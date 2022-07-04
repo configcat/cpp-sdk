@@ -13,18 +13,35 @@ on:
 
 jobs:
   test:
-
-    runs-on: ubuntu-18.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest, macos-latest, ubuntu-latest ]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install dependencies
+    - name: Install dependencies on ubuntu
+      if: startsWith(matrix.os, 'ubuntu')
       run: |
         sudo apt-get update
         sudo apt-get install ninja-build cmake
         ninja --version
         cmake --version
         gcc --version
+
+    - name: Install dependencies on macos
+      if: startsWith(matrix.os, 'macos')
+      run: |
+        brew install cmake ninja
+        ninja --version
+        cmake --version
+
+    - name: Install dependencies on windows
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        choco install ninja cmake
+        ninja --version
+        cmake --version
 
     - name: Build
       shell: bash
