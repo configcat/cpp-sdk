@@ -10,3 +10,27 @@ on:
     branches: [ main ]
 
   workflow_dispatch:
+
+jobs:
+  test:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install ninja-build cmake
+        ninja --version
+        cmake --version
+        gcc --version
+
+    - name: Build
+      shell: bash
+      run: |
+        cmake -S . -B build
+        cmake --build build
+
+    - name: Test
+      run: cd build && ctest
