@@ -1,10 +1,16 @@
 #include <gtest/gtest.h>
 #include "configcat/configcatclient.hpp"
+#include "configcat/consolelogger.hpp"
 
 using namespace configcat;
 using namespace std;
 
-TEST(ConfigCatClientTest, BasicAssertions) {
+
+TEST(ConfigCatClientTest, GetValueTest) {
+    ConsoleLogger logger;
+    setLogger(&logger);
+    setLogLevel(configcat::LOG_LEVEL_DEBUG);
+
     ConfigCatClient client;
 
     auto boolValue = client.getValue(string("bool"), false);

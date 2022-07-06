@@ -1,10 +1,12 @@
 #include "configcat/configcatclient.hpp"
 #include "configcat/configcatuser.hpp"
+#include "configcat/log.hpp"
 
 namespace configcat {
 
 template<>
 bool ConfigCatClient::getValue(const std::string& key, const bool& defaultValue, const ConfigCatUser* user) const {
+    LOG_DEBUG << "getValue bool";
     return true;
 }
 

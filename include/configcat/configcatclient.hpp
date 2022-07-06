@@ -5,8 +5,6 @@
 #include <vector>
 #include "keyvalue.hpp"
 
-std::string version();
-
 namespace configcat {
 
 class ConfigCatUser;
