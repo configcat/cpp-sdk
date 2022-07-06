@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(configcat)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 include(CTest)
 
@@ -24,7 +24,6 @@ if(BUILD_TESTING)
     list(REMOVE_ITEM tests "${PROJECT_SOURCE_DIR}/test/test-main.cpp")
 
     add_executable("google_tests"
-        ${sources}
         ${tests}
         "${PROJECT_SOURCE_DIR}/test/test-main.cpp"
     )
@@ -40,4 +39,5 @@ set(CONFIGCAT_INCLUDE_PATHS
     "third-party/include"
 )
 
-add_library(configcat src/configcat.cpp)
+file(GLOB SOURCES "src/*")
+add_library(configcat ${SOURCES})
