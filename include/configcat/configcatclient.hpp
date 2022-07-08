@@ -21,6 +21,7 @@ public:
      */
     template<typename ValueType>
     ValueType getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
+    std::string getValue(const std::string& key, char* defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
 
     // Gets all the setting keys.

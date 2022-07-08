@@ -25,10 +25,13 @@ double ConfigCatClient::getValue(const std::string& key, const double& defaultVa
     return 42.3;
 }
 
+std::string ConfigCatClient::getValue(const std::string& key, char* defaultValue, const ConfigCatUser* user) const {
+    return getValue(key, (const char*)defaultValue, user);
+}
+
 std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
     return "string";
 }
-
 
 } // namespace configcat
 
