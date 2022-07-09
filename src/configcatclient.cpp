@@ -1,8 +1,8 @@
 #include <assert.h>
 
-#include "configcat/configcatclient.hpp"
-#include "configcat/configcatuser.hpp"
-#include "configcat/log.hpp"
+#include "configcat/configcatclient.h"
+#include "configcat/configcatuser.h"
+#include "configcat/log.h"
 
 using namespace std;
 

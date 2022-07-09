@@ -1,4 +1,4 @@
-#include "configcat/log.hpp"
+#include "configcat/log.h"
 
 namespace configcat {
 

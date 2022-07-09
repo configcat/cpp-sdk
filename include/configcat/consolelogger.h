@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdio.h>
-#include "log.hpp"
+#include "log.h"
 
 namespace configcat {
 

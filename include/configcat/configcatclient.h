@@ -4,8 +4,8 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
-#include "keyvalue.hpp"
-#include "configcatoptions.hpp"
+#include "keyvalue.h"
+#include "configcatoptions.h"
 
 namespace configcat {
 

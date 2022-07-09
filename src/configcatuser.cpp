@@ -1,4 +1,4 @@
-#include "configcat/configcatuser.hpp"
+#include "configcat/configcatuser.h"
 
 namespace configcat {
 

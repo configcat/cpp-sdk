@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "configcat/configcatclient.hpp"
+#include "configcat/configcatclient.h"
 
 using namespace configcat;
 using namespace std;

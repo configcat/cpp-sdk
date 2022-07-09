@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "configcat/consolelogger.hpp"
+#include "configcat/consolelogger.h"
 
 using namespace configcat;
 
