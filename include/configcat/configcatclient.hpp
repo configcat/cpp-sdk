@@ -3,7 +3,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 #include "keyvalue.hpp"
+#include "configcatoptions.hpp"
 
 namespace configcat {
 
@@ -11,13 +13,24 @@ class ConfigCatUser;
 
 class ConfigCatClient {
 public:
+    // Creates a new or gets an already existing [ConfigCatClient] for the given [sdkKey].
+    static ConfigCatClient* get(const std::string& sdkKey, const ConfigCatOptions& options = {});
+
+    // Closes an individual [ConfigCatClient] instance.
+    static void close(ConfigCatClient* client);
+
+    // Closes all [ConfigCatClient] instances.
+    static void close();
+
+    // Returns count of [ConfigCatClient] instances.
+    static size_t instanceCount();
 
     /**
-     Gets a value from the configuration identified by the given `key`.
-
-     - Parameter key: the identifier of the configuration value.
-     - Parameter defaultValue: in case of any failure, this value will be returned.
-     - Parameter user: the user object to identify the caller.
+     * Gets a value from the configuration identified by the given `key`.
+     *
+     * Parameter [key]: the identifier of the configuration value.
+     * Parameter [defaultValue]: in case of any failure, this value will be returned.
+     * Parameter [user]: the user object to identify the caller.
      */
     template<typename ValueType>
     ValueType getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
@@ -41,6 +54,11 @@ public:
 
     // Initiates a force refresh synchronously on the cached configuration.
     void forceRefresh();
+
+private:
+    ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
+
+    static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instanceRepository;
 };
 
 } // namespace configcat
