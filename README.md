@@ -1,3 +1,5 @@
+# Work In Progress - Not ready yet
+
 # ConfigCat SDK for C++
 
 https://configcat.com
