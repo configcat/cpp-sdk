@@ -39,9 +39,10 @@ jobs:
     - name: Install dependencies on windows
       if: startsWith(matrix.os, 'windows')
       run: |
-        choco install ninja cmake curl
+        choco install ninja cmake
         ninja --version
         cmake --version
+        vcpkg install curl
 
     - name: Build
       shell: bash
