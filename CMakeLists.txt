@@ -33,11 +33,22 @@ if(BUILD_TESTING)
     gtest_discover_tests(google_tests)
 endif()
 
+# Find ConfigCat dependencies.
+find_package(CURL REQUIRED)
+
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
     "include"
+    ${CURL_INCLUDE_DIR}
     "third-party/include"
 )
 
 file(GLOB SOURCES "src/*")
 add_library(configcat ${SOURCES})
+
+set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} ${CURL_LIBRARIES})
+
+target_link_libraries(configcat
+#    PUBLIC  ${CONFIGCAT_PUBLIC_LIBRARIES}
+    PRIVATE ${CURL_LIBRARIES}
+)
