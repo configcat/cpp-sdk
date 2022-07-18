@@ -34,14 +34,18 @@ if(BUILD_TESTING)
 endif()
 
 # vcpkg init
-set(vcpkg "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+set(vcpkg "$ENV{VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake")
 if(NOT CMAKE_TOOLCHAIN_FILE AND EXISTS "${vcpkg}")
     set(CMAKE_TOOLCHAIN_FILE "${vcpkg}" CACHE FILEPATH "CMake toolchain file")
     message(STATUS "vcpkg toolchain found: ${CMAKE_TOOLCHAIN_FILE}")
 endif()
+# test
+message(STATUS "vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+# test
 
 # Find ConfigCat dependencies.
-find_package(CURL CONFIG REQUIRED)
+find_package(curl REQUIRED)
+#find_package(RapidJSON REQUIRED)
 
 set(CONFIGCAT_INCLUDE_PATHS
     "src"

@@ -43,8 +43,8 @@ jobs:
         choco install ninja cmake
         ninja --version
         cmake --version
-        vcpkg install curl
-        set
+        vcpkg install curl:x64-windows
+        gci env:* | sort-object name
 
     - name: Build
       shell: bash
