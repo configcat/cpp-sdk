@@ -43,6 +43,7 @@ jobs:
         ninja --version
         cmake --version
         vcpkg install curl
+        set
 
     - name: Build
       shell: bash

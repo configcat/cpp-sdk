@@ -33,8 +33,15 @@ if(BUILD_TESTING)
     gtest_discover_tests(google_tests)
 endif()
 
+# vcpkg init
+set(vcpkg "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+if(NOT CMAKE_TOOLCHAIN_FILE AND EXISTS "${vcpkg}")
+    set(CMAKE_TOOLCHAIN_FILE "${vcpkg}" CACHE FILEPATH "CMake toolchain file")
+    message(STATUS "vcpkg toolchain found: ${CMAKE_TOOLCHAIN_FILE}")
+endif()
+
 # Find ConfigCat dependencies.
-find_package(CURL REQUIRED)
+find_package(CURL CONFIG REQUIRED)
 
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
