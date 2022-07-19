@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <curl/curl.h>
+#include <rapidjson/document.h>
 #include "log.h"
 
 namespace configcat {
@@ -49,6 +50,9 @@ public:
 
             code = httpCode;
             data = *httpData;
+
+            rapidjson::Document json;
+            json.Parse(data.c_str());
         } else {
             LOG_ERROR << "Couldn't GET from " << url << " - exiting";
         }
