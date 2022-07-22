@@ -2,54 +2,48 @@
 
 #include <string>
 #include <iostream>
-#include <curl/curl.h>
+#include <cpr/cpr.h>
 #include <rapidjson/document.h>
 #include "log.h"
+#include "httpsessionadapter.h"
 
 namespace configcat {
 
+class SessionInterceptor : public cpr::Interceptor {
+public:
+    SessionInterceptor(std::shared_ptr<HttpSessionAdapter> httpSessionAdapter):
+        httpSessionAdapter(httpSessionAdapter) {
+    }
+
+    virtual cpr::Response intercept(cpr::Session& session) {
+        configcat::Response adapterResponse = httpSessionAdapter->get(session.GetFullRequestUrl());
+        cpr::Response response;
+        response.status_code = adapterResponse.status_code;
+        response.text = adapterResponse.text;
+        return response;
+    }
+
+private:
+    std::shared_ptr<HttpSessionAdapter> httpSessionAdapter;
+};
+
 class ConfigFetcher {
 public:
-    ConfigFetcher() {
-        const std::string url("http://date.jsontest.com/");
+    ConfigFetcher(std::shared_ptr<HttpSessionAdapter> httpSessionAdapter) {
+        const std::string url("https://cdn-global.configcat.com/configuration-files/PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A/config_v5.json");
+        cpr::Session session;
+        session.SetUrl(url);
+        if (httpSessionAdapter) {
+            session.AddInterceptor(std::make_shared<SessionInterceptor>(httpSessionAdapter));
+        }
+        cpr::Response response = session.Get();
 
-        CURL* curl = curl_easy_init();
-
-        // Set remote URL.
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-
-        // Don't bother trying IPv6, which would increase DNS resolution time.
-        curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-
-        // Don't wait forever, time out after 10 seconds.
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
-
-        // Follow HTTP redirects if necessary.
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        // Response information.
-        long httpCode(0);
-        std::unique_ptr<std::string> httpData(new std::string());
-
-        // Hook up data handling function.
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, ConfigFetcher::callback);
-
-        // Hook up data container (will be passed as the last parameter to the
-        // callback handling function).  Can be any pointer type, since it will
-        // internally be passed as a void pointer.
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, httpData.get());
-
-        // Run our HTTP GET command, capture the HTTP response code, and clean up.
-        curl_easy_perform(curl);
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-        curl_easy_cleanup(curl);
-
-        if (httpCode == 200) {
+        if (response.status_code == 200) {
             LOG_INFO << "Got successful response from " << url;
-            LOG_INFO << *httpData;
+            LOG_INFO << response.text;
 
-            code = httpCode;
-            data = *httpData;
+            code = response.status_code;
+            data = response.text;
 
             rapidjson::Document json;
             json.Parse(data.c_str());
@@ -62,11 +56,6 @@ public:
     std::string data = "";
 
 private:
-    static std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out) {
-        const std::size_t totalBytes(size * num);
-        out->append(in, totalBytes);
-        return totalBytes;
-    }
 };
 
 } // namespace configcat

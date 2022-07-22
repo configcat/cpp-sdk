@@ -81,5 +81,10 @@ std::string ConfigCatClient::getValue(const std::string& key, const char* defaul
     return "string";
 }
 
+
+void ConfigCatClient::forceRefresh() {
+
+}
+
 } // namespace configcat
 

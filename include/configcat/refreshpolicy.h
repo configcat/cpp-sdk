@@ -7,7 +7,7 @@ class RefreshPolicy {
     virtual void close() = 0;
     virtual void refresh() = 0;
 
-    virtual ~RefreshPolicy();
+    virtual ~RefreshPolicy() = default;
 }
 
 class DefaultRefreshPolicy : public RefreshPolicy {
