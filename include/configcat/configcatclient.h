@@ -10,6 +10,8 @@
 namespace configcat {
 
 class ConfigCatUser;
+class ConfigFetcher;
+class RolloutEvaluator;
 
 class ConfigCatClient {
 public:
@@ -57,6 +59,9 @@ public:
 
 private:
     ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
+
+    std::unique_ptr<ConfigFetcher> configFetcher;
+    std::unique_ptr<RolloutEvaluator> rolloutEvaluator;
 
     static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instanceRepository;
 };

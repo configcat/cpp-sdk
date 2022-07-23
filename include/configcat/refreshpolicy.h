@@ -8,7 +8,7 @@ class RefreshPolicy {
     virtual void refresh() = 0;
 
     virtual ~RefreshPolicy() = default;
-}
+};
 
 class DefaultRefreshPolicy : public RefreshPolicy {
 

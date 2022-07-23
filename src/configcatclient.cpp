@@ -3,6 +3,8 @@
 #include "configcat/configcatclient.h"
 #include "configcat/configcatuser.h"
 #include "configcat/log.h"
+#include "configcat/configfetcher.h"
+#include "configcat/rolloutevaluator.h"
 
 using namespace std;
 
@@ -49,7 +51,8 @@ size_t ConfigCatClient::instanceCount() {
 }
 
 ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options) {
-
+    rolloutEvaluator = make_unique<RolloutEvaluator>();
+    configFetcher = make_unique<ConfigFetcher>(options);
 }
 
 template<>
