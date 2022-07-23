@@ -5,6 +5,7 @@
 #include "pollingmode.h"
 #include "configcatcache.h"
 #include "httpsessionadapter.h"
+#include "flagoverrides.h"
 
 namespace configcat {
 
@@ -15,8 +16,8 @@ struct ConfigCatOptions {
     uint32_t readTimeout = 5000; // milliseconds
     std::shared_ptr<PollingMode> mode = PollingMode::autoPoll();
     std::shared_ptr<ConfigCatCache> cache;
+    std::shared_ptr<FlagOverrides> override;
     std::shared_ptr<HttpSessionAdapter> httpSessionAdapter;
-//    FlagOverrides? override;
 };
 
 } // namespace configcat

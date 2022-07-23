@@ -35,7 +35,7 @@ public:
         entries(entries) {
     }
 
-//    static Config empty;
+    static Config empty;
 };
 
 } // namespace configcat
