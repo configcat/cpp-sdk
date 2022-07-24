@@ -7,6 +7,10 @@
 
 namespace configcat {
 
+class RefreshPolicy;
+class ConfigFetcher;
+class ConfigJsonCache;
+
 // The base class of a polling mode configuration.
 class PollingMode {
 public:
@@ -35,7 +39,8 @@ public:
     // Gets the current polling mode's identifier.
     // Used for analytical purposes in HTTP User-Agent headers.
     virtual const char* getPollingIdentifier() const = 0;
-    virtual ~PollingMode() {};
+    virtual std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const = 0;
+    virtual ~PollingMode() = default;
 };
 
 // Represents the auto polling mode's configuration.
@@ -48,6 +53,7 @@ public:
     const std::function<void()> onConfigChanged;
 
     const char* getPollingIdentifier() const override { return "a"; }
+    std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:
     AutoPollingMode(double autoPollIntervalInSeconds, uint32_t maxInitWaitTimeInSeconds, std::function<void()> onConfigChanged):
@@ -57,17 +63,6 @@ private:
     }
 };
 
-// Represents the manual polling mode's configuration.
-class ManualPollingMode : public PollingMode {
-    friend class PollingMode;
-
-public:
-    const char* getPollingIdentifier() const override { return "m"; }
-
-private:
-    ManualPollingMode() {}
-};
-
 // Represents lazy loading mode's configuration.
 class LazyLoadingMode : public PollingMode {
     friend class PollingMode;
@@ -75,11 +70,24 @@ class LazyLoadingMode : public PollingMode {
 public:
     const double cacheRefreshIntervalInSeconds;
     const char* getPollingIdentifier() const override { return "l"; }
+    std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:
     LazyLoadingMode(double cacheRefreshIntervalInSeconds):
     cacheRefreshIntervalInSeconds(cacheRefreshIntervalInSeconds) {
     }
+};
+
+// Represents the manual polling mode's configuration.
+class ManualPollingMode : public PollingMode {
+    friend class PollingMode;
+
+public:
+    const char* getPollingIdentifier() const override { return "m"; }
+    std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
+
+private:
+    ManualPollingMode() {}
 };
 
 } // namespace configcat

@@ -5,6 +5,7 @@
 #include "configcat/httpsessionadapter.h"
 #include "configcat/configcatoptions.h"
 #include "configcat/configfetcher.h"
+#include "configcat/configjsoncache.h"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ private:
     shared_ptr<HttpSessionAdapter> httpSessionAdapter;
 };
 
-ConfigFetcher::ConfigFetcher(const ConfigCatOptions& options) {
+ConfigFetcher::ConfigFetcher(const std::string& sdkKey, const std::string& mode, ConfigJsonCache& jsonCache, const ConfigCatOptions& options) {
     const string url("https://cdn-global.configcat.com/configuration-files/PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A/config_v5.json");
     cpr::Session session;
     session.SetUrl(url);

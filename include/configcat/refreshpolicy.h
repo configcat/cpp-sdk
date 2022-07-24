@@ -2,8 +2,13 @@
 
 namespace configcat {
 
+class Config;
+class ConfigFetcher;
+class ConfigJsonCache;
+
 class RefreshPolicy {
-    virtual Config getConfiguration() = 0;
+public:
+    virtual const Config& getConfiguration() = 0;
     virtual void close() = 0;
     virtual void refresh() = 0;
 
@@ -11,7 +16,11 @@ class RefreshPolicy {
 };
 
 class DefaultRefreshPolicy : public RefreshPolicy {
+public:
+    DefaultRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) {}
 
+    void close() override {}
+    void refresh() override {}
 };
 
 

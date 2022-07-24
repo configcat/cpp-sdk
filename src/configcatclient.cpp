@@ -5,6 +5,8 @@
 #include "configcat/log.h"
 #include "configcat/configfetcher.h"
 #include "configcat/rolloutevaluator.h"
+#include "configcat/configjsoncache.h"
+#include "configcat/refreshpolicy.h"
 
 using namespace std;
 
@@ -51,8 +53,18 @@ size_t ConfigCatClient::instanceCount() {
 }
 
 ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options) {
+    auto mode = options.mode ? options.mode : PollingMode::autoPoll();
+    configJsonCache = make_unique<ConfigJsonCache>();
     rolloutEvaluator = make_unique<RolloutEvaluator>();
-    configFetcher = make_unique<ConfigFetcher>(options);
+    configFetcher = make_unique<ConfigFetcher>(sdkKey, mode->getPollingIdentifier(), *configJsonCache, options);
+    refreshPolicy = options.mode->createRefreshPolicy(*configFetcher, *configJsonCache);
+}
+
+const std::unordered_map<std::string, Value>& ConfigCatClient::getSettings() {
+    // TODO: override
+
+    const Config& config = refreshPolicy->getConfiguration();
+    return config.entries;
 }
 
 template<>

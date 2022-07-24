@@ -9,9 +9,11 @@
 
 namespace configcat {
 
+class ConfigJsonCache;
 class ConfigCatUser;
 class ConfigFetcher;
 class RolloutEvaluator;
+class RefreshPolicy;
 
 class ConfigCatClient {
 public:
@@ -60,8 +62,12 @@ public:
 private:
     ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
 
-    std::unique_ptr<ConfigFetcher> configFetcher;
+    const std::unordered_map<std::string, Value>& getSettings();
+
+    std::unique_ptr<ConfigJsonCache> configJsonCache;
     std::unique_ptr<RolloutEvaluator> rolloutEvaluator;
+    std::unique_ptr<ConfigFetcher> configFetcher;
+    std::unique_ptr<RefreshPolicy> refreshPolicy;
 
     static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instanceRepository;
 };
