@@ -62,7 +62,7 @@ public:
 private:
     ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
 
-    const std::unordered_map<std::string, Setting>& getSettings() const;
+    const std::shared_ptr<std::unordered_map<std::string, Setting>> getSettings() const;
 
     std::unique_ptr<ConfigJsonCache> configJsonCache;
     std::unique_ptr<RolloutEvaluator> rolloutEvaluator;

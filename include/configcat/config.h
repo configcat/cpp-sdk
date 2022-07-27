@@ -93,11 +93,11 @@ struct Config {
     static constexpr char kTimestamp[] = "t";
 
     std::string jsonString = "{}";
-    std::unordered_map<std::string, Preferences> preferences;
-    std::unordered_map<std::string, Setting> entries;
+    std::shared_ptr<std::unordered_map<std::string, Preferences>> preferences;
+    std::shared_ptr<std::unordered_map<std::string, Setting>> entries;
     std::string eTag;
 
-    static std::shared_ptr<Config> fromJson(const std::string& json, const std::string& eTag = "");
+    static std::shared_ptr<Config> fromJson(const std::string& jsonString, const std::string& eTag = "");
 
     static std::shared_ptr<Config> empty;
 

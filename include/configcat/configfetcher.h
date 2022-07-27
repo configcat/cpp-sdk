@@ -41,9 +41,6 @@ public:
     // Fetches the current ConfigCat configuration json.
     FetchResponse fetchConfiguration();
 
-    long code = 0;
-    std::string data = "";
-
 private:
     FetchResponse executeFetch(int executeCount);
 

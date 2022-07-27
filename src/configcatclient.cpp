@@ -60,7 +60,7 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
     refreshPolicy = options.mode->createRefreshPolicy(*configFetcher, *configJsonCache);
 }
 
-const std::unordered_map<std::string, Setting>& ConfigCatClient::getSettings() const {
+const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient::getSettings() const {
     // TODO: override
 
     auto config = refreshPolicy->getConfiguration();
@@ -93,11 +93,12 @@ std::string ConfigCatClient::getValue(const std::string& key, char* defaultValue
 }
 
 std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
-    auto settings = getSettings();
-    if (settings.empty()) {
+    auto settingsPtr = getSettings();
+    if (!settingsPtr || settingsPtr->empty()) {
         LOG_ERROR << "Config JSON is not present. Returning defaultValue: " << defaultValue << ".";
         return defaultValue;
     }
+    auto settings = *settingsPtr;
 
     auto setting = settings.find(key);
     if (setting == settings.end()) {
@@ -110,9 +111,12 @@ std::string ConfigCatClient::getValue(const std::string& key, const char* defaul
         return defaultValue;
     }
 
-    
+    // TODO: evaluation
+    const string* valuePtr = get_if<string>(&setting->second.value);
+    if (valuePtr)
+        return *valuePtr;
 
-    return "string";
+    return defaultValue;
 }
 
 
