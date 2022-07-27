@@ -65,6 +65,22 @@ public:
         return *this;
     }
 
+    template<typename Type>
+    LogEntry& operator<<(const std::vector<Type>& v) {
+        if (configcat::logger && level <= configcat::maxLogLevel) {
+            message += "[";
+            size_t last = v.size() - 1;
+            for (size_t i = 0; i < v.size(); ++i) {
+                operator<<(v[i]);
+                if (i != last) {
+                    message += ", ";
+                }
+            }
+            message += "]";
+        }
+        return *this;
+    }
+
 private:
     LogLevel level;
     std::string message;

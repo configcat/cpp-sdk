@@ -13,8 +13,7 @@ public:
         DefaultRefreshPolicy(fetcher, jsonCache) {
     }
 
-    const Config& getConfiguration() override {
-    }
+    std::shared_ptr<Config> getConfiguration() override;
 };
 
 } // namespace configcat

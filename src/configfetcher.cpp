@@ -1,11 +1,11 @@
-#include <iostream>
+#include "configcat/configfetcher.h"
+
 #include <cpr/cpr.h>
-#include <rapidjson/document.h>
 #include "configcat/log.h"
 #include "configcat/httpsessionadapter.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configfetcher.h"
 #include "configcat/configjsoncache.h"
+#include "configcat/version.h"
 
 using namespace std;
 
@@ -29,28 +29,69 @@ private:
     shared_ptr<HttpSessionAdapter> httpSessionAdapter;
 };
 
-ConfigFetcher::ConfigFetcher(const std::string& sdkKey, const std::string& mode, ConfigJsonCache& jsonCache, const ConfigCatOptions& options) {
-    const string url("https://cdn-global.configcat.com/configuration-files/PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A/config_v5.json");
-    cpr::Session session;
-    session.SetUrl(url);
+ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, ConfigJsonCache& jsonCache, const ConfigCatOptions& options):
+    sdkKey(sdkKey),
+    mode(mode),
+    jsonCache(jsonCache) {
+    session = make_unique<cpr::Session>();
+    session->SetConnectTimeout(options.connectTimeout);
+    session->SetTimeout(options.readTimeout);
     if (options.httpSessionAdapter) {
-        session.AddInterceptor(make_shared<SessionInterceptor>(options.httpSessionAdapter));
+        session->AddInterceptor(make_shared<SessionInterceptor>(options.httpSessionAdapter));
     }
-    cpr::Response response = session.Get();
 
-    if (response.status_code == 200) {
-        LOG_INFO << "Got successful response from " << url;
-        LOG_INFO << response.text;
-
-        code = response.status_code;
-        data = response.text;
-
-        rapidjson::Document json;
-        json.Parse(data.c_str());
-    } else {
-        LOG_ERROR << "Couldn't GET from " << url << " - exiting";
-    }
+    url = !options.baseUrl.empty()
+        ? options.baseUrl
+        : options.dataGovernance == DataGovernance::Global
+            ? kGlobalBaseUrl
+            : kEuOnlyBaseUrl;
 }
 
+ConfigFetcher::~ConfigFetcher() {
+}
+
+FetchResponse ConfigFetcher::fetchConfiguration() {
+    return executeFetch(2);
+}
+
+FetchResponse ConfigFetcher::executeFetch(int executeCount) {
+    auto cache = jsonCache.readCache();
+    cpr::Header header = {
+        {kUserAgentHeaderName, "ConfigCat-Cpp/" + mode + "-" + CONFIGCAT_VERSION}
+    };
+    if (!cache->eTag.empty()) {
+        header.insert({kIfNoneMatchHeaderName, cache->eTag});
+    }
+    session->SetHeader(header);
+    session->SetUrl(url + "/configuration-files/" + sdkKey + "/" + kConfigJsonName);
+    auto response = session->Get();
+
+    switch (response.status_code) {
+        case 200:
+        case 201:
+        case 202:
+        case 203:
+        case 204: {
+            const auto it = response.header.find(kEtagHeaderName);
+            string eTag = it != response.header.end() ? it->second : "";
+            auto config = jsonCache.readFromJson(response.text, eTag);
+            if (config == Config::empty) {
+                return FetchResponse({failure, Config::empty});
+            }
+
+            LOG_DEBUG << "Fetch was successful: new config fetched.";
+            return FetchResponse({fetched, config});
+        }
+
+        case 304:
+            LOG_DEBUG << "Fetch was successful: config not modified.";
+            return FetchResponse({notModified, Config::empty});
+
+        default:
+            LOG_ERROR << "Double-check your API KEY at https://app.configcat.com/apikey. " <<
+                "Received unexpected response: " << response.status_code;
+            return FetchResponse({failure, Config::empty});
+    }
+}
 
 } // namespace configcat

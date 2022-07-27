@@ -54,17 +54,17 @@ size_t ConfigCatClient::instanceCount() {
 
 ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options) {
     auto mode = options.mode ? options.mode : PollingMode::autoPoll();
-    configJsonCache = make_unique<ConfigJsonCache>();
+    configJsonCache = make_unique<ConfigJsonCache>(sdkKey, options.cache);
     rolloutEvaluator = make_unique<RolloutEvaluator>();
     configFetcher = make_unique<ConfigFetcher>(sdkKey, mode->getPollingIdentifier(), *configJsonCache, options);
     refreshPolicy = options.mode->createRefreshPolicy(*configFetcher, *configJsonCache);
 }
 
-const std::unordered_map<std::string, Value>& ConfigCatClient::getSettings() {
+const std::unordered_map<std::string, Setting>& ConfigCatClient::getSettings() const {
     // TODO: override
 
-    const Config& config = refreshPolicy->getConfiguration();
-    return config.entries;
+    auto config = refreshPolicy->getConfiguration();
+    return config->entries;
 }
 
 template<>
@@ -93,12 +93,31 @@ std::string ConfigCatClient::getValue(const std::string& key, char* defaultValue
 }
 
 std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
+    auto settings = getSettings();
+    if (settings.empty()) {
+        LOG_ERROR << "Config JSON is not present. Returning defaultValue: " << defaultValue << ".";
+        return defaultValue;
+    }
+
+    auto setting = settings.find(key);
+    if (setting == settings.end()) {
+        vector<string> keys;
+        keys.reserve(settings.size());
+        for (auto keyValue : settings) {
+            keys.emplace_back(keyValue.first);
+        }
+        LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys;
+        return defaultValue;
+    }
+
+    
+
     return "string";
 }
 
 
 void ConfigCatClient::forceRefresh() {
-
+    refreshPolicy->refresh();
 }
 
 } // namespace configcat
