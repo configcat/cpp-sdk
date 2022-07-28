@@ -6,6 +6,8 @@
 
 namespace configcat {
 
+class ConfigCatUser;
+
 enum LogLevel {
     LOG_LEVEL_ERROR,
     LOG_LEVEL_WARNING,
@@ -59,6 +61,9 @@ public:
             message += str;
         return *this;
     }
+
+    LogEntry& operator<<(const ConfigCatUser* str);
+    LogEntry& operator<<(const ConfigCatUser& str);
 
     template<typename... Type>
     LogEntry& operator<<(const std::variant<Type...>& v) {

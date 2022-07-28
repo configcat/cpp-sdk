@@ -1,4 +1,5 @@
 #include "configcat/rolloutevaluator.h"
+#include "configcat/configcatuser.h"
 #include "configcat/log.h"
 #include "list"
 
@@ -19,7 +20,11 @@ static std::tuple<Value, std::string> evaluate(const Setting& setting, const str
             return {setting.value, setting.variationId};
         }
     }
-    
+
+    logEntry << "User object: " << user;
+
+
+
     return {};
 
     // TODO: evaluation
