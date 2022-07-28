@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 
 namespace configcat {
 
@@ -56,6 +57,13 @@ public:
     LogEntry& operator<<(const std::string& str) {
         if (configcat::logger && level <= configcat::maxLogLevel)
             message += str;
+        return *this;
+    }
+
+    template<typename... Type>
+    LogEntry& operator<<(const std::variant<Type...>& v) {
+        if (configcat::logger && level <= configcat::maxLogLevel)
+            std::visit([&](const auto &arg) { operator<<(arg); }, v);
         return *this;
     }
 
