@@ -4,6 +4,7 @@
 #include <variant>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace configcat {
 

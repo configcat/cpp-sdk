@@ -15,11 +15,11 @@ public:
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
     void SetUp() override {
-        ConfigCatOptions options = {
-            .mode = PollingMode::manualPoll(),
-            .httpSessionAdapter = mockHttpSessionAdapter
+        // Using of designated initializers requires at least '/std:c++20'
+        ConfigCatOptions options;
+        options.mode = PollingMode::manualPoll();
+        options.httpSessionAdapter = mockHttpSessionAdapter;
 
-        };
         client = ConfigCatClient::get(kTestSdkKey, options);
     }
 
@@ -56,7 +56,7 @@ TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
 }
 
 TEST_F(ConfigCatClientTest, GetString) {
-    configcat::Response response = {.status_code = 200, .text = string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", "default");
@@ -65,7 +65,7 @@ TEST_F(ConfigCatClientTest, GetString) {
 }
 
 TEST_F(ConfigCatClientTest, GetStringValueFailed) {
-    configcat::Response response = {.status_code = 200, .text = string_format(kTestJsonFormat, "33")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, "33")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", "default");
