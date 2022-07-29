@@ -43,6 +43,12 @@ public:
     std::string getValue(const std::string& key, char* defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
 
+    /**
+     * Gets the value of a feature flag or setting as std::shared_ptr<Value> identified by the given [key].
+     * In case of any failure, nullptr will be returned. The [user] param identifies the caller.
+     */
+    std::shared_ptr<Value> getValue(const std::string& key, const ConfigCatUser* user = nullptr) const;
+
     // Gets all the setting keys.
     std::string getAllKeys() const;
 
