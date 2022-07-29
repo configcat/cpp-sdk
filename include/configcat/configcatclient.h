@@ -36,8 +36,10 @@ public:
      * Parameter [defaultValue]: in case of any failure, this value will be returned.
      * Parameter [user]: the user object to identify the caller.
      */
-    template<typename ValueType>
-    ValueType getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
+    bool getValue(const std::string& key, bool defaultValue, const ConfigCatUser* user = nullptr) const;
+    unsigned int getValue(const std::string& key, unsigned int defaultValue, const ConfigCatUser* user = nullptr) const;
+    double getValue(const std::string& key, double defaultValue, const ConfigCatUser* user = nullptr) const;
+    int getValue(const std::string& key, int defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, char* defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
 
@@ -62,6 +64,8 @@ public:
 private:
     ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
 
+    template<typename ValueType>
+    ValueType _getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
     const std::shared_ptr<std::unordered_map<std::string, Setting>> getSettings() const;
 
     std::unique_ptr<ConfigJsonCache> configJsonCache;

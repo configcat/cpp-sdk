@@ -15,7 +15,7 @@ LogEntry& LogEntry::operator<<(const ConfigCatUser* user) {
 
 LogEntry& LogEntry::operator<<(const ConfigCatUser& user) {
     if (configcat::logger && level <= configcat::maxLogLevel)
-        message += user.toString();
+        message += user.toJson();
     return *this;
 }
 

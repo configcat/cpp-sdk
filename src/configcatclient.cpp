@@ -67,58 +67,56 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
     return config->entries;
 }
 
-template<>
-bool ConfigCatClient::getValue(const std::string& key, const bool& defaultValue, const ConfigCatUser* user) const {
-    LOG_DEBUG << "getValue bool";
-    return true;
+bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
+    return _getValue(key, defaultValue, user);
 }
 
-template<>
-std::string ConfigCatClient::getValue(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user) const {
-    return getValue(key, defaultValue.c_str(), user);
+unsigned int ConfigCatClient::getValue(const std::string& key, unsigned int defaultValue, const ConfigCatUser* user) const {
+    return _getValue(key, defaultValue, user);
 }
 
-template<>
-int ConfigCatClient::getValue(const std::string& key, const int& defaultValue, const ConfigCatUser* user) const {
-    return 42;
+int ConfigCatClient::getValue(const std::string& key, int defaultValue, const ConfigCatUser* user) const {
+    return _getValue(key, defaultValue, user);
 }
 
-template<>
-double ConfigCatClient::getValue(const std::string& key, const double& defaultValue, const ConfigCatUser* user) const {
-    return 42.3;
+double ConfigCatClient::getValue(const std::string& key, double defaultValue, const ConfigCatUser* user) const {
+    return _getValue(key, defaultValue, user);
 }
 
 std::string ConfigCatClient::getValue(const std::string& key, char* defaultValue, const ConfigCatUser* user) const {
-    return getValue(key, (const char*)defaultValue, user);
+    return _getValue(key, string(defaultValue), user);
 }
 
 std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
-    auto settingsPtr = getSettings();
-    if (!settingsPtr || settingsPtr->empty()) {
+    return _getValue(key, string(defaultValue), user);
+}
+
+template<typename ValueType>
+ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user) const {
+    auto settings = getSettings();
+    if (!settings || settings->empty()) {
         LOG_ERROR << "Config JSON is not present. Returning defaultValue: " << defaultValue << ".";
         return defaultValue;
     }
-    auto settings = *settingsPtr;
 
-    auto setting = settings.find(key);
-    if (setting == settings.end()) {
+    auto setting = settings->find(key);
+    if (setting == settings->end()) {
         vector<string> keys;
-        keys.reserve(settings.size());
-        for (auto keyValue : settings) {
+        keys.reserve(settings->size());
+        for (auto keyValue : *settings) {
             keys.emplace_back(keyValue.first);
         }
         LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys;
         return defaultValue;
     }
 
-    // TODO: evaluation
-    const string* valuePtr = get_if<string>(&setting->second.value);
+    auto [value, variationId] = RolloutEvaluator::evaluate(setting->second, key, user);
+    const ValueType* valuePtr = get_if<ValueType>(&value);
     if (valuePtr)
         return *valuePtr;
 
     return defaultValue;
 }
-
 
 void ConfigCatClient::forceRefresh() {
     refreshPolicy->refresh();

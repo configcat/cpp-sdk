@@ -26,6 +26,52 @@ struct RolloutPercentageItem {
     std::string variationId;
 };
 
+enum Comparator: int {
+    ONE_OF = 0,        // IS ONE OF
+    NOT_ONE_OF,        // IS NOT ONE OF
+    CONTAINS,          // CONTAINS
+    NOT_CONTAINS,      // DOES NOT CONTAIN
+    ONE_OF_SEMVER,     // IS ONE OF (SemVer)
+    NOT_ONE_OF_SEMVER, // IS NOT ONE OF (SemVer)
+    LT_SEMVER,         // < (SemVer)
+    LTE_SEMVER,        // <= (SemVer)
+    GT_SEMVER,         // > (SemVer)
+    GTE_SEMVER,        // >= (SemVer)
+    EQ_NUM,            // = (Number)
+    NOT_EQ_NUM,        // <> (Number)
+    LT_NUM,            // < (Number)
+    LTE_NUM,           // <= (Number)
+    GT_NUM,            // > (Number)
+    GTE_NUM,           // >= (Number)
+    ONE_OF_SENS,       // IS ONE OF (Sensitive)
+    NOT_ONE_OF_SENS    // IS NOT ONE OF (Sensitive)
+};
+
+static constexpr char const* kComparatorTexts[] = {
+    "IS ONE OF",
+    "IS NOT ONE OF",
+    "CONTAINS",
+    "DOES NOT CONTAIN",
+    "IS ONE OF (SemVer)",
+    "IS NOT ONE OF (SemVer)",
+    "< (SemVer)",
+    "<= (SemVer)",
+    "> (SemVer)",
+    ">= (SemVer)",
+    "= (Number)",
+    "<> (Number)",
+    "< (Number)",
+    "<= (Number)",
+    "> (Number)",
+    ">= (Number)",
+    "IS ONE OF (Sensitive)",
+    "IS NOT ONE OF (Sensitive)"
+};
+
+inline const char* comparatorToString(Comparator comparator) {
+    return kComparatorTexts[comparator];
+}
+
 struct RolloutRule {
     // Value served when the rule is selected during evaluation.
     Value value = 0;
@@ -34,26 +80,7 @@ struct RolloutRule {
     std::string comparisonAttribute;
 
     // The operator used in the comparison.
-    //
-    // 0  -> 'IS ONE OF',
-    // 1  -> 'IS NOT ONE OF',
-    // 2  -> 'CONTAINS',
-    // 3  -> 'DOES NOT CONTAIN',
-    // 4  -> 'IS ONE OF (SemVer)',
-    // 5  -> 'IS NOT ONE OF (SemVer)',
-    // 6  -> '< (SemVer)',
-    // 7  -> '<= (SemVer)',
-    // 8  -> '> (SemVer)',
-    // 9  -> '>= (SemVer)',
-    // 10 -> '= (Number)',
-    // 11 -> '<> (Number)',
-    // 12 -> '< (Number)',
-    // 13 -> '<= (Number)',
-    // 14 -> '> (Number)',
-    // 15 -> '>= (Number)',
-    // 16 -> 'IS ONE OF (Sensitive)',
-    // 17 -> 'IS NOT ONE OF (Sensitive)'
-    int comparator;
+    Comparator comparator = ONE_OF;
 
     // The comparison value compared to the given user attribute.
     std::string comparisonValue;

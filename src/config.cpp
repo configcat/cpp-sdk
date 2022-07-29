@@ -42,10 +42,10 @@ void parseValue(const json& j, Value& value) {
             value = jsonValue.get<bool>();
         } else if (jsonValue.is_string()) {
             value = jsonValue.get<std::string>();
-        } else if (jsonValue.is_number_unsigned()) {
-            value = jsonValue.get<unsigned int>();
         } else if (jsonValue.is_number_integer()) {
             value = jsonValue.get<int>();
+        } else if (jsonValue.is_number_unsigned()) {
+            value = jsonValue.get<unsigned int>();
         } else if (jsonValue.is_number_float()) {
             value = jsonValue.get<double>();
         } else {
