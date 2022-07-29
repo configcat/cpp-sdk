@@ -38,24 +38,24 @@ struct RolloutPercentageItem {
 };
 
 enum Comparator: int {
-    ONE_OF = 0,        // IS ONE OF
-    NOT_ONE_OF,        // IS NOT ONE OF
-    CONTAINS,          // CONTAINS
-    NOT_CONTAINS,      // DOES NOT CONTAIN
-    ONE_OF_SEMVER,     // IS ONE OF (SemVer)
-    NOT_ONE_OF_SEMVER, // IS NOT ONE OF (SemVer)
-    LT_SEMVER,         // < (SemVer)
-    LTE_SEMVER,        // <= (SemVer)
-    GT_SEMVER,         // > (SemVer)
-    GTE_SEMVER,        // >= (SemVer)
-    EQ_NUM,            // = (Number)
-    NOT_EQ_NUM,        // <> (Number)
-    LT_NUM,            // < (Number)
-    LTE_NUM,           // <= (Number)
-    GT_NUM,            // > (Number)
-    GTE_NUM,           // >= (Number)
-    ONE_OF_SENS,       // IS ONE OF (Sensitive)
-    NOT_ONE_OF_SENS    // IS NOT ONE OF (Sensitive)
+    ONE_OF = 0,             // IS ONE OF
+    NOT_ONE_OF = 1,         // IS NOT ONE OF
+    CONTAINS = 2,           // CONTAINS
+    NOT_CONTAINS = 3,       // DOES NOT CONTAIN
+    ONE_OF_SEMVER = 4,      // IS ONE OF (SemVer)
+    NOT_ONE_OF_SEMVER = 5,  // IS NOT ONE OF (SemVer)
+    LT_SEMVER = 6,          // < (SemVer)
+    LTE_SEMVER = 7,         // <= (SemVer)
+    GT_SEMVER = 8,          // > (SemVer)
+    GTE_SEMVER = 9,         // >= (SemVer)
+    EQ_NUM = 10,            // = (Number)
+    NOT_EQ_NUM = 11,        // <> (Number)
+    LT_NUM = 12,            // < (Number)
+    LTE_NUM = 13,           // <= (Number)
+    GT_NUM = 14,            // > (Number)
+    GTE_NUM = 15,           // >= (Number)
+    ONE_OF_SENS = 16,       // IS ONE OF (Sensitive)
+    NOT_ONE_OF_SENS = 17    // IS NOT ONE OF (Sensitive)
 };
 
 static constexpr char const* kComparatorTexts[] = {
