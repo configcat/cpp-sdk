@@ -68,7 +68,7 @@ public:
     template<typename... Type>
     LogEntry& operator<<(const std::variant<Type...>& v) {
         if (configcat::logger && level <= configcat::maxLogLevel)
-            std::visit([&](const auto &arg) { operator<<(arg); }, v);
+            message += valueToString(v);
         return *this;
     }
 

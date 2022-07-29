@@ -10,25 +10,15 @@ namespace configcat {
 
 using Value = std::variant<bool, std::string, int, unsigned int, double>;
 
-// TODO: Use template here + change Value logging to use this. 
 inline std::string valueToString(const Value& value) {
-    if (bool const* pval = std::get_if<bool>(&value))
-        return std::to_string(*pval);
-
-    if (std::string const* pval = std::get_if<std::string>(&value))
-        return *pval;
-
-    if (int const* pval = std::get_if<int>(&value))
-        return std::to_string(*pval);
-
-    if (unsigned int const* pval = std::get_if<unsigned int>(&value))
-        return std::to_string(*pval);
-
-    if (double const* pval = std::get_if<double>(&value))
-        return std::to_string(*pval);
-
-    assert(false);
-    return {};
+    return std::visit([](auto&& arg){
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::string>) {
+            return arg;
+        } else {
+            return std::to_string(arg);
+        }
+    }, value);
 }
 
 struct Preferences {
