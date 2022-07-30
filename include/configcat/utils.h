@@ -41,4 +41,21 @@ inline std::string& trim(std::string& s, const char* t = " \t\n\r\f\v") {
     return ltrim(rtrim(s, t), t);
 }
 
+inline double str_to_double(const std::string& str, bool& error) {
+    char* end = nullptr; // error handler for strtod
+    double value;
+    if (str.find(",") != std::string::npos) {
+        std::string strCopy = str;
+        replace(strCopy.begin(), strCopy.end(), ',', '.');
+        value = strtod(strCopy.c_str(), &end);
+    } else {
+        value = strtod(str.c_str(), &end);
+    }
+
+    // Handle number conversion error
+    error = (*end) ? true : false;
+
+    return value;
+}
+
 } // namespace configcat

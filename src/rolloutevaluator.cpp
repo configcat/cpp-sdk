@@ -106,39 +106,23 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
             case LTE_NUM:
             case GT_NUM:
             case GTE_NUM: {
-                // TODO: move these 2 double-conversions into a function
-                char* end = nullptr; // error handler for strtod
-                double userValueDouble;
-                if (userValue->find(",") != std::string::npos) {
-                    string userValueCopy = *userValue;
-                    replace(userValueCopy.begin(), userValueCopy.end(), ',', '.');
-                    userValueDouble = strtod(userValueCopy.c_str(), &end);
-                } else {
-                    userValueDouble = strtod(userValue->c_str(), &end);
-                }
-                // Handle number conversion error
-                if (end) {
-                    string error = string_format("Cannot convert string \"%s\" to double.", userValue->c_str());
-                    auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, error);
+                bool error = false;
+                double userValueDouble = str_to_double(*userValue, error);
+                if (error) {
+                    string reason = string_format("Cannot convert string \"%s\" to double.", userValue->c_str());
+                    auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, reason);
                     logEntry << "\n" << message;
                     LOG_WARN << message;
+                    break;
                 }
 
-                double comparisonValueDouble;
-                end = nullptr;
-                if (comparisonValue.find(",") != std::string::npos) {
-                    string comparisonValueCopy = comparisonValue;
-                    replace(comparisonValueCopy.begin(), comparisonValueCopy.end(), ',', '.');
-                    comparisonValueDouble = strtod(comparisonValueCopy.c_str(), &end);
-                } else {
-                    comparisonValueDouble = strtod(comparisonValue.c_str(), &end);
-                }
-                // Handle number conversion error
-                if (end) {
-                    string error = string_format("Cannot convert string \"%s\" to double.", comparisonValue.c_str());
-                    auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, error);
+                double comparisonValueDouble = str_to_double(comparisonValue, error);
+                if (error) {
+                    string reason = string_format("Cannot convert string \"%s\" to double.", comparisonValue.c_str());
+                    auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, reason);
                     logEntry << "\n" << message;
                     LOG_WARN << message;
+                    break;
                 }
 
                 if (comparator == EQ_NUM     && userValueDouble == comparisonValueDouble ||
@@ -192,7 +176,6 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
 
     if (!setting.percentageItems.empty()) {
         auto hashCandidate = key + user->identifier;
-        sha1.reset();
         string hash = (*sha1)(hashCandidate).substr(0, 7);
         auto num = std::stoul(hash, nullptr, 16);
         auto scaled = num % 100;
@@ -246,6 +229,5 @@ std::string RolloutEvaluator::formatValidationErrorRule(const std::string& compa
                          comparisonValue.c_str(),
                          error.c_str());
 }
-
 
 } // namespace configcat

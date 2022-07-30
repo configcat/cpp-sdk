@@ -108,8 +108,8 @@ public:
                     auto value = client->getValue(settingKey, user.get());
                     string expected = str_tolower(testObjects[j + 4]);
                     if (!value || str_tolower(valueToString(*value)) != expected) {
-                        errors.push_back(string_format("Line: %d Identifier: %s, Key: %s. UV: %s Expected: %s, Result: %s",
-                                         i,
+                        errors.push_back(string_format("Index: [%d:%d] Identifier: %s, Key: %s. UV: %s Expected: %s, Result: %s",
+                                         i, j,
                                          testObjects[0].c_str(),
                                          settingKey.c_str(),
                                          testObjects[3].c_str(),
@@ -142,10 +142,10 @@ TEST_F(RolloutIntegrationTest, RolloutMatrixText) {
 //TEST_F(RolloutIntegrationTest, RolloutMatrixSemantic2) {
 //    testRolloutMatrix(directoryPath + "data/testmatrix_semantic2.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/q6jMCFIp-EmuAfnmZhPY7w", true);
 //}
-//
-//TEST_F(RolloutIntegrationTest, RolloutMatrixNumber) {
-//    testRolloutMatrix(directoryPath + "data/testmatrix_number.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/uGyK3q9_ckmdxRyI7vjwCw", true);
-//}
+
+TEST_F(RolloutIntegrationTest, RolloutMatrixNumber) {
+    testRolloutMatrix(directoryPath + "data/testmatrix_number.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/uGyK3q9_ckmdxRyI7vjwCw", true);
+}
 
 TEST_F(RolloutIntegrationTest, RolloutMatrixSensitive) {
     testRolloutMatrix(directoryPath + "data/testmatrix_sensitive.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/qX3TP2dTj06ZpCCT1h_SPA", true);
