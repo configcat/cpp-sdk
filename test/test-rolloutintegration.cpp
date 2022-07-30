@@ -5,12 +5,12 @@
 #include "configcat/configcatuser.h"
 #include "configcat/configcatclient.h"
 #include "configcat/utils.h"
+#include "configcat/log.h"
 
 
 #include <iostream>
 #include <string>
 #include <filesystem>
-#include <unistd.h>
 
 using namespace std;
 using namespace configcat;
@@ -36,6 +36,17 @@ static string RemoveFileName(string path){
 class RolloutIntegrationTest : public ::testing::Test {
 public:
     string directoryPath = RemoveFileName(__FILE__);
+    LogLevel logLevel;
+
+    RolloutIntegrationTest() {
+        // Minimal logging during rollout integration tests
+        logLevel = getLogLevel();
+        setLogLevel(LOG_LEVEL_WARNING);
+    }
+
+    ~RolloutIntegrationTest() {
+        setLogLevel(logLevel);
+    }
 
     MatrixData loadMatrixData(const string& filePath) {
         MatrixData data;
@@ -65,8 +76,8 @@ public:
 
         auto& header = matrixData[0];
         auto customKey = header[3];
-        auto& settingKeys = header;
-        settingKeys.resize(settingKeys.size() - 4); // Drop last items
+        auto settingKeys = header;
+        settingKeys.erase(settingKeys.begin(), settingKeys.begin() + 4);  // Drop first 4 items: "Identifier", "Email", "Country", "Custom1"
         list<string> errors;
         for (int i = 1; i < matrixData.size(); ++i) {
             auto& testObjects = matrixData[i];
@@ -97,7 +108,8 @@ public:
                     auto value = client->getValue(settingKey, user.get());
                     string expected = str_tolower(testObjects[j + 4]);
                     if (!value || str_tolower(valueToString(*value)) != expected) {
-                        errors.push_back(string_format("Identifier: %s, Key: %s. UV: %s Expected: %s, Result: %s",
+                        errors.push_back(string_format("Line: %d Identifier: %s, Key: %s. UV: %s Expected: %s, Result: %s",
+                                         i,
                                          testObjects[0].c_str(),
                                          settingKey.c_str(),
                                          testObjects[3].c_str(),
@@ -122,3 +134,15 @@ public:
 TEST_F(RolloutIntegrationTest, RolloutMatrixText) {
     testRolloutMatrix(directoryPath + "data/testmatrix.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A", true);
 }
+
+//TEST_F(RolloutIntegrationTest, RolloutMatrixSemantic) {
+//    testRolloutMatrix(directoryPath + "data/testmatrix_semantic.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/BAr3KgLTP0ObzKnBTo5nhA", true);
+//}
+//
+//TEST_F(RolloutIntegrationTest, RolloutMatrixSemantic2) {
+//    testRolloutMatrix(directoryPath + "data/testmatrix_semantic2.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/q6jMCFIp-EmuAfnmZhPY7w", true);
+//}
+//
+//TEST_F(RolloutIntegrationTest, RolloutMatrixNumber) {
+//    testRolloutMatrix(directoryPath + "data/testmatrix_number.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/uGyK3q9_ckmdxRyI7vjwCw", true);
+//}

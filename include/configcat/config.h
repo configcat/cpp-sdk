@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <sstream>
 
 namespace configcat {
 
@@ -15,6 +16,16 @@ inline std::string valueToString(const Value& value) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, std::string>) {
             return arg;
+        } else if constexpr (std::is_same_v<T, bool>) {
+            return std::string(arg ? "true" : "false");
+        } else if constexpr (std::is_same_v<T, double>) {
+            auto str = std::to_string(arg);
+            // Drop unnecessary '0' characters at the end of the string and keep format 0.0 for zero double
+            auto pos = str.find_last_not_of('0');
+            if (pos != std::string::npos && str[pos] == '.') {
+                ++pos;
+            }
+            return str.erase(pos + 1, std::string::npos);
         } else {
             return std::to_string(arg);
         }

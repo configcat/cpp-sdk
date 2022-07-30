@@ -6,6 +6,7 @@
 #include <list>
 #include <sstream>
 #include <stdlib.h>
+#include <hash-library/sha1.h>
 
 using namespace std;
 
@@ -150,6 +151,25 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                 continue;
 
             logEntry << "\n" << formatNoMatchRule(comparisonAttribute, userValue, comparator, comparisonValue);
+        }
+    }
+
+    if (!setting.percentageItems.empty()) {
+        SHA1 sha1; // TODO: move sha1 to a member variable
+        auto hashCandidate = key + user->identifier;
+        sha1.reset();
+        string hash = sha1(hashCandidate).substr(0, 7);
+        auto num = std::stoul(hash, nullptr, 16);
+        auto scaled = num % 100;
+        double bucket = 0;
+        for (const auto& rule : setting.percentageItems) {
+            for (const auto& rule : setting.percentageItems) {
+                bucket += rule.percentage;
+                if (scaled < bucket) {
+                    logEntry << "\n" << "Evaluating %% options. Returning " << rule.value;
+                    return {rule.value, rule.variationId};
+                }
+            }
         }
     }
 

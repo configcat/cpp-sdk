@@ -32,6 +32,7 @@ public:
 
 extern LogLevel maxLogLevel;
 void setLogLevel(LogLevel level);
+LogLevel getLogLevel();
 
 extern ILogger* logger;
 void setLogger(ILogger* externalLogger);

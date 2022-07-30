@@ -7,6 +7,7 @@ LogLevel maxLogLevel = LOG_LEVEL_WARNING;
 ILogger* logger = nullptr;
 
 void setLogLevel(LogLevel level) { configcat::maxLogLevel = level; }
+LogLevel getLogLevel() { return configcat::maxLogLevel; }
 void setLogger(ILogger* externalLogger) { configcat::logger = externalLogger; }
 
 LogEntry& LogEntry::operator<<(const ConfigCatUser* user) {
