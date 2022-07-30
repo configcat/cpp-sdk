@@ -11,6 +11,7 @@ find_package(nlohmann_json REQUIRED)
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
     "include"
+    "third-party"
 )
 
 if(BUILD_TESTING)
@@ -41,7 +42,7 @@ if(BUILD_TESTING)
     gtest_discover_tests(google_tests)
 endif()
 
-file(GLOB SOURCES "src/*")
+file(GLOB SOURCES "src/*" "third-party/hash-library/*")
 add_library(configcat ${SOURCES})
 
 set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json)
