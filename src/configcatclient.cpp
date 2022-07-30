@@ -110,7 +110,7 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
         return {};
     }
 
-    auto [value, variationId] = RolloutEvaluator::evaluate(setting->second, key, user);
+    auto [value, variationId] = rolloutEvaluator->evaluate(setting->second, key, user);
     return make_shared<Value>(value);
 }
 
@@ -133,7 +133,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         return defaultValue;
     }
 
-    auto [value, variationId] = RolloutEvaluator::evaluate(setting->second, key, user);
+    auto [value, variationId] = rolloutEvaluator->evaluate(setting->second, key, user);
     const ValueType* valuePtr = get_if<ValueType>(&value);
     if (valuePtr)
         return *valuePtr;

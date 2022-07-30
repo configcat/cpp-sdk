@@ -12,6 +12,13 @@ using namespace std;
 
 namespace configcat {
 
+RolloutEvaluator::RolloutEvaluator():
+    sha1(make_unique<SHA1>()) {
+}
+
+RolloutEvaluator::~RolloutEvaluator() {
+}
+
 std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting, const string& key, const ConfigCatUser* user) {
     LogEntry logEntry(LOG_LEVEL_INFO);
     logEntry << "Evaluating getValue(" << key << ")";
@@ -145,8 +152,37 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                 }
                 break;
             }
-            case ONE_OF_SENS:
-            case NOT_ONE_OF_SENS:
+            case ONE_OF_SENS: {
+                stringstream stream(comparisonValue);
+                string token;
+                auto userValueHash = (*sha1)(*userValue);
+                while (getline(stream, token, ',')) {
+                    trim(token);
+                    if (token == userValueHash) {
+                        logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
+                        return {rule.value, rule.variationId};
+                    }
+                }
+                break;
+            }
+            case NOT_ONE_OF_SENS: {
+                stringstream stream(comparisonValue);
+                string token;
+                auto userValueHash = (*sha1)(*userValue);
+                bool found = false;
+                while (getline(stream, token, ',')) {
+                    trim(token);
+                    if (token == userValueHash) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
+                    return {rule.value, rule.variationId};
+                }
+                break;
+            }
             default:
                 continue;
 
@@ -155,20 +191,17 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
     }
 
     if (!setting.percentageItems.empty()) {
-        SHA1 sha1; // TODO: move sha1 to a member variable
         auto hashCandidate = key + user->identifier;
         sha1.reset();
-        string hash = sha1(hashCandidate).substr(0, 7);
+        string hash = (*sha1)(hashCandidate).substr(0, 7);
         auto num = std::stoul(hash, nullptr, 16);
         auto scaled = num % 100;
         double bucket = 0;
         for (const auto& rule : setting.percentageItems) {
-            for (const auto& rule : setting.percentageItems) {
-                bucket += rule.percentage;
-                if (scaled < bucket) {
-                    logEntry << "\n" << "Evaluating %% options. Returning " << rule.value;
-                    return {rule.value, rule.variationId};
-                }
+            bucket += rule.percentage;
+            if (scaled < bucket) {
+                logEntry << "\n" << "Evaluating %% options. Returning " << rule.value;
+                return {rule.value, rule.variationId};
             }
         }
     }

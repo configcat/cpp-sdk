@@ -146,3 +146,11 @@ TEST_F(RolloutIntegrationTest, RolloutMatrixText) {
 //TEST_F(RolloutIntegrationTest, RolloutMatrixNumber) {
 //    testRolloutMatrix(directoryPath + "data/testmatrix_number.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/uGyK3q9_ckmdxRyI7vjwCw", true);
 //}
+
+TEST_F(RolloutIntegrationTest, RolloutMatrixSensitive) {
+    testRolloutMatrix(directoryPath + "data/testmatrix_sensitive.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/qX3TP2dTj06ZpCCT1h_SPA", true);
+}
+
+//TEST_F(RolloutIntegrationTest, RolloutMatrixVariationId) {
+//    testRolloutMatrix(directoryPath + "data/testmatrix_variationId.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/nQ5qkhRAUEa6beEyyrVLBA", false);
+//}
