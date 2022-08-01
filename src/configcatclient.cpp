@@ -114,6 +114,29 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     return make_shared<Value>(value);
 }
 
+string ConfigCatClient::getVariationId(const string& key, const string& defaultVariationId, const ConfigCatUser* user) const {
+    auto settings = getSettings();
+    if (!settings || settings->empty()) {
+        LOG_ERROR << "Config JSON is not present. Returning defaultVariationId: " << defaultVariationId << ".";
+        return defaultVariationId;
+    }
+
+    auto setting = settings->find(key);
+    if (setting == settings->end()) {
+        vector<string> keys;
+        keys.reserve(settings->size());
+        for (auto keyValue : *settings) {
+            keys.emplace_back(keyValue.first);
+        }
+        LOG_ERROR << "Variation ID not found for key " << key << ". Here are the available keys: " << keys;
+        return defaultVariationId;
+    }
+
+    auto [value, variationId] = rolloutEvaluator->evaluate(setting->second, key, user);
+    // TODO: on error returning defaultVariationId
+    return variationId;
+}
+
 template<typename ValueType>
 ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user) const {
     auto settings = getSettings();

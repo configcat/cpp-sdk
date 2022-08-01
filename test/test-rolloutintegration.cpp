@@ -25,7 +25,7 @@ const char kPathSeparator = '/';
 
 // Returns the directory path with the filename removed.
 // Example: FilePath("path/to/file").RemoveFileName() returns "path/to/".
-static string RemoveFileName(string path){
+static string RemoveFileName(string path) {
     const size_t lastSeparatorIndex = path.rfind(kPathSeparator);
     if (lastSeparatorIndex) {
         return path.substr(0, lastSeparatorIndex + 1);
@@ -55,6 +55,11 @@ public:
         string word;
 
         fstream file(filePath);
+        if (file.fail()) {
+            LOG_ERROR << "File open failed: " << filePath;
+            return {};
+        }
+
         while (getline(file, line)) {
             row.clear();
             stringstream stream(line);
@@ -69,6 +74,10 @@ public:
 
     void testRolloutMatrix(const string& filePath, const string& sdkKey, bool isValueKind) {
         auto matrixData = loadMatrixData(filePath);
+        if (matrixData.empty()) {
+            FAIL() << "Matrix data is empty.";
+        }
+
         ConfigCatOptions options;
         options.mode = PollingMode::manualPoll();
         auto client = ConfigCatClient::get(sdkKey, options);
@@ -103,10 +112,9 @@ public:
 
             int j = 0;
             for (auto& settingKey : settingKeys) {
+                string expected = str_tolower(testObjects[j + 4]);
                 if (isValueKind) {
-                    // TODO: variation_id
                     auto value = client->getValue(settingKey, user.get());
-                    string expected = str_tolower(testObjects[j + 4]);
                     if (!value || str_tolower(valueToString(*value)) != expected) {
                         errors.push_back(string_format("Index: [%d:%d] Identifier: %s, Key: %s. UV: %s Expected: %s, Result: %s",
                                          i, j,
@@ -115,6 +123,17 @@ public:
                                          testObjects[3].c_str(),
                                          expected.c_str(),
                                          value ? valueToString(*value).c_str() : "##null##"));
+                    }
+                } else {
+                    auto variationId = client->getVariationId(settingKey, "", user.get());
+                    if (variationId != expected) {
+                        errors.push_back(
+                                string_format("Index: [%d:%d] Identifier: %s, Key: %s. Expected: %s, Result: %s",
+                                              i, j,
+                                              testObjects[0].c_str(),
+                                              settingKey.c_str(),
+                                              expected.c_str(),
+                                              variationId.c_str()));
                     }
                 }
                 ++j;
@@ -151,6 +170,6 @@ TEST_F(RolloutIntegrationTest, RolloutMatrixSensitive) {
     testRolloutMatrix(directoryPath + "data/testmatrix_sensitive.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/qX3TP2dTj06ZpCCT1h_SPA", true);
 }
 
-//TEST_F(RolloutIntegrationTest, RolloutMatrixVariationId) {
-//    testRolloutMatrix(directoryPath + "data/testmatrix_variationId.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/nQ5qkhRAUEa6beEyyrVLBA", false);
-//}
+TEST_F(RolloutIntegrationTest, RolloutMatrixVariationId) {
+    testRolloutMatrix(directoryPath + "data/testmatrix_variationId.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/nQ5qkhRAUEa6beEyyrVLBA", false);
+}

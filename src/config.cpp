@@ -100,6 +100,4 @@ shared_ptr<Config> Config::fromJson(const string& jsonString, const string& eTag
     return config;
 }
 
-
-
 } // namespace configcat
