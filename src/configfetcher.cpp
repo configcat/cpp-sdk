@@ -6,6 +6,7 @@
 #include "configcat/configcatoptions.h"
 #include "configcat/configjsoncache.h"
 #include "configcat/version.h"
+#include "platform.h"
 
 using namespace std;
 
@@ -51,13 +52,14 @@ ConfigFetcher::~ConfigFetcher() {
 }
 
 FetchResponse ConfigFetcher::fetchConfiguration() {
+    // TODO: data governance
     return executeFetch(2);
 }
 
 FetchResponse ConfigFetcher::executeFetch(int executeCount) {
     auto cache = jsonCache.readCache();
     cpr::Header header = {
-        {kUserAgentHeaderName, "ConfigCat-Cpp/" + mode + "-" + CONFIGCAT_VERSION}
+        {kUserAgentHeaderName, string("ConfigCat-cpp-") + getPlatformName() + "/" + mode + "-" + CONFIGCAT_VERSION}
     };
     if (!cache->eTag.empty()) {
         header.insert({kIfNoneMatchHeaderName, cache->eTag});
