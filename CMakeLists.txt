@@ -4,9 +4,16 @@ set(CMAKE_CXX_STANDARD 17)
 project(configcat)
 
 include(CTest)
+include(FetchContent)
 
 find_package(cpr REQUIRED)
 find_package(nlohmann_json REQUIRED)
+FetchContent_Declare(
+    cpp-semver
+    GIT_REPOSITORY https://github.com/z4kn4fein/cpp-semver.git
+    GIT_TAG 909b11fdc80181ad308e9bc8cb4337a0aa911e0c
+)
+FetchContent_MakeAvailable(cpp-semver)
 
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
@@ -15,7 +22,6 @@ set(CONFIGCAT_INCLUDE_PATHS
 )
 
 if(BUILD_TESTING)
-    include(FetchContent)
     FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
@@ -45,7 +51,7 @@ endif()
 file(GLOB SOURCES "src/*" "third-party/hash-library/*")
 add_library(configcat ${SOURCES})
 
-set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json)
+set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json semver)
 
 target_link_libraries(configcat
     PRIVATE ${CONFIGCAT_LIBRARIES}

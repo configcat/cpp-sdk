@@ -7,11 +7,6 @@
 #include "configcat/utils.h"
 #include "configcat/log.h"
 
-
-#include <iostream>
-#include <string>
-#include <filesystem>
-
 using namespace std;
 using namespace configcat;
 
@@ -154,13 +149,13 @@ TEST_F(RolloutIntegrationTest, RolloutMatrixText) {
     testRolloutMatrix(directoryPath + "data/testmatrix.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A", true);
 }
 
-//TEST_F(RolloutIntegrationTest, RolloutMatrixSemantic) {
-//    testRolloutMatrix(directoryPath + "data/testmatrix_semantic.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/BAr3KgLTP0ObzKnBTo5nhA", true);
-//}
-//
-//TEST_F(RolloutIntegrationTest, RolloutMatrixSemantic2) {
-//    testRolloutMatrix(directoryPath + "data/testmatrix_semantic2.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/q6jMCFIp-EmuAfnmZhPY7w", true);
-//}
+TEST_F(RolloutIntegrationTest, RolloutMatrixSemantic) {
+    testRolloutMatrix(directoryPath + "data/testmatrix_semantic.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/BAr3KgLTP0ObzKnBTo5nhA", true);
+}
+
+TEST_F(RolloutIntegrationTest, RolloutMatrixSemantic2) {
+    testRolloutMatrix(directoryPath + "data/testmatrix_semantic_2.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/q6jMCFIp-EmuAfnmZhPY7w", true);
+}
 
 TEST_F(RolloutIntegrationTest, RolloutMatrixNumber) {
     testRolloutMatrix(directoryPath + "data/testmatrix_number.csv", "PKDVCLf-Hq-h-kCzMp-L7Q/uGyK3q9_ckmdxRyI7vjwCw", true);

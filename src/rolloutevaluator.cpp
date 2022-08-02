@@ -3,10 +3,9 @@
 #include "configcat/log.h"
 #include "configcat/utils.h"
 #include <algorithm>
-#include <list>
 #include <sstream>
-#include <stdlib.h>
 #include <hash-library/sha1.h>
+#include <semver/semver.hpp>
 
 using namespace std;
 
@@ -40,13 +39,15 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
         const auto& comparisonAttribute = rule.comparisonAttribute;
         const auto& comparisonValue = rule.comparisonValue;
         const auto& comparator = rule.comparator;
-        const auto* userValue = user->getAttribute(comparisonAttribute);
+        const auto* userValuePtr = user->getAttribute(comparisonAttribute);
         const auto& returnValue = rule.value;
 
-        if (userValue == nullptr || comparisonValue.empty() || userValue->empty()) {
-            logEntry << "\n" << formatNoMatchRule(comparisonAttribute, userValue, comparator, comparisonValue);
+        if (userValuePtr == nullptr || comparisonValue.empty() || userValuePtr->empty()) {
+            logEntry << "\n" << formatNoMatchRule(comparisonAttribute, userValuePtr ? *userValuePtr : "null", comparator, comparisonValue);
             continue;
         }
+
+        const string& userValue = *userValuePtr;
 
         switch (comparator) {
             case ONE_OF: {
@@ -54,7 +55,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                 string token;
                 while (getline(stream, token, ',')) {
                     trim(token);
-                    if (token == *userValue) {
+                    if (token == userValue) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
                         return {rule.value, rule.variationId};
                     }
@@ -67,7 +68,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                 bool found = false;
                 while (getline(stream, token, ',')) {
                     trim(token);
-                    if (token == *userValue) {
+                    if (token == userValue) {
                         found = true;
                         break;
                     }
@@ -79,25 +80,78 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                 break;
             }
             case CONTAINS: {
-                if (userValue->find(comparisonValue) != std::string::npos) {
+                if (userValue.find(comparisonValue) != std::string::npos) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
                     return {rule.value, rule.variationId};
                 }
                 break;
             }
             case NOT_CONTAINS: {
-                if (userValue->find(comparisonValue) == std::string::npos) {
+                if (userValue.find(comparisonValue) == std::string::npos) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
                     return {rule.value, rule.variationId};
                 }
                 break;
             }
             case ONE_OF_SEMVER:
-            case NOT_ONE_OF_SEMVER:
+            case NOT_ONE_OF_SEMVER: {
+                // The rule will be ignored if we found an invalid semantic version
+                try {
+                    semver::version userValueVersion = semver::version::parse(userValue);
+                    stringstream stream(comparisonValue);
+                    string token;
+                    bool matched = false;
+                    while (getline(stream, token, ',')) {
+                        trim(token);
+
+                        // Filter empty versions
+                        if (token.empty())
+                            continue;
+
+                        semver::version tokenVersion = semver::version::parse(token);
+                        matched = tokenVersion == userValueVersion || matched;
+                    }
+
+                    if ((matched && comparator == ONE_OF_SEMVER) ||
+                        (!matched && comparator == NOT_ONE_OF_SEMVER)) {
+                        logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue,
+                                                            returnValue);
+                        return {rule.value, rule.variationId};
+                    }
+                } catch (semver::semver_exception& exception) {
+                    auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
+                                                             comparisonValue, exception.what());
+                    logEntry << "\n" << message;
+                    LOG_WARN << message;
+                }
+                break;
+            }
             case LT_SEMVER:
             case LTE_SEMVER:
             case GT_SEMVER:
             case GTE_SEMVER: {
+                // The rule will be ignored if we found an invalid semantic version
+                try {
+                    string userValueCopy = userValue;
+                    semver::version userValueVersion = semver::version::parse(userValueCopy);
+
+                    string comparisonValueCopy = comparisonValue;
+                    semver::version comparisonValueVersion = semver::version::parse(trim(comparisonValueCopy));
+
+                    if ((comparator == LT_SEMVER && userValueVersion < comparisonValueVersion) ||
+                        (comparator == LTE_SEMVER && userValueVersion <= comparisonValueVersion) ||
+                        (comparator == GT_SEMVER && userValueVersion > comparisonValueVersion) ||
+                        (comparator == GTE_SEMVER && userValueVersion >= comparisonValueVersion)) {
+                        logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue,
+                                                            returnValue);
+                        return {rule.value, rule.variationId};
+                    }
+                } catch (semver::semver_exception& exception) {
+                    auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
+                                                             comparisonValue, exception.what());
+                    logEntry << "\n" << message;
+                    LOG_WARN << message;
+                }
                 break;
             }
             case EQ_NUM:
@@ -107,9 +161,9 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
             case GT_NUM:
             case GTE_NUM: {
                 bool error = false;
-                double userValueDouble = str_to_double(*userValue, error);
+                double userValueDouble = str_to_double(userValue, error);
                 if (error) {
-                    string reason = string_format("Cannot convert string \"%s\" to double.", userValue->c_str());
+                    string reason = string_format("Cannot convert string \"%s\" to double.", userValue.c_str());
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, reason);
                     logEntry << "\n" << message;
                     LOG_WARN << message;
@@ -139,7 +193,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
             case ONE_OF_SENS: {
                 stringstream stream(comparisonValue);
                 string token;
-                auto userValueHash = (*sha1)(*userValue);
+                auto userValueHash = (*sha1)(userValue);
                 while (getline(stream, token, ',')) {
                     trim(token);
                     if (token == userValueHash) {
@@ -152,7 +206,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
             case NOT_ONE_OF_SENS: {
                 stringstream stream(comparisonValue);
                 string token;
-                auto userValueHash = (*sha1)(*userValue);
+                auto userValueHash = (*sha1)(userValue);
                 bool found = false;
                 while (getline(stream, token, ',')) {
                     trim(token);
@@ -169,9 +223,9 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
             }
             default:
                 continue;
-
-            logEntry << "\n" << formatNoMatchRule(comparisonAttribute, userValue, comparator, comparisonValue);
         }
+
+        logEntry << "\n" << formatNoMatchRule(comparisonAttribute, userValue, comparator, comparisonValue);
     }
 
     if (!setting.percentageItems.empty()) {
@@ -194,37 +248,37 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
 }
 
 std::string RolloutEvaluator::formatNoMatchRule(const std::string& comparisonAttribute,
-                                                const std::string* userValue,
+                                                const std::string& userValue,
                                                 Comparator comparator,
                                                 const std::string& comparisonValue) {
     return string_format("Evaluating rule: [%s:%s] [%s] [%s] => no match",
                          comparisonAttribute.c_str(),
-                         userValue,
+                         userValue.c_str(),
                          comparatorToString(comparator),
                          comparisonValue.c_str());
 }
 
 std::string RolloutEvaluator::formatMatchRule(const std::string& comparisonAttribute,
-                                              const std::string* userValue,
+                                              const std::string& userValue,
                                               Comparator comparator,
                                               const std::string& comparisonValue,
                                               const Value& returnValue) {
     return string_format("Evaluating rule: [%s:%s] [%s] [%s] => match, returning: %s",
                          comparisonAttribute.c_str(),
-                         userValue,
+                         userValue.c_str(),
                          comparatorToString(comparator),
                          comparisonValue.c_str(),
                          valueToString(returnValue).c_str());
 }
 
 std::string RolloutEvaluator::formatValidationErrorRule(const std::string& comparisonAttribute,
-                                                        const std::string* userValue,
+                                                        const std::string& userValue,
                                                         Comparator comparator,
                                                         const std::string& comparisonValue,
                                                         const std::string& error) {
     return string_format("Evaluating rule: [%s:%s] [%s] [%s] => Skip rule, Validation error: %s",
                          comparisonAttribute.c_str(),
-                         userValue,
+                         userValue.c_str(),
                          comparatorToString(comparator),
                          comparisonValue.c_str(),
                          error.c_str());
