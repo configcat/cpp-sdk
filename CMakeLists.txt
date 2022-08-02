@@ -11,7 +11,7 @@ find_package(nlohmann_json REQUIRED)
 FetchContent_Declare(
     cpp-semver
     GIT_REPOSITORY https://github.com/z4kn4fein/cpp-semver.git
-    GIT_TAG 909b11fdc80181ad308e9bc8cb4337a0aa911e0c
+    GIT_TAG 4f8210cf46d6e618e0f5cfa38b57797c49017101
 )
 FetchContent_MakeAvailable(cpp-semver)
 
