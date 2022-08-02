@@ -96,7 +96,7 @@ inline const char* comparatorToString(Comparator comparator) {
 
 struct RolloutRule {
     // Value served when the rule is selected during evaluation.
-    Value value = 0;
+    Value value = 0; // optional
 
     // The user attribute used in the comparison during evaluation.
     std::string comparisonAttribute;

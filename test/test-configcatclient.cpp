@@ -73,14 +73,32 @@ TEST_F(ConfigCatClientTest, GetIntValueFailed) {
     EXPECT_EQ(10, value);
 }
 
-//TEST_F(ConfigCatClientTest, GetIntValueFailedInvalidJson) {
-//    configcat::Response response = {200, "{"};
-//    mockHttpSessionAdapter->enqueueResponse(response);
-//    client->forceRefresh();
-//    auto value = client->getValue("fakeKey", 10);
-//
-//    EXPECT_EQ(10, value);
-//}
+TEST_F(ConfigCatClientTest, GetIntValueFailedInvalidJson) {
+    configcat::Response response = {200, "{"};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    auto value = client->getValue("fakeKey", 10);
+
+    EXPECT_EQ(10, value);
+}
+
+TEST_F(ConfigCatClientTest, GetIntValueFailedPartialJson) {
+    configcat::Response responseWithoutValue = {200, R"({ "f": { "fakeKey": { "p": [], "r": [] } } })"};
+    mockHttpSessionAdapter->enqueueResponse(responseWithoutValue);
+    client->forceRefresh();
+    auto value = client->getValue("fakeKey", 10);
+
+    EXPECT_EQ(10, value);
+}
+
+TEST_F(ConfigCatClientTest, GetIntValueFailedNullValueJson) {
+    configcat::Response responseWithoutValue = {200, R"({ "f": { "fakeKey": { "v": null, "p": [], "r": [] } } })"};
+    mockHttpSessionAdapter->enqueueResponse(responseWithoutValue);
+    client->forceRefresh();
+    auto value = client->getValue("fakeKey", 10);
+
+    EXPECT_EQ(10, value);
+}
 
 TEST_F(ConfigCatClientTest, GetStringValue) {
     configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
