@@ -143,7 +143,7 @@ struct Config {
     static constexpr char kTimestamp[] = "t";
 
     std::string jsonString = "{}";
-    std::shared_ptr<std::unordered_map<std::string, Preferences>> preferences;
+    std::shared_ptr<Preferences> preferences;
     std::shared_ptr<std::unordered_map<std::string, Setting>> entries;
     std::string eTag;
 
