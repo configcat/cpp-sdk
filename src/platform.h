@@ -44,7 +44,7 @@ namespace configcat {
 
 // Return a name of platform, if determined, otherwise - an empty string
 inline const char* getPlatformName() {
-    return (PLATFORM_NAME == NULL) ? "" : PLATFORM_NAME;
+    return (PLATFORM_NAME == NULL) ? "unknown" : PLATFORM_NAME;
 }
 
 } // namespace configcat
