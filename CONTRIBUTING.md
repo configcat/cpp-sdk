@@ -27,26 +27,28 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 
 ## Build instructions
 
-This SDK is built with [CMake](https://cmake.org/), and depends on `libcurl`.
+This SDK is built with [CMake](https://cmake.org/), and uses [vcpkg](https://github.com/microsoft/vcpkg) for external dependency handling.
 
 ### Install dependencies
 
 - On Windows:
-
-- On Linux:
-  ```bash
-  sudo apt-get update
-  sudo apt-get install ninja-build cmake libcurl4-gnutls-dev
+  ```cmd
+  git clone https://github.com/microsoft/vcpkg
+  .\vcpkg\bootstrap-vcpkg.bat
+  .\vcpkg\vcpkg install cpr nlohmann-json
   ```
 
-- On Mac:
+- On Linux/Mac:
   ```bash
-  brew install cmake ninja
+  git clone https://github.com/microsoft/vcpkg
+  ./vcpkg/bootstrap-vcpkg.sh
+  ./vcpkg/vcpkg install cpr nlohmann-json
   ```
+
 ### Build with CMake
 
 ```bash
-  cmake -S . -B build
+  cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
   cmake --build build
 ```
 
