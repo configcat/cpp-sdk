@@ -2,7 +2,7 @@
 
 #include <string>
 #include <algorithm>
-#include "log.h"
+#include "configcat/log.h"
 
 namespace configcat {
 

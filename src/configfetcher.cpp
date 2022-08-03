@@ -5,7 +5,7 @@
 #include "configcat/httpsessionadapter.h"
 #include "configcat/configcatoptions.h"
 #include "configcat/configjsoncache.h"
-#include "configcat/version.h"
+#include "version.h"
 #include "platform.h"
 
 using namespace std;

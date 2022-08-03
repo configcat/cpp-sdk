@@ -4,7 +4,7 @@
 #include <list>
 #include "configcat/configcatuser.h"
 #include "configcat/configcatclient.h"
-#include "configcat/utils.h"
+#include "utils.h"
 #include "configcat/log.h"
 
 using namespace std;

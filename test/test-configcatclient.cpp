@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "mock.h"
 #include "configcat/configcatclient.h"
-#include "configcat/utils.h"
+#include "utils.h"
 
 
 using namespace configcat;

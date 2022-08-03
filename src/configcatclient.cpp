@@ -4,10 +4,10 @@
 #include "configcat/configcatuser.h"
 #include "configcat/log.h"
 #include "configcat/configfetcher.h"
-#include "configcat/rolloutevaluator.h"
+#include "rolloutevaluator.h"
 #include "configcat/configjsoncache.h"
 #include "configcat/refreshpolicy.h"
-#include "configcat/version.h"
+#include "version.h"
 
 using namespace std;
 

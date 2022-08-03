@@ -3,6 +3,7 @@
 #include "configcat/configcatoptions.h"
 #include "configcat/configjsoncache.h"
 #include "mock.h"
+#include "utils.h"
 
 using namespace configcat;
 using namespace std;

@@ -1,7 +1,7 @@
-#include "configcat/rolloutevaluator.h"
+#include "rolloutevaluator.h"
 #include "configcat/configcatuser.h"
 #include "configcat/log.h"
-#include "configcat/utils.h"
+#include "utils.h"
 #include <algorithm>
 #include <sstream>
 #include <hash-library/sha1.h>

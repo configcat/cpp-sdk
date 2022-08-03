@@ -2,7 +2,7 @@
 
 #include <string>
 #include <tuple>
-#include "config.h"
+#include "configcat/config.h"
 
 class SHA1;
 
