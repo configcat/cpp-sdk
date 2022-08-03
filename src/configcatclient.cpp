@@ -7,8 +7,11 @@
 #include "configcat/rolloutevaluator.h"
 #include "configcat/configjsoncache.h"
 #include "configcat/refreshpolicy.h"
+#include "configcat/version.h"
 
 using namespace std;
+
+const char* const configcat::version = CONFIGCAT_VERSION;
 
 namespace configcat {
 
