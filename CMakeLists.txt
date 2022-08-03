@@ -8,6 +8,7 @@ include(FetchContent)
 
 find_package(cpr REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(unofficial-hash-library REQUIRED)
 FetchContent_Declare(
     cpp-semver
     GIT_REPOSITORY https://github.com/z4kn4fein/cpp-semver.git
@@ -18,7 +19,6 @@ FetchContent_MakeAvailable(cpp-semver)
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
     "include"
-    "third-party"
 )
 
 if(BUILD_TESTING)
@@ -51,7 +51,7 @@ endif()
 file(GLOB SOURCES "src/*" "third-party/hash-library/*")
 add_library(configcat ${SOURCES})
 
-set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json semver)
+set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json unofficial::hash-library semver)
 
 target_link_libraries(configcat
     PRIVATE ${CONFIGCAT_LIBRARIES}

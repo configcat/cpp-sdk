@@ -35,14 +35,14 @@ This SDK is built with [CMake](https://cmake.org/), and uses [vcpkg](https://git
   ```cmd
   git clone https://github.com/microsoft/vcpkg
   .\vcpkg\bootstrap-vcpkg.bat
-  .\vcpkg\vcpkg install cpr nlohmann-json
+  .\vcpkg\vcpkg install cpr nlohmann-json hash-library
   ```
 
 - On Linux/Mac:
   ```bash
   git clone https://github.com/microsoft/vcpkg
   ./vcpkg/bootstrap-vcpkg.sh
-  ./vcpkg/vcpkg install cpr nlohmann-json
+  ./vcpkg/vcpkg install cpr nlohmann-json hash-library
   ```
 
 ### Build with CMake
