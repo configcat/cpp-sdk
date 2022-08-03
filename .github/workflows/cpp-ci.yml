@@ -25,21 +25,18 @@ jobs:
       run: |
         git clone https://github.com/microsoft/vcpkg build/vcpkg
         ./build/vcpkg/bootstrap-vcpkg.sh
-        ./build/vcpkg/vcpkg install cpr nlohmann-json hash-library
 
     - name: Install dependencies on macos
       if: startsWith(matrix.os, 'macos')
       run: |
         git clone https://github.com/microsoft/vcpkg build/vcpkg
         ./build/vcpkg/bootstrap-vcpkg.sh
-        ./build/vcpkg/vcpkg install cpr nlohmann-json hash-library
 
     - name: Install dependencies on windows
       if: startsWith(matrix.os, 'windows')
       run: |
         git clone https://github.com/microsoft/vcpkg build/vcpkg
         .\build\vcpkg\bootstrap-vcpkg.bat
-        .\build\vcpkg\vcpkg install cpr nlohmann-json hash-library --triplet=x64-windows
 
     - name: Build
       shell: bash

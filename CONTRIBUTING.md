@@ -29,20 +29,18 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 
 This SDK is built with [CMake](https://cmake.org/), and uses [vcpkg](https://github.com/microsoft/vcpkg) for external dependency handling.
 
-### Install dependencies
+### Install [vcpkg](https://github.com/microsoft/vcpkg)
 
 - On Windows:
   ```cmd
   git clone https://github.com/microsoft/vcpkg
   .\vcpkg\bootstrap-vcpkg.bat
-  .\vcpkg\vcpkg install cpr nlohmann-json hash-library
   ```
 
 - On Linux/Mac:
   ```bash
   git clone https://github.com/microsoft/vcpkg
   ./vcpkg/bootstrap-vcpkg.sh
-  ./vcpkg/vcpkg install cpr nlohmann-json hash-library
   ```
 
 ### Build with CMake

@@ -1,0 +1,8 @@
+{
+  "name": "configcat",
+  "dependencies": [
+    "cpr",
+    "nlohmann-json",
+    "hash-library"
+  ]
+}
