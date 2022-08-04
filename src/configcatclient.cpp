@@ -7,6 +7,8 @@
 #include "rolloutevaluator.h"
 #include "configcat/configjsoncache.h"
 #include "configcat/refreshpolicy.h"
+#include "configcat/flagoverrides.h"
+#include "configcat/overridedatasource.h"
 #include "version.h"
 
 using namespace std;
@@ -61,10 +63,22 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
     rolloutEvaluator = make_unique<RolloutEvaluator>();
     configFetcher = make_unique<ConfigFetcher>(sdkKey, mode->getPollingIdentifier(), *configJsonCache, options);
     refreshPolicy = options.mode->createRefreshPolicy(*configFetcher, *configJsonCache);
+    override = options.override;
 }
 
 const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient::getSettings() const {
-    // TODO: override
+    if (override && override->dataSource) {
+        switch (override->behaviour) {
+            case LocalOnly:
+                return override->dataSource->getOverrides();
+            case LocalOverRemote:
+                // TODO: Implement LocalOverRemote
+                break;
+            case RemoteOverLocal:
+                // TODO: Implement RemoteOverLocal
+                break;
+        }
+    }
 
     auto config = refreshPolicy->getConfiguration();
     return config->entries;

@@ -14,6 +14,7 @@ class ConfigCatUser;
 class ConfigFetcher;
 class RolloutEvaluator;
 class RefreshPolicy;
+class FlagOverrides;
 
 // Version string
 extern const char* const version;
@@ -81,6 +82,7 @@ private:
     std::unique_ptr<RolloutEvaluator> rolloutEvaluator;
     std::unique_ptr<ConfigFetcher> configFetcher;
     std::unique_ptr<RefreshPolicy> refreshPolicy;
+    std::shared_ptr<FlagOverrides> override;
 
     static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instanceRepository;
 };
