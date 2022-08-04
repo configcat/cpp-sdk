@@ -58,4 +58,8 @@ inline double str_to_double(const std::string& str, bool& error) {
     return value;
 }
 
+inline bool starts_with(const std::string& str, const std::string& cmp) {
+    return str.compare(0, cmp.length(), cmp) == 0;
+}
+
 } // namespace configcat

@@ -27,6 +27,8 @@ public:
     }
 
     virtual configcat::Response get(const std::string& url) override {
+        requests.emplace_back(url);
+
         if (!responses.empty()) {
             auto response = responses.front();
             responses.pop();
@@ -36,6 +38,6 @@ public:
         return {};
     };
 
-private:
     std::queue<configcat::Response> responses;
+    std::vector<std::string> requests;
 };

@@ -10,6 +10,7 @@ namespace configcat {
 
 struct ConfigCatOptions;
 class ConfigJsonCache;
+class SessionInterceptor;
 
 enum Status {
     fetched,
@@ -43,11 +44,14 @@ public:
 
 private:
     FetchResponse executeFetch(int executeCount);
+    FetchResponse fetch();
 
     std::string sdkKey;
     std::string mode;
     ConfigJsonCache& jsonCache;
+    std::shared_ptr<SessionInterceptor> sessionInterceptor;
     std::unique_ptr<cpr::Session> session;
+    bool urlIsCustom = false;
     std::string url;
 };
 

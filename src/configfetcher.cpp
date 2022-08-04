@@ -34,14 +34,14 @@ ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, ConfigJso
     sdkKey(sdkKey),
     mode(mode),
     jsonCache(jsonCache) {
+    if (options.httpSessionAdapter) {
+        sessionInterceptor = make_shared<SessionInterceptor>(options.httpSessionAdapter);
+    }
     session = make_unique<cpr::Session>();
     session->SetConnectTimeout(options.connectTimeout);
     session->SetTimeout(options.readTimeout);
-    if (options.httpSessionAdapter) {
-        session->AddInterceptor(make_shared<SessionInterceptor>(options.httpSessionAdapter));
-    }
-
-    url = !options.baseUrl.empty()
+    urlIsCustom = !options.baseUrl.empty();
+    url = urlIsCustom
         ? options.baseUrl
         : options.dataGovernance == DataGovernance::Global
             ? kGlobalBaseUrl
@@ -52,11 +52,54 @@ ConfigFetcher::~ConfigFetcher() {
 }
 
 FetchResponse ConfigFetcher::fetchConfiguration() {
-    // TODO: data governance
     return executeFetch(2);
 }
 
 FetchResponse ConfigFetcher::executeFetch(int executeCount) {
+    auto response = fetch();
+    auto preferences = response.config ? response.config->preferences : nullptr;
+
+    // If there wasn't a config change or there were no preferences in the config, we return the response
+    if (!response.isFetched() || preferences == nullptr) {
+        return response;
+    }
+
+    // If the preferences url is the same as the last called one, just return the response.
+    if (!preferences->url.empty() && url == preferences->url) {
+        return response;
+    }
+
+    // If the url is overridden, and the redirect parameter is not ForceRedirect,
+    // the SDK should not redirect the calls, and it just has to return the response.
+    if (urlIsCustom && preferences->redirect != ForceRedirect) {
+        return response;
+    }
+
+    // The next call should use the preferences url provided in the config json
+    url = preferences->url;
+
+    if (preferences->redirect == NoRedirect) {
+        return response;
+    }
+
+    // Try to download again with the new url
+
+    if (preferences->redirect == ShouldRedirect) {
+        LOG_WARN << "Your dataGovernance parameter at ConfigCatClient "
+                    "initialization is not in sync with your preferences on the ConfigCat "
+                    "Dashboard: https://app.configcat.com/organization/data-governance. "
+                    "Only Organization Admins can access this preference.";
+    }
+
+    if (executeCount > 0) {
+        return executeFetch(executeCount - 1);
+    }
+
+    LOG_ERROR << "Redirect loop during config.json fetch. Please contact support@configcat.com.";
+    return response;
+}
+
+FetchResponse ConfigFetcher::fetch() {
     auto cache = jsonCache.readCache();
     cpr::Header header = {
         {kUserAgentHeaderName, string("ConfigCat-cpp-") + getPlatformName() + "/" + mode + "-" + CONFIGCAT_VERSION}
@@ -66,6 +109,12 @@ FetchResponse ConfigFetcher::executeFetch(int executeCount) {
     }
     session->SetHeader(header);
     session->SetUrl(url + "/configuration-files/" + sdkKey + "/" + kConfigJsonName);
+
+    // The session's interceptor will be unregistered after the cpr::Session::Get() call.
+    // We always register it before the call.
+    if (sessionInterceptor) {
+        session->AddInterceptor(sessionInterceptor);
+    }
     auto response = session->Get();
 
     switch (response.status_code) {

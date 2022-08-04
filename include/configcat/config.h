@@ -32,9 +32,15 @@ inline std::string valueToString(const Value& value) {
     }, value);
 }
 
+enum RedirectMode: int {
+    NoRedirect = 0,
+    ShouldRedirect = 1,
+    ForceRedirect = 2
+};
+
 struct Preferences {
     std::string url;
-    int redirect = 0;
+    RedirectMode redirect = NoRedirect;
 };
 
 struct RolloutPercentageItem {
