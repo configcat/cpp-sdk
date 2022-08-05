@@ -62,7 +62,7 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
     configJsonCache = make_unique<ConfigJsonCache>(sdkKey, options.cache);
     rolloutEvaluator = make_unique<RolloutEvaluator>();
     configFetcher = make_unique<ConfigFetcher>(sdkKey, mode->getPollingIdentifier(), *configJsonCache, options);
-    refreshPolicy = options.mode->createRefreshPolicy(*configFetcher, *configJsonCache);
+    refreshPolicy = mode->createRefreshPolicy(*configFetcher, *configJsonCache);
     override = options.override;
 }
 
@@ -71,12 +71,39 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
         switch (override->behaviour) {
             case LocalOnly:
                 return override->dataSource->getOverrides();
-            case LocalOverRemote:
-                // TODO: Implement LocalOverRemote
-                break;
+            case LocalOverRemote: {
+                auto remote = refreshPolicy->getConfiguration();
+                auto local = override->dataSource->getOverrides();
+                auto result = make_shared<std::unordered_map<std::string, Setting>>();
+                if (remote && remote->entries) {
+                    for (auto& it : *remote->entries) {
+                        result->insert_or_assign(it.first, it.second);
+                    }
+                }
+                if (local) {
+                    for (auto& it : *local) {
+                        result->insert_or_assign(it.first, it.second);
+                    }
+                }
+
+                return result;
+            }
             case RemoteOverLocal:
-                // TODO: Implement RemoteOverLocal
-                break;
+                auto remote = refreshPolicy->getConfiguration();
+                auto local = override->dataSource->getOverrides();
+                auto result = make_shared<std::unordered_map<std::string, Setting>>();
+                if (local) {
+                    for (auto& it : *local) {
+                        result->insert_or_assign(it.first, it.second);
+                    }
+                }
+                if (remote && remote->entries) {
+                    for (auto& it : *remote->entries) {
+                        result->insert_or_assign(it.first, it.second);
+                    }
+                }
+
+                return result;
         }
     }
 

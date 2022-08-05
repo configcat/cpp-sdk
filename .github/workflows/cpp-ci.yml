@@ -54,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CXXFLAGS: "--coverage -fno-inline"
+
     steps:
       - name: lcov
         working-directory: build
