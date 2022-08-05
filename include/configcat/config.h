@@ -9,28 +9,9 @@
 
 namespace configcat {
 
-using Value = std::variant<bool, std::string, int, unsigned int, double>;
+using Value = std::variant<bool, char*, std::string, int, unsigned int, double>;
 
-inline std::string valueToString(const Value& value) {
-    return std::visit([](auto&& arg){
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-            return arg;
-        } else if constexpr (std::is_same_v<T, bool>) {
-            return std::string(arg ? "true" : "false");
-        } else if constexpr (std::is_same_v<T, double>) {
-            auto str = std::to_string(arg);
-            // Drop unnecessary '0' characters at the end of the string and keep format 0.0 for zero double
-            auto pos = str.find_last_not_of('0');
-            if (pos != std::string::npos && str[pos] == '.') {
-                ++pos;
-            }
-            return str.erase(pos + 1, std::string::npos);
-        } else {
-            return std::to_string(arg);
-        }
-    }, value);
-}
+std::string valueToString(const Value& value);
 
 enum RedirectMode: int {
     NoRedirect = 0,

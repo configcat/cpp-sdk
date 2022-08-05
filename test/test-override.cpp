@@ -29,7 +29,6 @@ TEST_F(OverrideTest, Map) {
     options.mode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<MapOverrideDataSource>(map), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
-    client->forceRefresh();
 
     EXPECT_TRUE(client->getValue("enabledFeature", false));
     EXPECT_FALSE(client->getValue("disabledFeature", true));

@@ -32,6 +32,29 @@ namespace configcat {
 
 shared_ptr<Config> Config::empty = make_shared<Config>();
 
+string valueToString(const Value& value) {
+    return visit([](auto&& arg){
+        using T = decay_t<decltype(arg)>;
+        if constexpr (is_same_v<T, string>) {
+            return arg;
+        } else if constexpr (is_same_v<T, char*>) {
+            return string(arg);
+        } else if constexpr (is_same_v<T, bool>) {
+            return string(arg ? "true" : "false");
+        } else if constexpr (is_same_v<T, double>) {
+            auto str = to_string(arg);
+            // Drop unnecessary '0' characters at the end of the string and keep format 0.0 for zero double
+            auto pos = str.find_last_not_of('0');
+            if (pos != string::npos && str[pos] == '.') {
+                ++pos;
+            }
+            return str.erase(pos + 1, string::npos);
+        } else {
+            return to_string(arg);
+        }
+    }, value);
+}
+
 // Config serialization
 
 void parseValue(const json& j, Value& value) {
