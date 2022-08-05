@@ -12,7 +12,7 @@ find_package(unofficial-hash-library REQUIRED)
 FetchContent_Declare(
     cpp-semver
     GIT_REPOSITORY https://github.com/z4kn4fein/cpp-semver.git
-    GIT_TAG 4f8210cf46d6e618e0f5cfa38b57797c49017101
+    GIT_TAG v0.1.0
 )
 FetchContent_MakeAvailable(cpp-semver)
 

@@ -17,6 +17,8 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest, macos-latest, ubuntu-latest ]
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
 
     steps:
     - uses: actions/checkout@v2
@@ -42,7 +44,24 @@ jobs:
       shell: bash
       run: |
         cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./build/vcpkg/scripts/buildsystems/vcpkg.cmake
-        cmake --build build
+        cmake --build build --parallel 4
 
     - name: Test
-      run: cd build && ctest
+      run: cd build && ctest -j4
+
+  coverage:
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    env:
+      CXXFLAGS: "--coverage -fno-inline"
+    steps:
+      - name: lcov
+        working-directory: build
+        run: |
+          sudo apt install lcov
+          lcov -c -d . -o cov.info
+          lcov -l cov.info
+      - name: codecov
+        working-directory: build
+        shell: bash
+        run: bash <(curl -s https://codecov.io/bash) -f cov.info
