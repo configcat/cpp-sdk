@@ -1,5 +1,6 @@
 #include "configcat/log.h"
 #include "configcat/configcatuser.h"
+#include "configcat/config.h"
 
 namespace configcat {
 
@@ -17,6 +18,12 @@ LogEntry& LogEntry::operator<<(const ConfigCatUser* user) {
 LogEntry& LogEntry::operator<<(const ConfigCatUser& user) {
     if (configcat::logger && level <= configcat::maxLogLevel)
         message += user.toJson();
+    return *this;
+}
+
+LogEntry& LogEntry::operator<<(const Value& v) {
+    if (configcat::logger && level <= configcat::maxLogLevel)
+        message += valueToString(v);
     return *this;
 }
 

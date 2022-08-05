@@ -32,7 +32,7 @@ namespace configcat {
 
 shared_ptr<Config> Config::empty = make_shared<Config>();
 
-string valueToString(const Value& value) {
+string valueToString(const ValueType& value) {
     return visit([](auto&& arg){
         using T = decay_t<decltype(arg)>;
         if constexpr (is_same_v<T, string>) {

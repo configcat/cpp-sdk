@@ -7,6 +7,7 @@
 namespace configcat {
 
 class ConfigCatUser;
+struct Value;
 
 enum LogLevel {
     LOG_LEVEL_ERROR,
@@ -65,13 +66,7 @@ public:
 
     LogEntry& operator<<(const ConfigCatUser* str);
     LogEntry& operator<<(const ConfigCatUser& str);
-
-    template<typename... Type>
-    LogEntry& operator<<(const std::variant<Type...>& v) {
-        if (configcat::logger && level <= configcat::maxLogLevel)
-            message += valueToString(v);
-        return *this;
-    }
+    LogEntry& operator<<(const Value& str);
 
     template<typename Type>
     LogEntry& operator<<(Type arg) {
