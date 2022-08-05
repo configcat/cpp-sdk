@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ windows-latest, macos-latest, ubuntu-latest ]
     env:
       CTEST_OUTPUT_ON_FAILURE: 1
 
@@ -47,7 +47,8 @@ jobs:
         cmake --build build --parallel 4
 
     - name: Test
-      run: cd build && ctest -j4
+      working-directory: build
+      run: ctest -j4
 
   coverage:
     needs: [ test ]
@@ -56,12 +57,29 @@ jobs:
       CXXFLAGS: "--coverage -fno-inline"
 
     steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          git clone https://github.com/microsoft/vcpkg build/vcpkg
+          ./build/vcpkg/bootstrap-vcpkg.sh
+
+      - name: Build
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./build/vcpkg/scripts/buildsystems/vcpkg.cmake
+          cmake --build build --parallel 4
+
+      - name: Test
+        working-directory: build
+        run: ctest -j4
+
       - name: lcov
         working-directory: build
         run: |
           sudo apt install lcov
           lcov -c -d . -o cov.info
           lcov -l cov.info
+
       - name: codecov
         working-directory: build
         shell: bash

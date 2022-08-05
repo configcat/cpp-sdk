@@ -69,21 +69,8 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
 const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient::getSettings() const {
     if (override && override->dataSource) {
         switch (override->behaviour) {
-            case LocalOnly: {
-                auto local = override->dataSource->getOverrides();
-
-                // test
-                if (local) {
-                    configcat::LogEntry log(configcat::LOG_LEVEL_INFO);
-                    log << "{";
-                    for (auto it : *local) {
-                        log << "\n" << "{ " << it.first << string(", ") << it.second.value << "}";
-                    }
-                    log << "\n" << "}";
-                }
-                // test
-                return local;
-            }
+            case LocalOnly:
+                return override->dataSource->getOverrides();
             case LocalOverRemote: {
                 auto remote = refreshPolicy->getConfiguration();
                 auto local = override->dataSource->getOverrides();
