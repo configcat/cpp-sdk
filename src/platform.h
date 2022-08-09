@@ -1,8 +1,8 @@
 #pragma once
 
-namespace configcat {
-
 #include <stdio.h>
+
+namespace configcat {
 
 /**
  * Determination a platform of an operation system

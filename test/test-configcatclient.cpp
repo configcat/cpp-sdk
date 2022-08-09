@@ -11,6 +11,8 @@ class ConfigCatClientTest : public ::testing::Test {
 public:
     static constexpr char kTestSdkKey[] = "TestSdkKey";
     static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
+    static constexpr char kTestJsonMultiple[] = R"({ "f": { "key1": { "v": true, "i": "fakeId1", "p": [], "r": [] }, "key2": { "v": false, "i": "fakeId2", "p": [], "r": [] } } })";
+
     ConfigCatClient* client = nullptr;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
@@ -154,8 +156,16 @@ TEST_F(ConfigCatClientTest, GetBoolValueFailed) {
     EXPECT_FALSE(value);
 }
 
+TEST_F(ConfigCatClientTest, GetAllKeys) {
+    configcat::Response response = {200, kTestJsonMultiple};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    auto keys = client->getAllKeys();
 
-
+    EXPECT_EQ(2, keys.size());
+    EXPECT_TRUE(std::find(keys.begin(), keys.end(), "key1") != keys.end());
+    EXPECT_TRUE(std::find(keys.begin(), keys.end(), "key2") != keys.end());
+}
 
 
 

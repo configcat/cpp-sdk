@@ -54,7 +54,7 @@ public:
     std::shared_ptr<Value> getValue(const std::string& key, const ConfigCatUser* user = nullptr) const;
 
     // Gets all the setting keys.
-    std::string getAllKeys() const;
+    std::vector<std::string> getAllKeys() const;
 
     // Gets the Variation ID (analytics) of a feature flag or setting based on it's key.
     std::string getVariationId(const std::string& key, const std::string& defaultVariationId, const ConfigCatUser* user = nullptr) const;

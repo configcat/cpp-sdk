@@ -158,6 +158,20 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     return make_shared<Value>(value);
 }
 
+std::vector<std::string> ConfigCatClient::getAllKeys() const {
+    auto settings = getSettings();
+    if (!settings || settings->empty()) {
+        return {};
+    }
+
+    vector<string> keys;
+    keys.reserve(settings->size());
+    for (auto keyValue : *settings) {
+        keys.emplace_back(keyValue.first);
+    }
+    return keys;
+}
+
 string ConfigCatClient::getVariationId(const string& key, const string& defaultVariationId, const ConfigCatUser* user) const {
     auto settings = getSettings();
     if (!settings || settings->empty()) {
