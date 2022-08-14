@@ -3,12 +3,11 @@
 #include "configcat/configcatclient.h"
 #include "configcat/configcatuser.h"
 #include "configcat/log.h"
-#include "configcat/configfetcher.h"
 #include "rolloutevaluator.h"
-#include "configcat/configjsoncache.h"
-#include "configcat/refreshpolicy.h"
+#include "configservice.h"
 #include "configcat/flagoverrides.h"
 #include "configcat/overridedatasource.h"
+#include "configservice.h"
 #include "version.h"
 
 using namespace std;
@@ -58,12 +57,16 @@ size_t ConfigCatClient::instanceCount() {
 }
 
 ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options) {
-    auto mode = options.mode ? options.mode : PollingMode::autoPoll();
-    configJsonCache = make_unique<ConfigJsonCache>(sdkKey, options.cache);
     rolloutEvaluator = make_unique<RolloutEvaluator>();
-    configFetcher = make_unique<ConfigFetcher>(sdkKey, mode->getPollingIdentifier(), *configJsonCache, options);
-    refreshPolicy = mode->createRefreshPolicy(*configFetcher, *configJsonCache);
     override = options.override;
+
+    if (override && override->behaviour == LocalOnly) {
+        if (!override->dataSource) {
+            LOG_WARN << "Override DataSource should be presented in LocalOnly override behaviour";
+        }
+    } else {
+        configService = make_unique<ConfigService>(sdkKey, options);
+    }
 }
 
 const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient::getSettings() const {
@@ -72,11 +75,11 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
             case LocalOnly:
                 return override->dataSource->getOverrides();
             case LocalOverRemote: {
-                auto remote = refreshPolicy->getConfiguration();
+                auto remote = configService ? configService->getSettings() : nullptr;
                 auto local = override->dataSource->getOverrides();
                 auto result = make_shared<std::unordered_map<std::string, Setting>>();
-                if (remote && remote->entries) {
-                    for (auto& it : *remote->entries) {
+                if (remote) {
+                    for (auto& it : *remote) {
                         result->insert_or_assign(it.first, it.second);
                     }
                 }
@@ -89,7 +92,7 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
                 return result;
             }
             case RemoteOverLocal:
-                auto remote = refreshPolicy->getConfiguration();
+                auto remote = configService ? configService->getSettings() : nullptr;
                 auto local = override->dataSource->getOverrides();
                 auto result = make_shared<std::unordered_map<std::string, Setting>>();
                 if (local) {
@@ -97,8 +100,8 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
                         result->insert_or_assign(it.first, it.second);
                     }
                 }
-                if (remote && remote->entries) {
-                    for (auto& it : *remote->entries) {
+                if (remote) {
+                    for (auto& it : *remote) {
                         result->insert_or_assign(it.first, it.second);
                     }
                 }
@@ -107,8 +110,7 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
         }
     }
 
-    auto config = refreshPolicy->getConfiguration();
-    return config->entries;
+    return configService ? configService->getSettings() : nullptr;
 }
 
 bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
@@ -223,7 +225,9 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
 }
 
 void ConfigCatClient::forceRefresh() {
-    refreshPolicy->refresh();
+    if (configService) {
+        configService->refresh();
+    }
 }
 
 } // namespace configcat

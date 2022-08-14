@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
-#include "configcat/configfetcher.h"
+#include "configfetcher.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configjsoncache.h"
 #include "mock.h"
 #include "utils.h"
-#include "configcat/config.h"
+#include "configentry.h"
 
 using namespace configcat;
 using namespace std;
@@ -13,7 +12,6 @@ class ConfigFetcherTest : public ::testing::Test {
 public:
     static constexpr char kTestSdkKey[] = "TestSdkKey";
     static constexpr char kCustomCdnUrl[] = "https://custom-cdn.configcat.com";
-    unique_ptr<ConfigJsonCache> jsonCache;
     unique_ptr<ConfigFetcher> fetcher;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
@@ -24,8 +22,7 @@ public:
         options.httpSessionAdapter = mockHttpSessionAdapter;
         options.baseUrl = baseUrl;
 
-        jsonCache = make_unique<ConfigJsonCache>(sdkKey);
-        fetcher = make_unique<ConfigFetcher>("TestSdkKey", "m", *jsonCache, options);
+        fetcher = make_unique<ConfigFetcher>(sdkKey, "m", options);
     }
 
     void TearDown() override {
@@ -43,9 +40,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnGivenUrl) {
     mockHttpSessionAdapter->enqueueResponse(response);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, NoRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, NoRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
 }
@@ -57,9 +56,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnSameUrl) {
     mockHttpSessionAdapter->enqueueResponse(response);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, ShouldRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, ShouldRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
 }
@@ -71,9 +72,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnSameUrlEvenWithForce) {
     mockHttpSessionAdapter->enqueueResponse(response);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, ForceRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, ForceRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
 }
@@ -87,9 +90,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldRedirectToAnotherServer) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, NoRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, NoRedirect);
     EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
@@ -104,9 +109,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldRedirectToAnotherServerWhenForced
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, NoRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, NoRedirect);
     EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
@@ -122,9 +129,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldBreakRedirectLoop) {
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, ShouldRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, ShouldRedirect);
     EXPECT_EQ(3, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
@@ -141,9 +150,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldBreakRedirectLoopWhenForced) {
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, ForceRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, ForceRedirect);
     EXPECT_EQ(3, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
@@ -157,9 +168,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldRespectCustomUrl) {
     mockHttpSessionAdapter->enqueueResponse(response);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, ShouldRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, ShouldRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], kCustomCdnUrl));
 }
@@ -173,9 +186,11 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldNotRespectCustomUrlWhenForced) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
     auto fetchResponse = fetcher->fetchConfiguration();
 
-    ASSERT_TRUE(fetchResponse.config != Config::empty);
-    EXPECT_EQ(fetchResponse.config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
-    EXPECT_EQ(fetchResponse.config->preferences->redirect, NoRedirect);
+    ASSERT_TRUE(fetchResponse.entry != ConfigEntry::empty);
+    ASSERT_TRUE(fetchResponse.entry->config != Config::empty);
+    auto& config = fetchResponse.entry->config;
+    EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
+    EXPECT_EQ(config->preferences->redirect, NoRedirect);
 
     EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], kCustomCdnUrl));

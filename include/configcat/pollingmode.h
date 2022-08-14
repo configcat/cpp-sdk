@@ -22,7 +22,7 @@ public:
      * [maxInitWaitTimeInSeconds] sets the maximum waiting time between initialization and the first config acquisition in seconds.
      * [listener] sets a configuration changed listener.
      */
-    static std::shared_ptr<PollingMode> autoPoll(double autoPollIntervalInSeconds = 60,
+    static std::shared_ptr<PollingMode> autoPoll(uint32_t autoPollIntervalInSeconds = 60,
                                                  uint32_t maxInitWaitTimeInSeconds = 5,
                                                  std::function<void()> onConfigChanged = {});
 
@@ -31,7 +31,7 @@ public:
      *
      * [cacheRefreshIntervalInSeconds] sets how long the cache will store its value before fetching the latest from the network again.
      */
-    static std::shared_ptr<PollingMode> lazyLoad(double cacheRefreshIntervalInSeconds = 60);
+    static std::shared_ptr<PollingMode> lazyLoad(uint32_t cacheRefreshIntervalInSeconds = 60);
 
     // Creates a configured manual polling configuration.
     static std::shared_ptr<PollingMode> manualPoll();
@@ -48,15 +48,17 @@ class AutoPollingMode : public PollingMode {
     friend class PollingMode;
 
 public:
-    const double autoPollIntervalInSeconds;
+    static constexpr char kIdentifier[] = "a";
+
+    const uint32_t autoPollIntervalInSeconds;
     const uint32_t maxInitWaitTimeInSeconds;
     const std::function<void()> onConfigChanged;
 
-    const char* getPollingIdentifier() const override { return "a"; }
+    const char* getPollingIdentifier() const override { return kIdentifier; }
     std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:
-    AutoPollingMode(double autoPollIntervalInSeconds, uint32_t maxInitWaitTimeInSeconds, std::function<void()> onConfigChanged):
+    AutoPollingMode(uint32_t autoPollIntervalInSeconds, uint32_t maxInitWaitTimeInSeconds, std::function<void()> onConfigChanged):
     autoPollIntervalInSeconds(autoPollIntervalInSeconds),
     maxInitWaitTimeInSeconds(maxInitWaitTimeInSeconds),
     onConfigChanged(onConfigChanged) {
@@ -68,12 +70,14 @@ class LazyLoadingMode : public PollingMode {
     friend class PollingMode;
 
 public:
-    const double cacheRefreshIntervalInSeconds;
-    const char* getPollingIdentifier() const override { return "l"; }
+    static constexpr char kIdentifier[] = "l";
+
+    const uint32_t cacheRefreshIntervalInSeconds;
+    const char* getPollingIdentifier() const override { return kIdentifier; }
     std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:
-    LazyLoadingMode(double cacheRefreshIntervalInSeconds):
+    LazyLoadingMode(uint32_t cacheRefreshIntervalInSeconds):
     cacheRefreshIntervalInSeconds(cacheRefreshIntervalInSeconds) {
     }
 };
@@ -83,7 +87,9 @@ class ManualPollingMode : public PollingMode {
     friend class PollingMode;
 
 public:
-    const char* getPollingIdentifier() const override { return "m"; }
+    static constexpr char kIdentifier[] = "m";
+
+    const char* getPollingIdentifier() const override { return kIdentifier; }
     std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:

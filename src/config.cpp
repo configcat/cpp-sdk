@@ -30,8 +30,6 @@ namespace nlohmann {
 
 namespace configcat {
 
-shared_ptr<Config> Config::empty = make_shared<Config>();
-
 string valueToString(const ValueType& value) {
     return visit([](auto&& arg){
         using T = decay_t<decltype(arg)>;
@@ -103,17 +101,13 @@ void from_json(const json& j, Setting& setting) {
 void from_json(const json& j, Config& config) {
     if (auto it = j.find(Config::kPreferences); it != j.end()) it->get_to(config.preferences);
     if (auto it = j.find(Config::kEntries); it != j.end()) it->get_to(config.entries);
-    if (auto it = j.find(Config::kETag); it != j.end()) it->get_to(config.eTag);
 }
 
 shared_ptr<Config> Config::fromJson(const string& jsonString, const string& eTag) {
     try {
         json ConfigObj = json::parse(jsonString);
-        if (!eTag.empty()) ConfigObj[kETag] = eTag;
         auto config = make_shared<Config>();
         ConfigObj.get_to(*config);
-        config->jsonString = ConfigObj.dump();
-
         return config;
     } catch (json::exception& ex) {
         LOG_ERROR << "Config JSON parsing failed. " << ex.what();

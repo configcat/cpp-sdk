@@ -139,17 +139,12 @@ struct Config {
     static constexpr char kPreferencesRedirect[] = "r";
     static constexpr char kEntries[] = "f";
 
-    static constexpr char kETag[] = "e";
-    static constexpr char kTimestamp[] = "t";
-
-    std::string jsonString = "{}";
     std::shared_ptr<Preferences> preferences;
     std::shared_ptr<std::unordered_map<std::string, Setting>> entries;
-    std::string eTag;
 
     static std::shared_ptr<Config> fromJson(const std::string& jsonString, const std::string& eTag = "");
 
-    static std::shared_ptr<Config> empty;
+    static inline std::shared_ptr<Config> empty = std::make_shared<Config>();
 
     Config() {};
     Config(const Config&) = delete; // Disable copy

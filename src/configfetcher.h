@@ -2,14 +2,14 @@
 
 #include <string>
 #include <memory>
-#include "config.h"
+#include <atomic>
 
 namespace cpr { class Session; }
 
 namespace configcat {
 
 struct ConfigCatOptions;
-class ConfigJsonCache;
+struct ConfigEntry;
 class SessionInterceptor;
 
 enum Status {
@@ -20,10 +20,14 @@ enum Status {
 
 struct FetchResponse {
     Status status;
-    std::shared_ptr<Config> config;
+    std::shared_ptr<ConfigEntry> entry;
 
     bool isFetched() {
-        return status == fetched;
+        return status == Status::fetched;
+    }
+
+    bool notModified() {
+        return status == Status::notModified;
     }
 };
 
@@ -36,23 +40,25 @@ public:
     static constexpr char kIfNoneMatchHeaderName[] = "If-None-Match";
     static constexpr char kEtagHeaderName[] = "Etag";
 
-    ConfigFetcher(const std::string& sdkKey, const std::string& mode, ConfigJsonCache& jsonCache, const ConfigCatOptions& options);
+    ConfigFetcher(const std::string& sdkKey, const std::string& mode, const ConfigCatOptions& options);
     ~ConfigFetcher();
 
+    void close();
+
     // Fetches the current ConfigCat configuration json.
-    FetchResponse fetchConfiguration();
+    FetchResponse fetchConfiguration(const std::string& eTag = "");
 
 private:
-    FetchResponse executeFetch(int executeCount);
-    FetchResponse fetch();
+    FetchResponse executeFetch(const std::string& eTag, int executeCount);
+    FetchResponse fetch(const std::string& eTag);
 
     std::string sdkKey;
     std::string mode;
-    ConfigJsonCache& jsonCache;
     std::shared_ptr<SessionInterceptor> sessionInterceptor;
     std::unique_ptr<cpr::Session> session;
     bool urlIsCustom = false;
     std::string url;
+    std::atomic<bool> closed = false;
 };
 
 } // namespace configcat

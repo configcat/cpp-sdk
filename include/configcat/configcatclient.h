@@ -15,6 +15,7 @@ class ConfigFetcher;
 class RolloutEvaluator;
 class RefreshPolicy;
 class FlagOverrides;
+class ConfigService;
 
 // Version string
 extern const char* const version;
@@ -78,11 +79,9 @@ private:
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
     const std::shared_ptr<std::unordered_map<std::string, Setting>> getSettings() const;
 
-    std::unique_ptr<ConfigJsonCache> configJsonCache;
     std::unique_ptr<RolloutEvaluator> rolloutEvaluator;
-    std::unique_ptr<ConfigFetcher> configFetcher;
-    std::unique_ptr<RefreshPolicy> refreshPolicy;
     std::shared_ptr<FlagOverrides> override;
+    std::unique_ptr<ConfigService> configService;
 
     static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instanceRepository;
 };

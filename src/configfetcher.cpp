@@ -1,10 +1,10 @@
-#include "configcat/configfetcher.h"
+#include "configfetcher.h"
 
 #include <cpr/cpr.h>
 #include "configcat/log.h"
 #include "configcat/httpsessionadapter.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configjsoncache.h"
+#include "configentry.h"
 #include "version.h"
 #include "platform.h"
 
@@ -30,16 +30,21 @@ private:
     shared_ptr<HttpSessionAdapter> httpSessionAdapter;
 };
 
-ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, ConfigJsonCache& jsonCache, const ConfigCatOptions& options):
+ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, const ConfigCatOptions& options):
     sdkKey(sdkKey),
-    mode(mode),
-    jsonCache(jsonCache) {
+    mode(mode) {
     if (options.httpSessionAdapter) {
         sessionInterceptor = make_shared<SessionInterceptor>(options.httpSessionAdapter);
     }
     session = make_unique<cpr::Session>();
     session->SetConnectTimeout(options.connectTimeout);
     session->SetTimeout(options.readTimeout);
+    session->SetProgressCallback(cpr::ProgressCallback{
+            [&](size_t /*downloadTotal*/, size_t /*downloadNow*/, size_t /*uploadTotal*/, size_t /*uploadNow*/,
+                intptr_t /*userdata*/) -> bool {
+                return !closed;
+            }
+    });
     urlIsCustom = !options.baseUrl.empty();
     url = urlIsCustom
         ? options.baseUrl
@@ -51,13 +56,17 @@ ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, ConfigJso
 ConfigFetcher::~ConfigFetcher() {
 }
 
-FetchResponse ConfigFetcher::fetchConfiguration() {
-    return executeFetch(2);
+void ConfigFetcher::close() {
+    closed = true;
 }
 
-FetchResponse ConfigFetcher::executeFetch(int executeCount) {
-    auto response = fetch();
-    auto preferences = response.config ? response.config->preferences : nullptr;
+FetchResponse ConfigFetcher::fetchConfiguration(const std::string& eTag) {
+    return executeFetch(eTag, 2);
+}
+
+FetchResponse ConfigFetcher::executeFetch(const std::string& eTag, int executeCount) {
+    auto response = fetch(eTag);
+    auto preferences = response.entry && response.entry->config ? response.entry->config->preferences : nullptr;
 
     // If there wasn't a config change or there were no preferences in the config, we return the response
     if (!response.isFetched() || preferences == nullptr) {
@@ -92,20 +101,19 @@ FetchResponse ConfigFetcher::executeFetch(int executeCount) {
     }
 
     if (executeCount > 0) {
-        return executeFetch(executeCount - 1);
+        return executeFetch(eTag, executeCount - 1);
     }
 
     LOG_ERROR << "Redirect loop during config.json fetch. Please contact support@configcat.com.";
     return response;
 }
 
-FetchResponse ConfigFetcher::fetch() {
-    auto cache = jsonCache.readCache();
+FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     cpr::Header header = {
         {kUserAgentHeaderName, string("ConfigCat-cpp-") + getPlatformName() + "/" + mode + "-" + CONFIGCAT_VERSION}
     };
-    if (!cache->eTag.empty()) {
-        header.insert({kIfNoneMatchHeaderName, cache->eTag});
+    if (!eTag.empty()) {
+        header.insert({kIfNoneMatchHeaderName, eTag});
     }
     session->SetHeader(header);
     session->SetUrl(url + "/configuration-files/" + sdkKey + "/" + kConfigJsonName);
@@ -115,6 +123,7 @@ FetchResponse ConfigFetcher::fetch() {
     if (sessionInterceptor) {
         session->AddInterceptor(sessionInterceptor);
     }
+
     auto response = session->Get();
 
     switch (response.status_code) {
@@ -125,23 +134,24 @@ FetchResponse ConfigFetcher::fetch() {
         case 204: {
             const auto it = response.header.find(kEtagHeaderName);
             string eTag = it != response.header.end() ? it->second : "";
-            auto config = jsonCache.readFromJson(response.text, eTag);
+            auto& jsonString = response.text;
+            auto config = Config::fromJson(jsonString, eTag);
             if (config == Config::empty) {
-                return FetchResponse({failure, Config::empty});
+                return FetchResponse({failure, ConfigEntry::empty});
             }
 
             LOG_DEBUG << "Fetch was successful: new config fetched.";
-            return FetchResponse({fetched, config});
+            return FetchResponse({fetched, make_shared<ConfigEntry>(jsonString, config, eTag, std::chrono::steady_clock::now())});
         }
 
         case 304:
             LOG_DEBUG << "Fetch was successful: config not modified.";
-            return FetchResponse({notModified, Config::empty});
+            return FetchResponse({notModified, ConfigEntry::empty});
 
         default:
             LOG_ERROR << "Double-check your API KEY at https://app.configcat.com/apikey. " <<
                 "Received unexpected response: " << response.status_code;
-            return FetchResponse({failure, Config::empty});
+            return FetchResponse({failure, ConfigEntry::empty});
     }
 }
 
