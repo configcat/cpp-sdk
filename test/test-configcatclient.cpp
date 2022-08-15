@@ -18,7 +18,6 @@ public:
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
     void SetUp() override {
-        // Using of designated initializers requires at least '/std:c++20'
         ConfigCatOptions options;
         options.mode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
