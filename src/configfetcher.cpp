@@ -26,6 +26,10 @@ public:
         return response;
     }
 
+    void close() {
+        httpSessionAdapter->close();
+    }
+
 private:
     shared_ptr<HttpSessionAdapter> httpSessionAdapter;
 };
@@ -57,6 +61,9 @@ ConfigFetcher::~ConfigFetcher() {
 }
 
 void ConfigFetcher::close() {
+    if (sessionInterceptor) {
+        sessionInterceptor->close();
+    }
     closed = true;
 }
 

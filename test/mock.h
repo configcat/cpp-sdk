@@ -35,13 +35,20 @@ public:
         responses.push({response, delay});
     }
 
-    virtual configcat::Response get(const std::string& url) override {
+    configcat::Response get(const std::string& url) override {
         requests.emplace_back(url);
 
         if (!responses.empty()) {
             auto mockResponse = responses.front();
             if (mockResponse.delay > 0) {
-                std::this_thread::sleep_for(std::chrono::seconds(mockResponse.delay));
+                constexpr int stepMilliseconds = 100;
+                for (int delay = 0; delay < mockResponse.delay * 1000; delay += stepMilliseconds) {
+                    if (closed) {
+                        constexpr int closedByClientStatusCode = 499;
+                        return configcat::Response{closedByClientStatusCode, ""};
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(stepMilliseconds));
+                }
             }
 
             responses.pop();
@@ -51,6 +58,13 @@ public:
         return {};
     };
 
+    void close() override {
+        closed = true;
+    }
+
     std::queue<MockResponse> responses;
     std::vector<std::string> requests;
+
+private:
+    std::atomic<bool> closed = false;
 };

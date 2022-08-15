@@ -7,7 +7,6 @@
 #include <iostream>
 
 using namespace std;
-using namespace std::chrono;
 using namespace std::this_thread;
 
 namespace configcat {
@@ -33,6 +32,7 @@ ConfigService::~ConfigService() {
         stopRequested = true;
     }
     stop.notify_all();
+    configFetcher->close();
     if (thread && thread->joinable())
         thread->join();
 }

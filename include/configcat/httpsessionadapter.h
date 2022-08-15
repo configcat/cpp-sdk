@@ -11,7 +11,8 @@ struct Response {
 
 class HttpSessionAdapter {
 public:
-    virtual Response get(const std::string& url)= 0;
+    virtual Response get(const std::string& url) = 0;
+    virtual void close() = 0;
     virtual ~HttpSessionAdapter() = default;
 };
 

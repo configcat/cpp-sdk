@@ -122,22 +122,22 @@ TEST_F(AutoPollingTest, InitWaitTimeout) {
     EXPECT_TRUE(elapsedTimeInSeconds < 2);
 }
 
-//TEST_F(AutoPollingTest, CancelRequest) {
-//    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
-//    constexpr int responseDelay = 60;
-//    mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
-//
-//    auto startTime = std::chrono::steady_clock::now();
-//    ConfigCatOptions options;
-//    options.mode = PollingMode::autoPoll(2);
-//    options.httpSessionAdapter = mockHttpSessionAdapter;
-//    auto service = ConfigService(kTestSdkKey, options);
-//
-//    auto settings = service.getSettings();
-//    EXPECT_EQ(settings, nullptr);
-//
-//    EXPECT_EQ(1, mockHttpSessionAdapter->responses.size());
-//}
+TEST_F(AutoPollingTest, CancelRequest) {
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    constexpr int responseDelay = 60;
+    mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
+
+    auto startTime = std::chrono::steady_clock::now();
+    ConfigCatOptions options;
+    options.mode = PollingMode::autoPoll(2);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, options);
+
+    auto settings = service.getSettings();
+    EXPECT_EQ(settings, nullptr);
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->responses.size());
+}
 
 TEST_F(AutoPollingTest, Cache) {
     auto mockCache = make_shared<InMemoryConfigCache>();
