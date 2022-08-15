@@ -193,8 +193,69 @@ string ConfigCatClient::getVariationId(const string& key, const string& defaultV
     }
 
     auto [value, variationId] = rolloutEvaluator->evaluate(setting->second, key, user);
-    // TODO: on error returning defaultVariationId
     return variationId;
+}
+
+std::vector<std::string> ConfigCatClient::getAllVariationIds(const ConfigCatUser* user) const {
+    auto settings = getSettings();
+    if (!settings || settings->empty()) {
+        return {};
+    }
+
+    vector<string> variationIds;
+    variationIds.reserve(settings->size());
+    for (auto keyValue : *settings) {
+        auto [value, variationId] = rolloutEvaluator->evaluate(keyValue.second, keyValue.first, user);
+        variationIds.emplace_back(variationId);
+    }
+
+    return variationIds;
+}
+
+std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& variationId) const {
+    auto settings = getSettings();
+    if (!settings || settings->empty()) {
+        LOG_ERROR << "Config JSON is not present. Returning null.";
+        return nullptr;
+    }
+
+    for (auto keyValue : *settings) {
+        auto& key = keyValue.first;
+        auto setting = keyValue.second;
+        if (setting.variationId == variationId) {
+            return make_shared<KeyValue>(key, setting.value);
+        }
+
+        for (auto rolloutRule : setting.rolloutRules) {
+            if (rolloutRule.variationId == variationId) {
+                return make_shared<KeyValue>(key, rolloutRule.value);
+            }
+        }
+
+        for (auto percentageRule : setting.percentageItems) {
+            if (percentageRule.variationId == variationId) {
+                return make_shared<KeyValue>(key, percentageRule.value);
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const ConfigCatUser* user) const {
+    auto settings = getSettings();
+    if (!settings || settings->empty()) {
+        return {};
+    }
+
+    std::unordered_map<std::string, Value> result;
+    for (auto keyValue : *settings) {
+        auto& key = keyValue.first;
+        auto [value, variationId] = rolloutEvaluator->evaluate(keyValue.second, key, user);
+        result.insert({key, value});
+    }
+
+    return result;
 }
 
 template<typename ValueType>

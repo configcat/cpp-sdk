@@ -64,7 +64,7 @@ public:
     std::vector<std::string> getAllVariationIds(const ConfigCatUser* user = nullptr) const;
 
     // Gets the key of a setting and it's value identified by the given Variation ID (analytics)
-    KeyValue getKeyAndValue(const std::string& variationId) const;
+    std::shared_ptr<KeyValue> getKeyAndValue(const std::string& variationId) const;
 
     // Gets the values of all feature flags or settings.
     std::unordered_map<std::string, Value> getAllValues(const ConfigCatUser* user = nullptr) const;

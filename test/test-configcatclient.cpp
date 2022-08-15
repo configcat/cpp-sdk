@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "mock.h"
 #include "configcat/configcatclient.h"
+#include "configcat/config.h"
 #include "utils.h"
 
 
@@ -166,6 +167,20 @@ TEST_F(ConfigCatClientTest, GetAllKeys) {
     EXPECT_TRUE(std::find(keys.begin(), keys.end(), "key1") != keys.end());
     EXPECT_TRUE(std::find(keys.begin(), keys.end(), "key2") != keys.end());
 }
+
+TEST_F(ConfigCatClientTest, GetAllValues) {
+    configcat::Response response = {200, kTestJsonMultiple};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    auto allValues = client->getAllValues();
+
+    EXPECT_EQ(2, allValues.size());
+    EXPECT_EQ(true, std::get<bool>(allValues.at("key1")));
+    EXPECT_EQ(false, std::get<bool>(allValues.at("key2")));
+}
+
+
+
 
 
 
