@@ -97,8 +97,9 @@ TEST_F(AutoPollingTest, RequestTimeout) {
 
     sleep_for(seconds(2));
 
-    auto settings = *service.getSettings();
-    EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
+    auto settings = service.getSettings();
+    EXPECT_TRUE(settings != nullptr);
+    EXPECT_EQ("test", std::get<string>(settings->at("fakeKey").value));
 }
 
 TEST_F(AutoPollingTest, InitWaitTimeout) {
