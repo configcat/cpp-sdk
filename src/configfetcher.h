@@ -37,6 +37,7 @@ public:
     static constexpr char kGlobalBaseUrl[] = "https://cdn-global.configcat.com";
     static constexpr char kEuOnlyBaseUrl[] = "https://cdn-eu.configcat.com";
     static constexpr char kUserAgentHeaderName[] = "X-ConfigCat-UserAgent";
+    static constexpr char kPlatformHeaderName[] = "X-ConfigCat-Platform";
     static constexpr char kIfNoneMatchHeaderName[] = "If-None-Match";
     static constexpr char kEtagHeaderName[] = "Etag";
 
@@ -54,6 +55,8 @@ private:
 
     std::string sdkKey;
     std::string mode;
+    uint32_t connectTimeout; // milliseconds (0 means it never times out during transfer)
+    uint32_t readTimeout; // milliseconds (0 means it never times out during transfer)
     std::shared_ptr<SessionInterceptor> sessionInterceptor;
     std::unique_ptr<cpr::Session> session;
     bool urlIsCustom = false;

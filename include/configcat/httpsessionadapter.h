@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 
 namespace configcat {
 
@@ -11,7 +12,7 @@ struct Response {
 
 class HttpSessionAdapter {
 public:
-    virtual Response get(const std::string& url) = 0;
+    virtual Response get(const std::string& url, const std::map<std::string, std::string>& header) = 0;
     virtual void close() = 0;
     virtual ~HttpSessionAdapter() = default;
 };

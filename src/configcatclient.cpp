@@ -262,7 +262,7 @@ template<typename ValueType>
 ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user) const {
     auto settings = getSettings();
     if (!settings || settings->empty()) {
-        LOG_ERROR << "Config JSON is not present. Returning defaultValue: " << defaultValue << ".";
+        LOG_ERROR << "Config JSON is not present. Returning defaultValue: " << defaultValue << " .";
         return defaultValue;
     }
 

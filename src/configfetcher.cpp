@@ -19,11 +19,18 @@ public:
     }
 
     virtual cpr::Response intercept(cpr::Session& session) {
-        configcat::Response adapterResponse = httpSessionAdapter->get(session.GetFullRequestUrl());
+        configcat::Response adapterResponse = httpSessionAdapter->get(session.GetFullRequestUrl(), header);
+        header.clear();
         cpr::Response response;
         response.status_code = adapterResponse.status_code;
         response.text = adapterResponse.text;
         return response;
+    }
+
+    void setHeader(const cpr::Header& requestHeader) {
+        for (auto keyValue : requestHeader) {
+            header.insert({keyValue.first, keyValue.second});
+        }
     }
 
     void close() {
@@ -32,17 +39,20 @@ public:
 
 private:
     shared_ptr<HttpSessionAdapter> httpSessionAdapter;
+    std::map<std::string, std::string> header;
 };
 
 ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, const ConfigCatOptions& options):
     sdkKey(sdkKey),
-    mode(mode) {
+    mode(mode),
+    connectTimeout(options.connectTimeout),
+    readTimeout(options.readTimeout) {
     if (options.httpSessionAdapter) {
         sessionInterceptor = make_shared<SessionInterceptor>(options.httpSessionAdapter);
     }
     session = make_unique<cpr::Session>();
-    session->SetConnectTimeout(options.connectTimeout);
-    session->SetTimeout(options.readTimeout);
+    session->SetConnectTimeout(connectTimeout);
+    session->SetTimeout(readTimeout);
     session->SetProgressCallback(cpr::ProgressCallback{
             [&](size_t /*downloadTotal*/, size_t /*downloadNow*/, size_t /*uploadTotal*/, size_t /*uploadNow*/,
                 intptr_t /*userdata*/) -> bool {
@@ -117,7 +127,8 @@ FetchResponse ConfigFetcher::executeFetch(const std::string& eTag, int executeCo
 
 FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     cpr::Header header = {
-        {kUserAgentHeaderName, string("ConfigCat-cpp-") + getPlatformName() + "/" + mode + "-" + CONFIGCAT_VERSION}
+        {kUserAgentHeaderName, string("ConfigCat-Cpp/") + mode + "-" + CONFIGCAT_VERSION},
+        {kPlatformHeaderName, getPlatformName()}
     };
     if (!eTag.empty()) {
         header.insert({kIfNoneMatchHeaderName, eTag});
@@ -128,10 +139,20 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     // The session's interceptor will be unregistered after the cpr::Session::Get() call.
     // We always register it before the call.
     if (sessionInterceptor) {
+        sessionInterceptor->setHeader(header);
         session->AddInterceptor(sessionInterceptor);
     }
 
     auto response = session->Get();
+
+    if (response.error.code != cpr::ErrorCode::OK) {
+        LogEntry logEntry(LOG_LEVEL_ERROR);
+        logEntry << "An error occurred during the config fetch: " << response.error.message << ".";
+        if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT) {
+            logEntry << " Timeout values: [connect: " << connectTimeout << "ms, read: " << readTimeout << "ms]";
+        }
+        return FetchResponse({failure, ConfigEntry::empty});
+    }
 
     switch (response.status_code) {
         case 200:

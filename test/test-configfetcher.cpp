@@ -16,7 +16,6 @@ public:
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
     void SetUp(const std::string& baseUrl = "", const std::string& sdkKey = kTestSdkKey) {
-        // Using of designated initializers requires at least '/std:c++20'
         ConfigCatOptions options;
         options.mode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
@@ -46,7 +45,7 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnGivenUrl) {
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
     EXPECT_EQ(config->preferences->redirect, NoRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, ConfigFetcher::kGlobalBaseUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnSameUrl) {
@@ -62,7 +61,7 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnSameUrl) {
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
     EXPECT_EQ(config->preferences->redirect, ShouldRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, ConfigFetcher::kGlobalBaseUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnSameUrlEvenWithForce) {
@@ -78,7 +77,7 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldStayOnSameUrlEvenWithForce) {
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
     EXPECT_EQ(config->preferences->redirect, ForceRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, ConfigFetcher::kGlobalBaseUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldRedirectToAnotherServer) {
@@ -96,8 +95,8 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldRedirectToAnotherServer) {
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
     EXPECT_EQ(config->preferences->redirect, NoRedirect);
     EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1].url, ConfigFetcher::kEuOnlyBaseUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldRedirectToAnotherServerWhenForced) {
@@ -115,8 +114,8 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldRedirectToAnotherServerWhenForced
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
     EXPECT_EQ(config->preferences->redirect, NoRedirect);
     EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1].url, ConfigFetcher::kEuOnlyBaseUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldBreakRedirectLoop) {
@@ -135,9 +134,9 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldBreakRedirectLoop) {
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
     EXPECT_EQ(config->preferences->redirect, ShouldRedirect);
     EXPECT_EQ(3, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[2], ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1].url, ConfigFetcher::kEuOnlyBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[2].url, ConfigFetcher::kGlobalBaseUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldBreakRedirectLoopWhenForced) {
@@ -156,9 +155,9 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldBreakRedirectLoopWhenForced) {
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kEuOnlyBaseUrl);
     EXPECT_EQ(config->preferences->redirect, ForceRedirect);
     EXPECT_EQ(3, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], ConfigFetcher::kGlobalBaseUrl));
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kEuOnlyBaseUrl));
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[2], ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1].url, ConfigFetcher::kEuOnlyBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[2].url, ConfigFetcher::kGlobalBaseUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldRespectCustomUrl) {
@@ -174,7 +173,7 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldRespectCustomUrl) {
     EXPECT_EQ(config->preferences->url, ConfigFetcher::kGlobalBaseUrl);
     EXPECT_EQ(config->preferences->redirect, ShouldRedirect);
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], kCustomCdnUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, kCustomCdnUrl));
 }
 
 TEST_F(ConfigFetcherTest, DataGovernance_ShouldNotRespectCustomUrlWhenForced) {
@@ -193,8 +192,8 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldNotRespectCustomUrlWhenForced) {
     EXPECT_EQ(config->preferences->redirect, NoRedirect);
 
     EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0], kCustomCdnUrl));
-    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1], ConfigFetcher::kGlobalBaseUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[0].url, kCustomCdnUrl));
+    EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1].url, ConfigFetcher::kGlobalBaseUrl));
 }
 
 

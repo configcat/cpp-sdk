@@ -26,6 +26,11 @@ public:
 
 class MockHttpSessionAdapter : public configcat::HttpSessionAdapter {
 public:
+    struct Request {
+        std::string url;
+        std::map<std::string, std::string> header;
+    };
+
     struct MockResponse {
         configcat::Response response;
         int delay = 0;
@@ -35,8 +40,8 @@ public:
         responses.push({response, delay});
     }
 
-    configcat::Response get(const std::string& url) override {
-        requests.emplace_back(url);
+    configcat::Response get(const std::string& url, const std::map<std::string, std::string>& header) override {
+        requests.push_back({url, header});
 
         if (!responses.empty()) {
             auto mockResponse = responses.front();
@@ -63,7 +68,7 @@ public:
     }
 
     std::queue<MockResponse> responses;
-    std::vector<std::string> requests;
+    std::vector<Request> requests;
 
 private:
     std::atomic<bool> closed = false;

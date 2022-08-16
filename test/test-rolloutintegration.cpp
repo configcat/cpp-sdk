@@ -73,10 +73,7 @@ public:
             FAIL() << "Matrix data is empty.";
         }
 
-        ConfigCatOptions options;
-        options.mode = PollingMode::manualPoll();
-        auto client = ConfigCatClient::get(sdkKey, options);
-        client->forceRefresh(); // TODO use autopoll here
+        auto client = ConfigCatClient::get(sdkKey);
 
         auto& header = matrixData[0];
         auto customKey = header[3];
