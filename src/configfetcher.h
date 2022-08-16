@@ -29,6 +29,10 @@ struct FetchResponse {
     bool notModified() {
         return status == Status::notModified;
     }
+
+    bool isFailed() {
+        return status == Status::failure;
+    }
 };
 
 class ConfigFetcher {

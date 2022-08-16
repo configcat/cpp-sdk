@@ -8,6 +8,7 @@ namespace configcat {
 struct Response {
     long status_code = 0;
     std::string text;
+    std::map<std::string, std::string> header;
 };
 
 class HttpSessionAdapter {

@@ -24,6 +24,9 @@ public:
         cpr::Response response;
         response.status_code = adapterResponse.status_code;
         response.text = adapterResponse.text;
+        for (auto keyValue : adapterResponse.header) {
+            response.header.insert({keyValue.first, keyValue.second});
+        }
         return response;
     }
 

@@ -12,6 +12,7 @@ class ConfigFetcherTest : public ::testing::Test {
 public:
     static constexpr char kTestSdkKey[] = "TestSdkKey";
     static constexpr char kCustomCdnUrl[] = "https://custom-cdn.configcat.com";
+    static constexpr char kTestJson[] = R"({ "f": { "fakeKey": { "v": "fakeValue", "p": [], "r": [] } } })";
     unique_ptr<ConfigFetcher> fetcher;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
@@ -196,4 +197,66 @@ TEST_F(ConfigFetcherTest, DataGovernance_ShouldNotRespectCustomUrlWhenForced) {
     EXPECT_TRUE(starts_with(mockHttpSessionAdapter->requests[1].url, ConfigFetcher::kGlobalBaseUrl));
 }
 
+TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchSuccess) {
+    SetUp();
 
+    configcat::Response response = {200, kTestJson};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    auto eTag = "";
+    auto fetchResponse = fetcher->fetchConfiguration(eTag);
+
+    EXPECT_TRUE(fetchResponse.isFetched());
+    EXPECT_TRUE(fetchResponse.entry != nullptr && fetchResponse.entry != ConfigEntry::empty);
+    auto entries = *fetchResponse.entry->config->entries;
+    EXPECT_EQ("fakeValue", get<string>(entries["fakeKey"].value));
+}
+
+TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchNotModified) {
+    SetUp();
+
+    configcat::Response response = {304, ""};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    auto eTag = "";
+    auto fetchResponse = fetcher->fetchConfiguration(eTag);
+
+    EXPECT_TRUE(fetchResponse.notModified());
+    EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
+}
+
+TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed) {
+    SetUp();
+
+    configcat::Response response = {404, ""};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    auto eTag = "";
+    auto fetchResponse = fetcher->fetchConfiguration(eTag);
+
+    EXPECT_TRUE(fetchResponse.isFailed());
+    EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
+}
+
+TEST_F(ConfigFetcherTest, Fetcher_FetchNotModifiedEtag) {
+    SetUp();
+
+    auto eTag = "test";
+    configcat::Response firstResponse = {200, kTestJson, {{"Etag", eTag}}};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+    configcat::Response secondResponse = {304, ""};
+    mockHttpSessionAdapter->enqueueResponse(secondResponse);
+
+    auto fetchResponse = fetcher->fetchConfiguration("");
+
+    EXPECT_TRUE(fetchResponse.isFetched());
+    EXPECT_TRUE(fetchResponse.entry != nullptr && fetchResponse.entry != ConfigEntry::empty);
+    EXPECT_EQ(eTag, fetchResponse.entry->eTag);
+    auto entries = *fetchResponse.entry->config->entries;
+    EXPECT_EQ("fakeValue", get<string>(entries["fakeKey"].value));
+
+    fetchResponse = fetcher->fetchConfiguration(eTag);
+    EXPECT_TRUE(fetchResponse.notModified());
+    EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
+    EXPECT_EQ(eTag, mockHttpSessionAdapter->requests.back().header["If-None-Match"]);
+}
