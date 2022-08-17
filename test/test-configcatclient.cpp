@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
 #include "mock.h"
 #include "configcat/configcatclient.h"
-#include "configcat/config.h"
 #include "configfetcher.h"
 #include "utils.h"
-
+#include <hash-library/sha1.h>
 
 using namespace configcat;
 using namespace std;
@@ -248,6 +247,39 @@ TEST_F(ConfigCatClientTest, FailingAutoPoll) {
     EXPECT_EQ("", value);
 }
 
+TEST_F(ConfigCatClientTest, FromCacheOnly) {
+    auto mockCache = make_shared<InMemoryConfigCache>();
+    auto cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + kTestSdkKey);
+    mockCache->write(cacheKey, string_format(kTestJsonFormat, R"("fake")"));
+    mockHttpSessionAdapter->enqueueResponse({500, ""});
+
+    ConfigCatOptions options;
+    options.mode = PollingMode::autoPoll(120);
+    options.cache = mockCache;
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto client = ConfigCatClient::get(kTestSdkKey, options);
+
+    auto value = client->getValue("fakeKey", "");
+    EXPECT_EQ("fake", value);
+}
+
+TEST_F(ConfigCatClientTest, FromCacheOnlyRefresh) {
+    auto mockCache = make_shared<InMemoryConfigCache>();
+    auto cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + kTestSdkKey);
+    mockCache->write(cacheKey, string_format(kTestJsonFormat, R"("fake")"));
+    mockHttpSessionAdapter->enqueueResponse({500, ""});
+
+    ConfigCatOptions options;
+    options.mode = PollingMode::autoPoll(120);
+    options.cache = mockCache;
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    client->forceRefresh();
+
+    auto value = client->getValue("fakeKey", "");
+    EXPECT_EQ("fake", value);
+}
+
 TEST_F(ConfigCatClientTest, FailingAutoPollRefresh) {
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
@@ -261,7 +293,6 @@ TEST_F(ConfigCatClientTest, FailingAutoPollRefresh) {
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("", value);
 }
-
 
 TEST_F(ConfigCatClientTest, FailingExpiringCache) {
     mockHttpSessionAdapter->enqueueResponse({500, ""});

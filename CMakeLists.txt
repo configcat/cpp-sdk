@@ -43,7 +43,8 @@ if(BUILD_TESTING)
         "${PROJECT_SOURCE_DIR}/test/test-main.cpp"
     )
     target_include_directories(google_tests PRIVATE ${CONFIGCAT_INCLUDE_PATHS})
-    target_link_libraries(google_tests configcat gtest_main)
+    # $<TARGET_PROPERTY:configcat,LINK_LIBRARIES> explicitly propagates private dependencies
+    target_link_libraries(google_tests configcat gtest_main $<TARGET_PROPERTY:configcat,LINK_LIBRARIES>)
 
     gtest_discover_tests(google_tests)
 endif()
