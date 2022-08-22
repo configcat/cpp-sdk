@@ -166,7 +166,7 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
             const auto it = response.header.find(kEtagHeaderName);
             string eTag = it != response.header.end() ? it->second : "";
             auto& jsonString = response.text;
-            auto config = Config::fromJson(jsonString, eTag);
+            auto config = Config::fromJson(jsonString);
             if (config == Config::empty) {
                 return FetchResponse({failure, ConfigEntry::empty});
             }

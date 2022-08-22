@@ -5,28 +5,13 @@
 #include "configcat/configcatuser.h"
 #include "configcat/configcatclient.h"
 #include "utils.h"
+#include "test.h"
 #include "configcat/log.h"
 
 using namespace std;
 using namespace configcat;
 
 using MatrixData = vector<vector<string>>;
-
-#if defined(_WIN32)
-const char kPathSeparator = '\\';
-#else
-const char kPathSeparator = '/';
-#endif
-
-// Returns the directory path with the filename removed.
-// Example: FilePath("path/to/file").RemoveFileName() returns "path/to/".
-static string RemoveFileName(string path) {
-    const size_t lastSeparatorIndex = path.rfind(kPathSeparator);
-    if (lastSeparatorIndex) {
-        return path.substr(0, lastSeparatorIndex + 1);
-    }
-    return path;
-}
 
 class RolloutIntegrationTest : public ::testing::Test {
 public:

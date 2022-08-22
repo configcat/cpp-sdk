@@ -142,7 +142,8 @@ struct Config {
     std::shared_ptr<Preferences> preferences;
     std::shared_ptr<std::unordered_map<std::string, Setting>> entries;
 
-    static std::shared_ptr<Config> fromJson(const std::string& jsonString, const std::string& eTag = "");
+    static std::shared_ptr<Config> fromJson(const std::string& jsonString);
+    static std::shared_ptr<Config> fromFile(const std::string& filePath);
 
     static inline std::shared_ptr<Config> empty = std::make_shared<Config>();
 
