@@ -156,7 +156,7 @@ TEST_F(OverrideTest, SimpleFile) {
 TEST_F(OverrideTest, NonExistentFile) {
     ConfigCatOptions options;
     options.mode = PollingMode::manualPoll();
-    options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/non-existent.json"), LocalOnly);
+    options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "data/non-existent.json"), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
 
     EXPECT_FALSE(client->getValue("enabledFeature", false));

@@ -64,6 +64,12 @@ public:
         return *this;
     }
 
+    LogEntry& operator<<(bool arg) {
+        if (configcat::logger && level <= configcat::maxLogLevel)
+            message += arg ? "true" : "false";
+        return *this;
+    }
+
     LogEntry& operator<<(const ConfigCatUser* str);
     LogEntry& operator<<(const ConfigCatUser& str);
     LogEntry& operator<<(const Value& str);
