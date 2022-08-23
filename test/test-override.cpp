@@ -24,7 +24,7 @@ public:
     // Returns temporary file path if the creation was successful, empty string otherwise
     string createTemporaryFile(const string& content) {
         string tempDir = std::filesystem::temp_directory_path().u8string();
-        string file_template = tempDir + "configcat.XXXXXXXX";
+        string file_template = tempDir + "/configcat.XXXXXXXX";
         vector<char> filePath(file_template.begin(), file_template.end());
         filePath.push_back('\0');
         if (!mktemp(filePath.data())) {
@@ -147,7 +147,7 @@ TEST_F(OverrideTest, SimpleFile) {
 TEST_F(OverrideTest, NonExistentFile) {
     ConfigCatOptions options;
     options.mode = PollingMode::manualPoll();
-    options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "data/non-existent.json"), LocalOnly);
+    options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/non-existent.json"), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
 
     EXPECT_FALSE(client->getValue("enabledFeature", false));
