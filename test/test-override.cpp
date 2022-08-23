@@ -16,25 +16,15 @@ using namespace std;
 class OverrideTest : public ::testing::Test {
 public:
     ~OverrideTest() {
-        if (!testDirectoryPath.empty())
-            remove(testDirectoryPath.c_str());
+        for (auto& tempFile : tempFiles) {
+            remove(tempFile.c_str());
+        }
     }
 
     // Returns temporary file path if the creation was successful, empty string otherwise
     string createTemporaryFile(const string& content) {
-        if (testDirectoryPath.empty()) {
-            string tempDir = std::filesystem::temp_directory_path();
-            string directory_template = tempDir + "ConfigCat.XXXXXXXX";
-            vector<char> directory(directory_template.begin(), directory_template.end());
-            directory.push_back('\0');
-            if (!mkdtemp(directory.data())) {
-                LOG_ERROR << "Cannot create temp directory.";
-                return {};
-            }
-            testDirectoryPath = directory.data();
-        }
-
-        string file_template = testDirectoryPath + kPathSeparator + "test.XXXXXXXX";
+        string tempDir = std::filesystem::temp_directory_path().u8string();
+        string file_template = tempDir + "configcat.XXXXXXXX";
         vector<char> filePath(file_template.begin(), file_template.end());
         filePath.push_back('\0');
         if (!mktemp(filePath.data())) {
@@ -45,11 +35,12 @@ public:
         std::ofstream file(filePath.data());
         file << content;
         file.close();
+        tempFiles.push_back(filePath.data());
         return filePath.data();
     }
 
     string directoryPath = RemoveFileName(__FILE__);
-    string testDirectoryPath;
+    vector<string> tempFiles;
     static constexpr char kTestSdkKey[] = "TestSdkKey";
     static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
     ConfigCatClient* client = nullptr;
@@ -166,6 +157,11 @@ TEST_F(OverrideTest, NonExistentFile) {
 
 TEST_F(OverrideTest, ReloadFile) {
     auto filePath = createTemporaryFile(R"({ "flags": { "enabledFeature": false } })");
+
+    // Backdate file modification time so that it will be different when we
+    // rewrite it below. This avoids having to add a sleep to the test.
+    auto time = std::filesystem::last_write_time(filePath);
+    std::filesystem::last_write_time(filePath, time - 1000ms);
 
     ConfigCatOptions options;
     options.mode = PollingMode::manualPoll();
