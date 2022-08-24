@@ -7,6 +7,7 @@
 
 using namespace configcat;
 using namespace std;
+using namespace std::this_thread;
 
 class ConfigCatClientTest : public ::testing::Test {
 public:
@@ -377,8 +378,68 @@ TEST_F(ConfigCatClientTest, ManualPollUserAgentHeader) {
     EXPECT_EQ(string("ConfigCat-Cpp/m-") + configcat::version, mockHttpSessionAdapter->requests[0].header["X-ConfigCat-UserAgent"]);
 }
 
+TEST_F(ConfigCatClientTest, Concurrency_DoNotStartNewFetchIfThereIsAnOngoingFetch) {
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    constexpr int responseDelay = 1;
+    mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
+    ConfigCatOptions options;
+    options.mode = PollingMode::autoPoll(2);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto client = ConfigCatClient::get(kTestSdkKey, options);
 
+    thread t([&]() {
+        sleep_for(chrono::milliseconds(500));
+        client->forceRefresh();
+
+        auto value = client->getValue("fakeKey", "");
+        EXPECT_EQ("fake", value);
+    });
+
+    auto value = client->getValue("fakeKey", "");
+    EXPECT_EQ("fake", value);
+
+    t.join();
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+}
+
+TEST_F(ConfigCatClientTest, Concurrency_OngoingFetchDoesNotBlockGetValue) {
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("fake")")};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("fake2")")};
+    constexpr int responseDelay = 3;
+    mockHttpSessionAdapter->enqueueResponse(secondResponse, responseDelay);
+
+    ConfigCatOptions options;
+    options.mode = PollingMode::autoPoll(1);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto client = ConfigCatClient::get(kTestSdkKey, options);
+
+    thread t([&]() {
+        sleep_for(chrono::milliseconds(1500));
+
+        auto startTime = chrono::steady_clock::now();
+
+        auto value = client->getValue("fakeKey", "");
+        EXPECT_EQ("fake", value);
+
+        auto endTime = chrono::steady_clock::now();
+        auto elapsedTimeInSeconds = chrono::duration<double>(endTime - startTime).count();
+        EXPECT_LT(elapsedTimeInSeconds, 0.1);
+    });
+
+    auto value = client->getValue("fakeKey", "");
+    EXPECT_EQ("fake", value);
+
+    sleep_for(chrono::milliseconds(5000));
+
+    value = client->getValue("fakeKey", "");
+    EXPECT_EQ("fake2", value);
+
+    t.join();
+    EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
+}
 
 
 

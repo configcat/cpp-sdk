@@ -39,7 +39,6 @@ public:
     // Gets the current polling mode's identifier.
     // Used for analytical purposes in HTTP User-Agent headers.
     virtual const char* getPollingIdentifier() const = 0;
-    virtual std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const = 0;
     virtual ~PollingMode() = default;
 };
 
@@ -55,7 +54,6 @@ public:
     const std::function<void()> onConfigChanged;
 
     const char* getPollingIdentifier() const override { return kIdentifier; }
-    std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:
     AutoPollingMode(uint32_t autoPollIntervalInSeconds, uint32_t maxInitWaitTimeInSeconds, std::function<void()> onConfigChanged):
@@ -74,7 +72,6 @@ public:
 
     const uint32_t cacheRefreshIntervalInSeconds;
     const char* getPollingIdentifier() const override { return kIdentifier; }
-    std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:
     LazyLoadingMode(uint32_t cacheRefreshIntervalInSeconds):
@@ -90,7 +87,6 @@ public:
     static constexpr char kIdentifier[] = "m";
 
     const char* getPollingIdentifier() const override { return kIdentifier; }
-    std::unique_ptr<RefreshPolicy> createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const override;
 
 private:
     ManualPollingMode() {}

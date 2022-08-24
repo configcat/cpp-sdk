@@ -18,6 +18,7 @@ struct ConfigCatOptions {
     std::shared_ptr<ConfigCatCache> cache;
     std::shared_ptr<FlagOverrides> override;
     std::shared_ptr<HttpSessionAdapter> httpSessionAdapter;
+    // TODO proxy
 };
 
 } // namespace configcat

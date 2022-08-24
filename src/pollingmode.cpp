@@ -1,8 +1,6 @@
 #include "configcat/pollingmode.h"
 #include <memory>
 
-#include "configcat/manualpollingpolicy.h"
-
 using namespace std;
 
 namespace configcat {
@@ -22,19 +20,5 @@ shared_ptr<PollingMode> PollingMode::lazyLoad(uint32_t cacheRefreshIntervalInSec
 shared_ptr<PollingMode> PollingMode::manualPoll() {
     return shared_ptr<ManualPollingMode>(new ManualPollingMode());
 }
-
-
-unique_ptr<RefreshPolicy> AutoPollingMode::createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const {
-    return {};
-}
-
-unique_ptr<RefreshPolicy> LazyLoadingMode::createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const {
-    return {};
-}
-
-unique_ptr<RefreshPolicy> ManualPollingMode::createRefreshPolicy(ConfigFetcher& fetcher, ConfigJsonCache& jsonCache) const {
-    return unique_ptr<RefreshPolicy>(new ManualPollingPolicy(fetcher, jsonCache));
-}
-
 
 } // namespace configcat

@@ -33,11 +33,11 @@ public:
 
     struct MockResponse {
         configcat::Response response;
-        int delay = 0;
+        int delayInSeconds = 0;
     };
 
-    void enqueueResponse(const configcat::Response& response, int delay = 0) {
-        responses.push({response, delay});
+    void enqueueResponse(const configcat::Response& response, int delayInSeconds = 0) {
+        responses.push({response, delayInSeconds});
     }
 
     configcat::Response get(const std::string& url, const std::map<std::string, std::string>& header) override {
@@ -45,9 +45,9 @@ public:
 
         if (!responses.empty()) {
             auto mockResponse = responses.front();
-            if (mockResponse.delay > 0) {
+            if (mockResponse.delayInSeconds > 0) {
                 constexpr int stepMilliseconds = 100;
-                for (int delay = 0; delay < mockResponse.delay * 1000; delay += stepMilliseconds) {
+                for (int delay = 0; delay < mockResponse.delayInSeconds * 1000; delay += stepMilliseconds) {
                     if (closed) {
                         constexpr int closedByClientStatusCode = 499;
                         return configcat::Response{closedByClientStatusCode, ""};

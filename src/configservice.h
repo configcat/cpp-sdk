@@ -4,8 +4,10 @@
 #include <string>
 #include <memory>
 #include <thread>
+#include <future>
 #include <condition_variable>
 #include "configcat/config.h"
+#include "configfetcher.h"
 
 namespace configcat {
 
@@ -37,12 +39,14 @@ private:
     std::unique_ptr<std::thread> thread;
     std::condition_variable stop;
     bool stopRequested = false;
+    std::atomic<bool> ongoingFetch = false;
 
     std::shared_ptr<PollingMode> pollingMode;
     std::shared_ptr<ConfigEntry> cachedEntry;
     std::shared_ptr<ConfigCatCache> cache;
     std::string cacheKey;
     std::unique_ptr<ConfigFetcher> configFetcher;
+    std::shared_future<FetchResponse> responseFuture;
 };
 
 } // namespace configcat

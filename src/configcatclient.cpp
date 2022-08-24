@@ -7,7 +7,6 @@
 #include "configservice.h"
 #include "configcat/flagoverrides.h"
 #include "configcat/overridedatasource.h"
-#include "configservice.h"
 #include "version.h"
 
 using namespace std;

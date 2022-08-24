@@ -69,33 +69,47 @@ void ConfigService::refresh() {
 }
 
 shared_ptr<Config> ConfigService::fetchIfOlder(chrono::time_point<chrono::steady_clock> time, bool preferCache) {
-    lock_guard<mutex> lock(fetchMutex);
+    {
+        lock_guard<mutex> lock(fetchMutex);
 
-    // Sync up with the cache and use it when it's not expired.
-    if (cachedEntry == ConfigEntry::empty || cachedEntry->fetchTime > time) {
-        auto jsonString = readConfigCache();
-        if (!jsonString.empty() && jsonString != cachedEntry->jsonString) {
-            auto config = Config::fromJson(jsonString);
-            if (config && config != Config::empty) {
-                cachedEntry = make_shared<ConfigEntry>(jsonString, config);
+        // Sync up with the cache and use it when it's not expired.
+        if (cachedEntry == ConfigEntry::empty || cachedEntry->fetchTime > time) {
+            auto jsonString = readConfigCache();
+            if (!jsonString.empty() && jsonString != cachedEntry->jsonString) {
+                auto config = Config::fromJson(jsonString);
+                if (config && config != Config::empty) {
+                    cachedEntry = make_shared<ConfigEntry>(jsonString, config);
+                }
+            }
+            if (cachedEntry && cachedEntry->fetchTime > time) {
+                return cachedEntry->config;
             }
         }
-        if (cachedEntry && cachedEntry->fetchTime > time) {
+
+        // Use cache anyway (get calls on auto & manual poll must not initiate fetch).
+        // The initialized check ensures that we subscribe for the ongoing fetch during the
+        // max init wait time window in case of auto poll.
+        if (preferCache && initialized) {
             return cachedEntry->config;
+        }
+
+        // If there's an ongoing fetch running, we will wait for the ongoing fetch future and use its response.
+        if (!ongoingFetch) {
+            // No fetch is running, initiate a new one.
+            ongoingFetch = true;
+            // launch::deferred will invoke the function on the first calling thread
+            responseFuture = async(std::launch::deferred, [&]() {
+                auto response = configFetcher->fetchConfiguration(cachedEntry->eTag);
+                ongoingFetch = false;
+                return response;
+            });
         }
     }
 
-    // Use cache anyway (get calls on auto & manual poll must not initiate fetch).
-    // The initialized check ensures that we subscribe for the ongoing fetch during the
-    // max init wait time window in case of auto poll.
-    if (preferCache && initialized) {
-        return cachedEntry->config;
-    }
+    auto response = responseFuture.get();
 
-    // TODO: There's an ongoing fetch running, save the callback to call it later when the ongoing fetch finishes.
+    lock_guard<mutex> lock(fetchMutex);
 
-    // No fetch is running, initiate a new one.
-    auto response = configFetcher->fetchConfiguration(cachedEntry->eTag);
     if (response.isFetched()) {
         cachedEntry = response.entry;
         writeConfigCache(cachedEntry->jsonString);
