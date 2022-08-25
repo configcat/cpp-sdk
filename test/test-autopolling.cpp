@@ -95,10 +95,10 @@ TEST_F(AutoPollingTest, RequestTimeout) {
 
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 
-    sleep_for(seconds(2));
+    sleep_for(milliseconds(2500));
 
     auto settings = service.getSettings();
-    EXPECT_TRUE(settings != nullptr);
+    ASSERT_TRUE(settings != nullptr);
     EXPECT_EQ("test", std::get<string>(settings->at("fakeKey").value));
 }
 
