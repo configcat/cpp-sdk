@@ -78,6 +78,7 @@ jobs:
         run: |
           sudo apt install lcov
           lcov -c -d . -o cov.info
+          lcov --remove cov.info */test/* --output-file cov.info 
           lcov -l cov.info
 
       - name: codecov
