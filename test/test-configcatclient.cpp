@@ -404,34 +404,13 @@ TEST_F(ConfigCatClientTest, Concurrency_DoNotStartNewFetchIfThereIsAnOngoingFetc
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 }
 
-
-// test
-std::string get_time()
-{
-    using namespace std::chrono;
-    auto timepoint = system_clock::now();
-    auto coarse = system_clock::to_time_t(timepoint);
-    auto fine = time_point_cast<std::chrono::milliseconds>(timepoint);
-
-    char buffer[sizeof "9999-12-31 23:59:59.999"];
-    std::snprintf(buffer + std::strftime(buffer, sizeof buffer - 3,
-                                         "%F %T.", std::localtime(&coarse)),
-                  4, "%03lu", fine.time_since_epoch().count() % 1000);
-
-    return buffer;
-}
-// test
-
-#if 0
+#ifndef __APPLE__
+// TODO: This test is broken on GitHub macos-latest os.
 TEST_F(ConfigCatClientTest, Concurrency_OngoingFetchDoesNotBlockGetValue) {
-    // test
-    std::cout << "Concurrency_OngoingFetchDoesNotBlockGetValue() - time: " << get_time() << " thread_id: " << this_thread::get_id() << endl;
-    // test
-
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("fake")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
     configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("fake2")")};
-    constexpr int responseDelay = 2;
+    constexpr int responseDelay = 3;
     mockHttpSessionAdapter->enqueueResponse(secondResponse, responseDelay);
 
     ConfigCatOptions options;
@@ -455,18 +434,15 @@ TEST_F(ConfigCatClientTest, Concurrency_OngoingFetchDoesNotBlockGetValue) {
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("fake", value);
 
-//    sleep_for(chrono::milliseconds(4000)); // 3500 (4500 -> 6000)
-//
-//    std::cout << "value = client->getValue(\"fakeKey\", \"\") - time: " << get_time() << " thread_id: " << this_thread::get_id() << endl;
-//    value = client->getValue("fakeKey", "");
-//    std::cout << "EXPECT_EQ(\"fake2\", value) - time: " << get_time() << " thread_id: " << this_thread::get_id() << endl;
-//    EXPECT_EQ("fake2", value);
+    sleep_for(chrono::milliseconds(4500));
+
+    value = client->getValue("fakeKey", "");
+    EXPECT_EQ("fake2", value);
 
     t.join();
-//    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+    EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
 }
 #endif
-
 
 
 
