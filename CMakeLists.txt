@@ -1,9 +1,20 @@
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_CXX_STANDARD 17)
 
-project(configcat)
+file(READ "src/version.h" HeaderVersionFile)
 
-include(CTest)
+string(REGEX MATCH
+    "#define CONFIGCAT_VERSION \"([0-9\\.]+).*\""
+    _
+    ${HeaderVersionFile}
+)
+set(CONFIGCAT_VERSION ${CMAKE_MATCH_1})
+message("ConfigCat version: ${CONFIGCAT_VERSION}")
+
+project(configcat VERSION ${CONFIGCAT_VERSION})
+
+option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
+
 include(FetchContent)
 
 find_package(cpr REQUIRED)
@@ -21,7 +32,9 @@ set(CONFIGCAT_INCLUDE_PATHS
     "include"
 )
 
-if(BUILD_TESTING)
+if(CONFIGCAT_BUILD_TESTS)
+    include(CTest)
+
     FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
