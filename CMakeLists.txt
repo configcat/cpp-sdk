@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_CXX_STANDARD 17)
 
 file(READ "src/version.h" HeaderVersionFile)
-
 string(REGEX MATCH
     "#define CONFIGCAT_VERSION \"([0-9\\.]+).*\""
     _
@@ -25,6 +24,7 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/z4kn4fein/cpp-semver.git
     GIT_TAG v0.2.1
 )
+set(SEMVER_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(cpp-semver)
 
 set(CONFIGCAT_INCLUDE_PATHS
@@ -65,7 +65,7 @@ endif()
 file(GLOB SOURCES "src/*" "third-party/hash-library/*")
 add_library(configcat ${SOURCES})
 
-set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json unofficial::hash-library semver)
+set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
 
 target_link_libraries(configcat
     PRIVATE ${CONFIGCAT_LIBRARIES}
