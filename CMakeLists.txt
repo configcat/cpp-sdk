@@ -12,20 +12,15 @@ message("ConfigCat version: ${CONFIGCAT_VERSION}")
 
 project(configcat VERSION ${CONFIGCAT_VERSION})
 
-option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-include(FetchContent)
+option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
 
 find_package(cpr REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(unofficial-hash-library REQUIRED)
-FetchContent_Declare(
-    cpp-semver
-    GIT_REPOSITORY https://github.com/z4kn4fein/cpp-semver.git
-    GIT_TAG v0.2.1
-)
-set(SEMVER_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(cpp-semver)
+find_package(semver REQUIRED)
 
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
@@ -34,6 +29,7 @@ set(CONFIGCAT_INCLUDE_PATHS
 
 if(CONFIGCAT_BUILD_TESTS)
     include(CTest)
+    include(FetchContent)
 
     FetchContent_Declare(
         googletest
@@ -62,8 +58,9 @@ if(CONFIGCAT_BUILD_TESTS)
     gtest_discover_tests(google_tests)
 endif()
 
-file(GLOB SOURCES "src/*" "third-party/hash-library/*")
+file(GLOB SOURCES "src/*")
 add_library(configcat ${SOURCES})
+add_library(configcat::configcat ALIAS configcat)
 
 set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
 
@@ -71,7 +68,44 @@ target_link_libraries(configcat
     PRIVATE ${CONFIGCAT_LIBRARIES}
 )
 
-target_include_directories(configcat
-    PUBLIC "include"
-    PRIVATE ${CONFIGCAT_INCLUDE_PATHS}
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+    ${CONFIGCAT_INCLUDE_PATHS}
+)
+
+# install
+
+install(TARGETS configcat
+    EXPORT configcat-targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    FRAMEWORK DESTINATION ${CMAKE_INSTALL_PREFIX}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/configcat
+)
+
+export(EXPORT configcat-targets NAMESPACE configcat:: FILE configcat-targets.cmake)
+
+set(CMAKE_INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/configcat)
+install(EXPORT configcat-targets
+    DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
+    NAMESPACE configcat::
+)
+
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/configcat-config.cmake.in ${PROJECT_BINARY_DIR}/configcat-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
+    PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR
+)
+
+write_basic_package_version_file(${PROJECT_BINARY_DIR}/configcat-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(FILES ${PROJECT_BINARY_DIR}/configcat-config.cmake ${PROJECT_BINARY_DIR}/configcat-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
 )

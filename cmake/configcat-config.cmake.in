@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+set(CONFIGCAT_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_FULL_INCLUDEDIR@")
+
+include("${CMAKE_CURRENT_LIST_DIR}/configcat-targets.cmake")
+
+set(CONFIGCAT_LIBRARIES configcat::configcat)
+
+check_required_components(configcat)
+set(CONFIGCAT_FOUND 1)
