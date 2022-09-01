@@ -79,33 +79,34 @@ target_include_directories(${PROJECT_NAME}
 
 # install
 
-install(TARGETS configcat
-    EXPORT configcat-targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    FRAMEWORK DESTINATION ${CMAKE_INSTALL_PREFIX}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/configcat
-)
+configure_package_config_file(
+        ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}
+        PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR)
 
-export(EXPORT configcat-targets NAMESPACE configcat:: FILE configcat-targets.cmake)
+write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+        ARCH_INDEPENDENT)
 
-set(CMAKE_INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/configcat)
-install(EXPORT configcat-targets
-    DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
-    NAMESPACE configcat::
-)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/configcat-config.cmake.in ${PROJECT_BINARY_DIR}/configcat-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
-    PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR
-)
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
 
-write_basic_package_version_file(${PROJECT_BINARY_DIR}/configcat-config-version.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
+export(TARGETS ${PROJECT_NAME}
+        NAMESPACE ${PROJECT_NAME}::
+        FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
 
-install(FILES ${PROJECT_BINARY_DIR}/configcat-config.cmake ${PROJECT_BINARY_DIR}/configcat-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
-)
+install(TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}-targets
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT ${PROJECT_NAME}-targets
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
