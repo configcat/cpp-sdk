@@ -63,8 +63,6 @@ void from_json(const json& j, Value& value) {
         value = j.get<std::string>();
     } else if (j.is_number_integer()) {
         value = j.get<int>();
-    } else if (j.is_number_unsigned()) {
-        value = j.get<unsigned int>();
     } else if (j.is_number_float()) {
         value = j.get<double>();
     } else {

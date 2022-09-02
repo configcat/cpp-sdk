@@ -43,9 +43,7 @@ public:
      */
     bool getValue(const std::string& key, bool defaultValue, const ConfigCatUser* user = nullptr) const;
     int getValue(const std::string& key, int defaultValue, const ConfigCatUser* user = nullptr) const;
-    unsigned int getValue(const std::string& key, unsigned int defaultValue, const ConfigCatUser* user = nullptr) const;
     double getValue(const std::string& key, double defaultValue, const ConfigCatUser* user = nullptr) const;
-    std::string getValue(const std::string& key, char* defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user = nullptr) const;
 

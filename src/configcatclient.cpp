@@ -120,16 +120,8 @@ int ConfigCatClient::getValue(const std::string& key, int defaultValue, const Co
     return _getValue(key, defaultValue, user);
 }
 
-unsigned int ConfigCatClient::getValue(const std::string& key, unsigned int defaultValue, const ConfigCatUser* user) const {
-    return _getValue(key, defaultValue, user);
-}
-
 double ConfigCatClient::getValue(const std::string& key, double defaultValue, const ConfigCatUser* user) const {
     return _getValue(key, defaultValue, user);
-}
-
-std::string ConfigCatClient::getValue(const std::string& key, char* defaultValue, const ConfigCatUser* user) const {
-    return _getValue(key, string(defaultValue), user);
 }
 
 std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {

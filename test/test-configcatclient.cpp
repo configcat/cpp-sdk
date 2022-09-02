@@ -466,9 +466,6 @@ TEST_F(ConfigCatClientTest, GetValueTypeTest) {
     int intValue = client->getValue("", 42);
     EXPECT_EQ(intValue, 42);
 
-    unsigned int unsignedIntValue = client->getValue("", 42u);
-    EXPECT_EQ(unsignedIntValue, 42u);
-
     double doubleValue = client->getValue("", 42.0);
     EXPECT_EQ(doubleValue, 42.0);
 }

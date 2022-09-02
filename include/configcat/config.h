@@ -9,7 +9,7 @@
 
 namespace configcat {
 
-using ValueType = std::variant<bool, std::string, int, unsigned int, double>;
+using ValueType = std::variant<bool, std::string, int, double>;
 // Disable implicit conversion from pointer types (const char*) to bool when constructing std::variant
 // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0608r3.html
 struct Value : public ValueType {
@@ -17,7 +17,6 @@ struct Value : public ValueType {
     Value(const char* v) : ValueType(std::string(v)) {}
     Value(const std::string& v) : ValueType(v) {}
     Value(int v) : ValueType(v) {}
-    Value(unsigned int v) : ValueType(v) {}
     Value(double v) : ValueType(v) {}
 
     template<typename T>
