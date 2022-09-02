@@ -116,11 +116,11 @@ bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const 
     return _getValue(key, defaultValue, user);
 }
 
-unsigned int ConfigCatClient::getValue(const std::string& key, unsigned int defaultValue, const ConfigCatUser* user) const {
+int ConfigCatClient::getValue(const std::string& key, int defaultValue, const ConfigCatUser* user) const {
     return _getValue(key, defaultValue, user);
 }
 
-int ConfigCatClient::getValue(const std::string& key, int defaultValue, const ConfigCatUser* user) const {
+unsigned int ConfigCatClient::getValue(const std::string& key, unsigned int defaultValue, const ConfigCatUser* user) const {
     return _getValue(key, defaultValue, user);
 }
 
@@ -134,6 +134,10 @@ std::string ConfigCatClient::getValue(const std::string& key, char* defaultValue
 
 std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
     return _getValue(key, string(defaultValue), user);
+}
+
+std::string ConfigCatClient::getValue(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user) const {
+    return _getValue(key, defaultValue, user);
 }
 
 std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const ConfigCatUser* user) const {

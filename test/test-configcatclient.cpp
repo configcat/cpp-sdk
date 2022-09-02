@@ -444,27 +444,31 @@ TEST_F(ConfigCatClientTest, Concurrency_OngoingFetchDoesNotBlockGetValue) {
 }
 #endif
 
-
-
-
-
-
-
-
-
-TEST_F(ConfigCatClientTest, GetValueTest) {
+TEST_F(ConfigCatClientTest, GetValueTypeTest) {
     SetUp();
 
-    auto boolValue = client->getValue(string("bool"), false);
-    auto boolValue2 = client->getValue("bool", false);
-    const char* def = "default";
-    auto stringValue = client->getValue(string("string"), def);
-    char def2[100] = "def";
-    auto stringValue2 = client->getValue(string("string"), def2);
-    char* def3 = def2;
-    auto stringValue3 = client->getValue(string("string"), def3);
-    auto strValue = client->getValue(string("string"), "default");
-    auto strValue2 = client->getValue("string", "default");
-    auto intValue = client->getValue(string("int"), 0);
-    auto otherValue = client->getValue(string("other"), 0.0);
+    bool boolValue = client->getValue("", false);
+    EXPECT_EQ(boolValue, false);
+
+    string stringValue = client->getValue("", "str");
+    EXPECT_EQ(stringValue, "str");
+
+    stringValue = client->getValue("", "str"s);
+    EXPECT_EQ(stringValue, "str");
+
+    char defaultChars[] = "str";
+    stringValue = client->getValue("", defaultChars);
+    EXPECT_EQ(stringValue, "str");
+
+    stringValue = client->getValue("", string("str"));
+    EXPECT_EQ(stringValue, "str");
+
+    int intValue = client->getValue("", 42);
+    EXPECT_EQ(intValue, 42);
+
+    unsigned int unsignedIntValue = client->getValue("", 42u);
+    EXPECT_EQ(unsignedIntValue, 42u);
+
+    double doubleValue = client->getValue("", 42.0);
+    EXPECT_EQ(doubleValue, 42.0);
 }
