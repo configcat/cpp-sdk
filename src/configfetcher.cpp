@@ -56,6 +56,13 @@ ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, const Con
     session = make_unique<cpr::Session>();
     session->SetConnectTimeout(connectTimeout);
     session->SetTimeout(readTimeout);
+    session->SetProxies(options.proxies);
+    std::map<std::string, cpr::EncodedAuthentication> proxyAuthentications;
+    for (auto& keyValue : options.proxyAuthentications) {
+        auto& authentications = keyValue.second;
+        proxyAuthentications.insert({keyValue.first, {authentications.user, authentications.password}});
+    }
+    session->SetProxyAuth(proxyAuthentications);
     session->SetProgressCallback(cpr::ProgressCallback{
             [&](size_t /*downloadTotal*/, size_t /*downloadNow*/, size_t /*uploadTotal*/, size_t /*uploadNow*/,
                 intptr_t /*userdata*/) -> bool {
