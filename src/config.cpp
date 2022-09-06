@@ -66,7 +66,7 @@ void from_json(const json& j, Value& value) {
     } else if (j.is_number_float()) {
         value = j.get<double>();
     } else {
-        throw json::parse_error::create(105, 0, string("Invalid value type: ") + j.type_name(), j);
+        throw json::parse_error::create(105, 0, string("Invalid value type: ") + j.type_name(), &j);
     }
 }
 
