@@ -9,11 +9,9 @@
 
 namespace configcat {
 
-class ConfigJsonCache;
 class ConfigCatUser;
 class ConfigFetcher;
 class RolloutEvaluator;
-class RefreshPolicy;
 class FlagOverrides;
 class ConfigService;
 
