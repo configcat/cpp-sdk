@@ -26,7 +26,7 @@ int main(int /*argc*/, char** /*argv*/) {
     bool value = client->getValue("isPOCFeatureEnabled", false, &user);
     cout << "isPOCFeatureEnabled value from ConfigCat: " << (value == true ? "true" : "false");
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 
     return 0;
 }
