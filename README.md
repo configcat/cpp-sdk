@@ -1,6 +1,6 @@
 [![codecov](https://codecov.io/gh/configcat/cpp-sdk/branch/main/graph/badge.svg?token=cvUgfof8k7)](https://codecov.io/gh/configcat/cpp-sdk)
 
-# ConfigCat SDK for C++ [Work in progress]
+# ConfigCat SDK for C++
 
 https://configcat.com
 
