@@ -12,6 +12,7 @@ message("ConfigCat version: ${CONFIGCAT_VERSION}")
 
 project(configcat VERSION ${CONFIGCAT_VERSION})
 
+include(FetchContent)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -20,7 +21,10 @@ option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
 find_package(cpr REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(unofficial-hash-library REQUIRED)
-find_package(semver REQUIRED)
+
+FetchContent_Declare(cpp-semver GIT_REPOSITORY https://github.com/z4kn4fein/cpp-semver.git GIT_TAG v0.2.1)
+set(SEMVER_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(cpp-semver)
 
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
@@ -29,7 +33,6 @@ set(CONFIGCAT_INCLUDE_PATHS
 
 if(CONFIGCAT_BUILD_TESTS)
     include(CTest)
-    include(FetchContent)
 
     FetchContent_Declare(
         googletest

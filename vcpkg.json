@@ -3,7 +3,6 @@
   "dependencies": [
     "cpr",
     "nlohmann-json",
-    "hash-library",
-    "cpp-semver"
+    "hash-library"
   ]
 }
