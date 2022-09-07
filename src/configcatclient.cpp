@@ -130,7 +130,6 @@ std::string ConfigCatClient::getValue(const std::string& key, const std::string&
 }
 
 std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const ConfigCatUser* user) const {
-    // TODO: Do not duplicate code. Move this into _getValue().
     auto settings = getSettings();
     if (!settings || settings->empty()) {
         LOG_ERROR << "Config JSON is not present.";
@@ -265,7 +264,8 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         for (auto keyValue : *settings) {
             keys.emplace_back(keyValue.first);
         }
-        LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys;
+        LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys
+                  << " Returning defaultValue: " << defaultValue << " .";
         return defaultValue;
     }
 
@@ -274,6 +274,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     if (valuePtr)
         return *valuePtr;
 
+    LOG_ERROR << "Evaluating getValue(\"" << key << "\") failed. Returning defaultValue: " << defaultValue << " .";
     return defaultValue;
 }
 
