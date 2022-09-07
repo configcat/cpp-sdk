@@ -66,7 +66,7 @@ public:
     }
 
     void TearDown() override {
-        ConfigCatClient::close();
+        ConfigCatClient::closeAll();
     }
 };
 

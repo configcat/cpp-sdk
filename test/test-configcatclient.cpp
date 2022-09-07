@@ -27,7 +27,7 @@ public:
     }
 
     void TearDown() override {
-        ConfigCatClient::close();
+        ConfigCatClient::closeAll();
     }
 };
 
@@ -50,7 +50,7 @@ TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
     client = ConfigCatClient::get("another");
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
 
     client = ConfigCatClient::get("another");

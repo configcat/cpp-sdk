@@ -44,7 +44,7 @@ void ConfigCatClient::close(ConfigCatClient* client) {
     assert(false);
 }
 
-void ConfigCatClient::close() {
+void ConfigCatClient::closeAll() {
     instanceRepository.clear();
 }
 

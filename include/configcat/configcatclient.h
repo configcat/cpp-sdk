@@ -24,7 +24,7 @@ public:
     static void close(ConfigCatClient* client);
 
     // Closes all [ConfigCatClient] instances.
-    static void close();
+    static void closeAll();
 
     // Returns count of [ConfigCatClient] instances.
     static size_t instanceCount();

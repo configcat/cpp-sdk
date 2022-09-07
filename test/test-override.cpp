@@ -67,7 +67,7 @@ TEST_F(OverrideTest, Map) {
     EXPECT_EQ(3.14, client->getValue("doubleSetting", 0.0));
     EXPECT_EQ("test", client->getValue("stringSetting", ""));
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 }
 
 TEST_F(OverrideTest, LocalOverRemote) {
@@ -89,7 +89,7 @@ TEST_F(OverrideTest, LocalOverRemote) {
     EXPECT_TRUE(client->getValue("fakeKey", false));
     EXPECT_TRUE(client->getValue("nonexisting", false));
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 }
 
 TEST_F(OverrideTest, RemoteOverLocal) {
@@ -111,7 +111,7 @@ TEST_F(OverrideTest, RemoteOverLocal) {
     EXPECT_FALSE(client->getValue("fakeKey", true));
     EXPECT_TRUE(client->getValue("nonexisting", false));
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 }
 
 TEST_F(OverrideTest, File) {
@@ -126,7 +126,7 @@ TEST_F(OverrideTest, File) {
     EXPECT_EQ(3.14, client->getValue("doubleSetting", 0.0));
     EXPECT_EQ("test", client->getValue("stringSetting", ""));
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 }
 
 TEST_F(OverrideTest, SimpleFile) {
@@ -141,7 +141,7 @@ TEST_F(OverrideTest, SimpleFile) {
     EXPECT_EQ(3.14, client->getValue("doubleSetting", 0.0));
     EXPECT_EQ("test", client->getValue("stringSetting", ""));
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 }
 
 TEST_F(OverrideTest, NonExistentFile) {
@@ -152,7 +152,7 @@ TEST_F(OverrideTest, NonExistentFile) {
 
     EXPECT_FALSE(client->getValue("enabledFeature", false));
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 }
 
 TEST_F(OverrideTest, ReloadFile) {
@@ -177,5 +177,5 @@ TEST_F(OverrideTest, ReloadFile) {
 
     EXPECT_TRUE(client->getValue("enabledFeature", false));
 
-    ConfigCatClient::close();
+    ConfigCatClient::closeAll();
 }
