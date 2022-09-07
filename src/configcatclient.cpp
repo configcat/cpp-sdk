@@ -7,11 +7,8 @@
 #include "configservice.h"
 #include "configcat/flagoverrides.h"
 #include "configcat/overridedatasource.h"
-#include "version.h"
 
 using namespace std;
-
-const char* const configcat::version = CONFIGCAT_VERSION;
 
 namespace configcat {
 

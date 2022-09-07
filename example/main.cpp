@@ -1,7 +1,5 @@
-#include <configcat/configcatclient.h>
-#include <configcat/configcatuser.h>
-#include "configcat/log.h"
-#include "configcat/consolelogger.h"
+#include <configcat/configcat.h>
+#include <configcat/consolelogger.h>
 #include <iostream>
 
 using namespace std;

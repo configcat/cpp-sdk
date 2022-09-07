@@ -15,9 +15,6 @@ class RolloutEvaluator;
 class FlagOverrides;
 class ConfigService;
 
-// Version string
-extern const char* const version;
-
 class ConfigCatClient {
 public:
     // Creates a new or gets an already existing [ConfigCatClient] for the given [sdkKey].
