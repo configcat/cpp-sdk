@@ -1,3 +1,5 @@
+
+[![C++ CI](https://github.com/configcat/cpp-sdk/actions/workflows/cpp-ci.yml/badge.svg?branch=main)](https://github.com/configcat/cpp-sdk/actions/workflows/cpp-ci.yml)
 [![codecov](https://codecov.io/gh/configcat/cpp-sdk/branch/main/graph/badge.svg?token=cvUgfof8k7)](https://codecov.io/gh/configcat/cpp-sdk)
 
 # ConfigCat SDK for C++
