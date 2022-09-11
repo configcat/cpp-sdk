@@ -37,6 +37,7 @@ LogLevel getLogLevel();
 
 extern ILogger* logger;
 void setLogger(ILogger* externalLogger);
+ILogger* getLogger();
 
 class LogEntry {
 public:
