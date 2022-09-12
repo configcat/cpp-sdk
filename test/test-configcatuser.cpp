@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
 #include "configcat/configcatuser.h"
 #include "configcat/log.h"
+#include <nlohmann/json.hpp>
 
 using namespace configcat;
 using namespace std;
+using json = nlohmann::json;
 
 TEST(ConfigCatUserTest, UserAttributesCaseInsensitivity) {
     auto user = ConfigCatUser(
@@ -24,3 +26,21 @@ TEST(ConfigCatUserTest, UserAttributesCaseInsensitivity) {
     EXPECT_EQ("test", *user.getAttribute("custom"));
     EXPECT_EQ(nullptr, user.getAttribute("not-existing"));
 }
+
+TEST(ConfigCatUserTest, ToJson) {
+    auto user = ConfigCatUser(
+        "id",
+        "email",
+        "country", {
+            {"custom", "test"}
+        }
+    );
+
+    json userJson = json::parse(user.toJson());
+
+    EXPECT_EQ("id", userJson["Identifier"]);
+    EXPECT_EQ("email", userJson["Email"]);
+    EXPECT_EQ("country", userJson["Country"]);
+    EXPECT_EQ("test",  userJson["custom"]);
+}
+
