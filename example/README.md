@@ -8,7 +8,7 @@ This is a simple application to demonstrate how to use the ConfigCat C++ SDK in 
 
 - Follow the instructions on https://cmake.org/install 
 
-### Install [vcpkg](https://github.com/microsoft/vcpkg)
+### Install [Vcpkg](https://github.com/microsoft/vcpkg)
 
 - On Windows:
   ```cmd
