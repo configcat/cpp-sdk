@@ -1,0 +1,43 @@
+# Steps to deploy
+## Preparation
+1. Run tests
+   ```bash
+   cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
+   cmake --build build
+   cd build && ctest
+   ```
+2. Increase the `CONFIGCAT_VERSION` in [src/version.h](src/version.h).
+3. Commit & Push
+## Publish
+Use the **same version** for the git tag as in `src/version.h`.
+- Via git tag
+    1. Create a new version tag.
+       ```bash
+       git tag v[MAJOR].[MINOR].[PATCH]
+       ```
+       > Example: `git tag v2.5.5`
+    2. Push the tag.
+       ```bash
+       git push origin --tags
+       ```
+- Via Github release 
+
+  Create a new [Github release](https://github.com/configcat/cpp-sdk/releases) with a new version tag and release notes.
+
+## Vcpkg Package
+- Fork the [vcpkg](https://github.com/microsoft/vcpkg) repo on GitHub.
+- Update the git tag and the SHA512 hash in the fork repo's `ports/configcat/portfile.cmake` file.
+  ```
+  vcpkg_from_github(
+      OUT_SOURCE_PATH SOURCE_PATH
+      REPO configcat/cpp-sdk
+      REF [GIT_TAG]
+      SHA512 [HASH]
+      HEAD_REF master
+  )
+  ```
+- Update the version in the fork repo's `ports/configcat/vcpkg.json` file.
+- Commit & Push
+- Run `./vcpkg x-add-version --all`
+- Commit & Push
+- Create a PR from the fork to [vcpkg](https://github.com/microsoft/vcpkg) master branch.
