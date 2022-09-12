@@ -83,11 +83,9 @@ TEST_F(VariationIdTest, GetVariationIdNotFound) {
     configcat::Response response = {200, kTestJson};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
-    auto variationIds = client->getAllVariationIds();
+    auto variationId = client->getVariationId("nonexisting", "default");
 
-    EXPECT_EQ(2, variationIds.size());
-    EXPECT_TRUE(std::find(variationIds.begin(), variationIds.end(), "fakeId1") != variationIds.end());
-    EXPECT_TRUE(std::find(variationIds.begin(), variationIds.end(), "fakeId2") != variationIds.end());
+    EXPECT_EQ("default", variationId);
 }
 
 TEST_F(VariationIdTest, GetVarationIdInvalidJson) {
@@ -97,6 +95,17 @@ TEST_F(VariationIdTest, GetVarationIdInvalidJson) {
     auto variationId = client->getVariationId("key1", "default");
 
     EXPECT_EQ("default", variationId);
+}
+
+TEST_F(VariationIdTest, GetAllVariationIds) {
+    configcat::Response response = {200, kTestJson};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    auto variationIds = client->getAllVariationIds();
+
+    EXPECT_EQ(2, variationIds.size());
+    EXPECT_TRUE(std::find(variationIds.begin(), variationIds.end(), "fakeId1") != variationIds.end());
+    EXPECT_TRUE(std::find(variationIds.begin(), variationIds.end(), "fakeId2") != variationIds.end());
 }
 
 TEST_F(VariationIdTest, GetAllVariationIdsEmpty) {

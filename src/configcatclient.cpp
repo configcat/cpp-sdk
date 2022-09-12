@@ -180,7 +180,8 @@ string ConfigCatClient::getVariationId(const string& key, const string& defaultV
         for (auto keyValue : *settings) {
             keys.emplace_back(keyValue.first);
         }
-        LOG_ERROR << "Variation ID not found for key " << key << ". Here are the available keys: " << keys;
+        LOG_ERROR << "Variation ID not found for key " << key << ". Here are the available keys: " << keys
+                  << " Returning defaultVariationId: " << defaultVariationId << ".";
         return defaultVariationId;
     }
 
