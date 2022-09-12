@@ -46,10 +46,12 @@ Use the **same version** for the git tag as in [src/version.h](src/version.h).
   )
   ```
 - Update the version in the fork repo's `ports/configcat/vcpkg.json` file.
-  ```json
+  ```
   {
       "name": "configcat",
       "version": "[CONFIGCAT_VERSION]",
+      ...
+  }
   ```
 - Commit & Push
 - Run `./vcpkg x-add-version --all`
