@@ -56,7 +56,7 @@ This is a simple application to demonstrate how to use the ConfigCat C++ SDK in 
   ./vcpkg/bootstrap-vcpkg.sh
   ```
 
-### Open the `example` folder with CLion 
+### Open the example folder with CLion 
 
 ### Update CLion Toolchain
 
