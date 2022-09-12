@@ -469,3 +469,19 @@ TEST_F(ConfigCatClientTest, GetValueTypeTest) {
     double doubleValue = client->getValue("", 42.0);
     EXPECT_EQ(doubleValue, 42.0);
 }
+
+TEST_F(ConfigCatClientTest, GetValueWithKeyNotFound) {
+    SetUp();
+
+    configcat::Response response = {200, string_format(kTestJsonFormat, "43")};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+
+    auto value = client->getValue("nonexisting", 10);
+    EXPECT_EQ(10, value);
+
+    ConfigCatUser* user = nullptr;
+    shared_ptr<Value> valuePtr = client->getValue("nonexisting", user);
+    EXPECT_EQ(nullptr, valuePtr);
+}
+

@@ -143,7 +143,8 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
         for (auto keyValue : *settings) {
             keys.emplace_back(keyValue.first);
         }
-        LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys;
+        LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys
+                  << " Returning nullptr.";
         return {};
     }
 
