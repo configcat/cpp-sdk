@@ -27,7 +27,7 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 
 ## Build instructions
 
-This SDK is built with [CMake](https://cmake.org/), and uses [vcpkg](https://github.com/microsoft/vcpkg) for external dependency handling.
+This SDK is built with [CMake](https://cmake.org/), and uses [Vcpkg](https://github.com/microsoft/vcpkg) for external dependency handling.
 
 ### Install [Vcpkg](https://github.com/microsoft/vcpkg)
 
