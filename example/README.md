@@ -91,5 +91,7 @@ After this, you can now create a New non-CMake Project (or open an existing one)
 All installed libraries are immediately ready to be `#include`'d and used
 in your project without additional configuration.
 
+### Build and Run the *example.sln* with Visual Studio
+
 ## Documentation
 - [ConfigCat](https://configcat.com)
