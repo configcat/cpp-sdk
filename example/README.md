@@ -73,5 +73,23 @@ Finally, in `CMake options`, add the following line:
 
 ## Visual Studio
 
+### Install [Vcpkg](https://github.com/microsoft/vcpkg)
+
+```cmd
+git clone https://github.com/microsoft/vcpkg
+.\vcpkg\bootstrap-vcpkg.bat
+```
+
+In order to use vcpkg with Visual Studio,
+run the following command (may require administrator elevation):
+
+```cmd
+.\vcpkg\vcpkg integrate install
+```
+
+After this, you can now create a New non-CMake Project (or open an existing one).
+All installed libraries are immediately ready to be `#include`'d and used
+in your project without additional configuration.
+
 ## Documentation
 - [ConfigCat](https://configcat.com)
