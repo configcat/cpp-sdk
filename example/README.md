@@ -91,6 +91,8 @@ After this, you can now create a New non-CMake Project (or open an existing one)
 All installed libraries are immediately ready to be `#include`'d and used
 in your project without additional configuration.
 
+### Build and Run the *example.sln* with Visual Studio
+
 > **Note**
 >
 > Make sure that on the project's property pages `Use Vcpkg Manifest` is turned on and `C++ Language Standard` is C++17.
@@ -98,8 +100,6 @@ in your project without additional configuration.
 > ![Visual Studio Vcpkg Manifest](https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/example/media/vs-vcpkg-manifest.png "Visual Studio Vcpkg Manifest")
 >
 > ![Visual Studio C++17](https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/example/media/vs-cpp17.png "Visual Studio C++17")
-
-### Build and Run the *example.sln* with Visual Studio
 
 ## Documentation
 - [ConfigCat](https://configcat.com)
