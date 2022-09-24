@@ -93,9 +93,9 @@ in your project without additional configuration.
 
 Make sure that on the project's property pages `Use Vcpkg Manifest` is turned on and `C++ Language Standard` is C++17.
 
-![Visual Studio Vcpkg Manifest](https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/example/media/vs-vcpkg-manifest.png "Visual Studio Vcpkg Manifest")
+![Visual Studio Vcpkg Manifest](https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/media/vs-vcpkg-manifest.png "Visual Studio Vcpkg Manifest")
 
-![Visual Studio C++17](https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/example/media/vs-cpp17.png "Visual Studio C++17")
+![Visual Studio C++17](https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/media/vs-cpp17.png "Visual Studio C++17")
 
 ### Build and Run the *example.sln* with Visual Studio
 
