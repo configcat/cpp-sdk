@@ -52,7 +52,7 @@ cmake -B [build directory] -S . "-DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/
 cmake --build [build directory]
 ```
 
-Using `vcpkg.json` manifest file to add the dependencies in your project is recommended.
+Using `vcpkg.json` manifest file to add the dependencies in your project is recommended.  
 You can find an example manifest file [here](example/vcpkg.json).
 
 ### 2. Go to the <a href="https://app.configcat.com/sdkkey" target="_blank">ConfigCat Dashboard</a> to get your *SDK Key*
