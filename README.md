@@ -8,6 +8,8 @@ https://configcat.com
 
 ConfigCat SDK for C++ provides easy integration for your application to ConfigCat.
 
+C++ Standard Minimum Level: `C++17`.
+
 ConfigCat is a feature flag and configuration management service that lets you separate releases from deployments. You can turn your features ON/OFF using [ConfigCat Dashboard](http://app.configcat.com) even after they are deployed. ConfigCat lets you target specific groups of users based on region, email or any other custom user attribute.
 
 ConfigCat is a [hosted feature flag service](http://configcat.com). Manage feature toggles across frontend, backend, mobile, desktop apps. [Alternative to LaunchDarkly](https://configcat.com/launchdarkly-vs-configcat). Management app + feature flag SDKs.
@@ -49,6 +51,9 @@ In order to use vcpkg with CMake, you can use the toolchain file:
 cmake -B [build directory] -S . "-DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake"
 cmake --build [build directory]
 ```
+
+Using `vcpkg.json` manifest file to add the dependencies in your project is recommended.
+You can find an example manifest file [here](example/vcpkg.json).
 
 ### 2. Go to the <a href="https://app.configcat.com/sdkkey" target="_blank">ConfigCat Dashboard</a> to get your *SDK Key*
 ![SDK-KEY](https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/media/readme02-3.png "SDK-KEY")
