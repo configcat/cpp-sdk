@@ -33,7 +33,7 @@ With [Vcpkg](https://github.com/microsoft/vcpkg)
   .\vcpkg\vcpkg integrate install
   ```
 
-  After this, you can now create a New non-CMake Project (or open an existing one).
+  After this, you can create a New non-CMake Project (or open an existing one).
   All installed libraries are immediately ready to be `#include`'d and used
   in your project without additional configuration.
 
@@ -52,7 +52,7 @@ cmake -B [build directory] -S . "-DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/
 cmake --build [build directory]
 ```
 
-Using `vcpkg.json` manifest file to add the dependencies in your project is recommended.  
+We recommend that you use the `vcpkg.json` manifest file to add the dependencies to your project.
 You can find an example manifest file [here](example/vcpkg.json).
 
 ### 2. Go to the <a href="https://app.configcat.com/sdkkey" target="_blank">ConfigCat Dashboard</a> to get your *SDK Key*
