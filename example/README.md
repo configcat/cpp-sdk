@@ -2,13 +2,19 @@
 
 This is a simple application to demonstrate how to use the ConfigCat C++ SDK in a console application.
 
-## CMake
+## Table of Contents
 
-### Install [CMake](https://cmake.org/)
+- [Instructions for CMake](#instructions-for-cmake)
+- [Instructions for CLion](#instructions-for-clion)
+- [Instructions for Visual Studio](#instructions-for-visual-studio)
+
+## Instructions for CMake
+
+### 1. Install [CMake](https://cmake.org/)
 
 - Follow the instructions on https://cmake.org/install 
 
-### Install [Vcpkg](https://github.com/microsoft/vcpkg)
+### 2. Install [Vcpkg](https://github.com/microsoft/vcpkg)
 
 - On Windows:
   ```cmd
@@ -22,14 +28,14 @@ This is a simple application to demonstrate how to use the ConfigCat C++ SDK in 
   ./vcpkg/bootstrap-vcpkg.sh
   ```
 
-### Build with CMake
+### 3. Build with CMake
 
 ```bash
   cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
   cmake --build build
 ```
 
-### Run
+### 4. Run
 - On Windows:
   ```cmd
   .\build\example.exe
@@ -40,9 +46,9 @@ This is a simple application to demonstrate how to use the ConfigCat C++ SDK in 
   ./build/example
   ```
 
-## CLion
+## Instructions for CLion
 
-### Install [Vcpkg](https://github.com/microsoft/vcpkg)
+### 1. Install [Vcpkg](https://github.com/microsoft/vcpkg)
 
 - On Windows:
   ```cmd
@@ -56,9 +62,9 @@ This is a simple application to demonstrate how to use the ConfigCat C++ SDK in 
   ./vcpkg/bootstrap-vcpkg.sh
   ```
 
-### Open the example folder with CLion 
+### 2. Open the example folder with CLion 
 
-### Update CLion Toolchain
+### 3. Update CLion Toolchain
 
 Open the Toolchains settings
 (File > Settings on Windows and Linux, CLion > Preferences on macOS),
@@ -69,11 +75,11 @@ Finally, in `CMake options`, add the following line:
 -DCMAKE_TOOLCHAIN_FILE=[vcpkg root]/scripts/buildsystems/vcpkg.cmake
 ```
 
-### Build and Run the example project with CLion
+### 4. Build and Run the example project with CLion
 
-## Visual Studio
+## Instructions for Visual Studio
 
-### Install [Vcpkg](https://github.com/microsoft/vcpkg)
+### 1. Install [Vcpkg](https://github.com/microsoft/vcpkg)
 
 ```cmd
 git clone https://github.com/microsoft/vcpkg
@@ -91,7 +97,7 @@ After this, you can now create a New non-CMake Project (or open an existing one)
 All installed libraries are immediately ready to be `#include`'d and used
 in your project without additional configuration.
 
-### Build and Run the *example.sln* with Visual Studio
+### 2. Build and Run the *example.sln* with Visual Studio
 
 > **Note**
 >
