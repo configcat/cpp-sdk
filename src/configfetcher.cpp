@@ -48,14 +48,14 @@ private:
 ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, const ConfigCatOptions& options):
     sdkKey(sdkKey),
     mode(mode),
-    connectTimeout(options.connectTimeout),
-    readTimeout(options.readTimeout) {
+    connectTimeoutMs(options.connectTimeoutMs),
+    readTimeoutMs(options.readTimeoutMs) {
     if (options.httpSessionAdapter) {
         sessionInterceptor = make_shared<SessionInterceptor>(options.httpSessionAdapter);
     }
     session = make_unique<cpr::Session>();
-    session->SetConnectTimeout(connectTimeout);
-    session->SetTimeout(readTimeout);
+    session->SetConnectTimeout(connectTimeoutMs);
+    session->SetTimeout(readTimeoutMs);
     session->SetProxies(options.proxies);
     std::map<std::string, cpr::EncodedAuthentication> proxyAuthentications;
     for (auto& keyValue : options.proxyAuthentications) {
@@ -159,7 +159,7 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
         LogEntry logEntry(LOG_LEVEL_ERROR);
         logEntry << "An error occurred during the config fetch: " << response.error.message << ".";
         if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT) {
-            logEntry << " Timeout values: [connect: " << connectTimeout << "ms, read: " << readTimeout << "ms]";
+            logEntry << " Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]";
         }
         return FetchResponse({failure, ConfigEntry::empty});
     }

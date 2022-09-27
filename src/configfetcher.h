@@ -59,8 +59,8 @@ private:
 
     std::string sdkKey;
     std::string mode;
-    uint32_t connectTimeout; // milliseconds (0 means it never times out during transfer)
-    uint32_t readTimeout; // milliseconds (0 means it never times out during transfer)
+    uint32_t connectTimeoutMs; // milliseconds (0 means it never times out during transfer)
+    uint32_t readTimeoutMs; // milliseconds (0 means it never times out during transfer)
     std::shared_ptr<SessionInterceptor> sessionInterceptor;
     std::unique_ptr<cpr::Session> session;
     bool urlIsCustom = false;
