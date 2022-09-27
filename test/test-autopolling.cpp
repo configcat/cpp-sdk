@@ -95,7 +95,7 @@ TEST_F(AutoPollingTest, RequestTimeout) {
 
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 
-    sleep_for(milliseconds(2500));
+    sleep_for(milliseconds(3500));
 
     auto settings = service.getSettings();
     ASSERT_TRUE(settings != nullptr);
