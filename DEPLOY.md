@@ -57,3 +57,4 @@ Use the **same version** for the git tag as in [src/version.h](src/version.h).
 - Run `./vcpkg x-add-version --all`
 - Commit & Push
 - Create a PR from the fork to [vcpkg](https://github.com/microsoft/vcpkg) master branch.
+- Make sure the PR is merged by the vcpkg team.
