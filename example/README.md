@@ -108,4 +108,5 @@ in your project without additional configuration.
 > <p align="center"><img width="800" alt="Visual Studio Vcpkg Manifest" src="https://raw.githubusercontent.com/ConfigCat/cpp-sdk/master/media/vs-cpp17.png"></p>
 
 ## Documentation
+- [C++ SDK](https://configcat.com/docs/sdk-reference/cpp)
 - [ConfigCat](https://configcat.com)
