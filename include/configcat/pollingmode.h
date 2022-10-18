@@ -20,7 +20,7 @@ public:
      *
      * [autoPollIntervalInSeconds] sets at least how often this policy should fetch the latest configuration and refresh the cache.
      * [maxInitWaitTimeInSeconds] sets the maximum waiting time between initialization and the first config acquisition in seconds.
-     * [listener] sets a configuration changed listener.
+     * [onConfigChanged] sets a configuration changed event handler.
      */
     static std::shared_ptr<PollingMode> autoPoll(uint32_t autoPollIntervalInSeconds = 60,
                                                  uint32_t maxInitWaitTimeInSeconds = 5,
