@@ -1,6 +1,6 @@
 # ConfigCat C++ Console Sample App
 
-This is a simple application to demonstrate how to use the ConfigCat C++ SDK in a console application.
+This is a sample application to demonstrate how to use the ConfigCat C++ SDK.
 
 ## Table of Contents
 
