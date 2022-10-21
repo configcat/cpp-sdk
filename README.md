@@ -104,7 +104,7 @@ if (isMyAwesomeFeatureEnabled) {
 ```
 
 ## Sample/Demo apps
-* [Example Console app](https://github.com/ConfigCat/cpp-sdk/tree/main/example/)
+* [Sample Console app](https://github.com/ConfigCat/cpp-sdk/tree/main/samples/)
 
 ## Polling Modes
 The ConfigCat SDK supports three different polling mechanisms to acquire the setting values from ConfigCat. After the latest setting values are downloaded, they are stored in an internal cache . After that, all requests are served from the cache. Read more about Polling Modes and how to use them at [ConfigCat C++ Docs](https://configcat.com/docs/sdk-reference/cpp/).
