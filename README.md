@@ -1,5 +1,5 @@
 
-[![Build](https://img.shields.io/github/workflow/status/configcat/cpp-sdk/C++%20CI?logo=GitHub&label=windows%20%2F%20macos%20%2F%20linux)](https://github.com/configcat/cpp-sdk/actions/workflows/cpp-ci.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/configcat/cpp-sdk/cpp-ci.yml?logo=GitHub&label=windows%20%2F%20macos%20%2F%20linux&branch=main)](https://github.com/configcat/cpp-sdk/actions/workflows/cpp-ci.yml)
 [![codecov](https://codecov.io/gh/configcat/cpp-sdk/branch/main/graph/badge.svg?token=cvUgfof8k7)](https://codecov.io/gh/configcat/cpp-sdk)
 
 # ConfigCat SDK for C++
