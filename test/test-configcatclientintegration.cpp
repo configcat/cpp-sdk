@@ -11,7 +11,7 @@ TEST(ConfigCatClientIntegrationTest, RequestTimeout) {
     options.pollingMode = PollingMode::autoPoll(120);
     options.connectTimeoutMs = 1; // milliseconds
     options.readTimeoutMs = 1; // milliseconds
-    auto client = ConfigCatClient::get("PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A", options);
+    auto client = ConfigCatClient::get("PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A", &options);
     auto startTime = chrono::steady_clock::now();
 
     auto value = client->getValue("stringDefaultCat", "");

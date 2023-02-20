@@ -12,30 +12,36 @@ using namespace std;
 
 namespace configcat {
 
-std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> ConfigCatClient::instanceRepository;
+std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> ConfigCatClient::instances;
 
-ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCatOptions& options) {
+ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCatOptions* options) {
     if (sdkKey.empty()) {
         LOG_ERROR << "The SDK key cannot be empty.";
         assert(false);
         return nullptr;
     }
 
-    auto client = instanceRepository.find(sdkKey);
-    if (client == instanceRepository.end()) {
-        client = instanceRepository.insert({
-            sdkKey,
-            move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, options)))
-       }).first;
+    auto client = instances.find(sdkKey);
+    if (client != instances.end()) {
+        if (options) {
+            LOG_WARN << "Client for sdk_key `" << sdkKey
+                     << "` is already created and will be reused; options passed are being ignored.";
+        }
+        return client->second.get();
     }
+
+    client = instances.insert({
+        sdkKey,
+        move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, options ? *options : ConfigCatOptions())))
+    }).first;
 
     return client->second.get();
 }
 
 void ConfigCatClient::close(ConfigCatClient* client) {
-    for (auto it = instanceRepository.begin(); it != instanceRepository.end(); ++it) {
+    for (auto it = instances.begin(); it != instances.end(); ++it) {
         if (it->second.get() == client) {
-            instanceRepository.erase(it);
+            instances.erase(it);
             return;
         }
     }
@@ -45,11 +51,11 @@ void ConfigCatClient::close(ConfigCatClient* client) {
 }
 
 void ConfigCatClient::closeAll() {
-    instanceRepository.clear();
+    instances.clear();
 }
 
 size_t ConfigCatClient::instanceCount() {
-    return instanceRepository.size();
+    return instances.size();
 }
 
 ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options) {

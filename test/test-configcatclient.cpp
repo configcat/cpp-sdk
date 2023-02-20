@@ -23,7 +23,7 @@ public:
         options.pollingMode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
 
-        client = ConfigCatClient::get(kTestSdkKey, options);
+        client = ConfigCatClient::get(kTestSdkKey, &options);
     }
 
     void TearDown() override {
@@ -205,7 +205,7 @@ TEST_F(ConfigCatClientTest, ForceRefreshLazy) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::lazyLoad(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("test", value);
@@ -225,7 +225,7 @@ TEST_F(ConfigCatClientTest, ForceRefreshAuto) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("test", value);
@@ -242,7 +242,7 @@ TEST_F(ConfigCatClientTest, FailingAutoPoll) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("", value);
@@ -258,7 +258,7 @@ TEST_F(ConfigCatClientTest, FromCacheOnly) {
     options.pollingMode = PollingMode::autoPoll(120);
     options.configCache = mockCache;
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("fake", value);
@@ -274,7 +274,7 @@ TEST_F(ConfigCatClientTest, FromCacheOnlyRefresh) {
     options.pollingMode = PollingMode::autoPoll(120);
     options.configCache = mockCache;
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -287,7 +287,7 @@ TEST_F(ConfigCatClientTest, FailingAutoPollRefresh) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     client->forceRefresh();
 
@@ -301,7 +301,7 @@ TEST_F(ConfigCatClientTest, FailingExpiringCache) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("", value);
@@ -340,7 +340,7 @@ TEST_F(ConfigCatClientTest, AutoPollUserAgentHeader) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -355,7 +355,7 @@ TEST_F(ConfigCatClientTest, LazyPollUserAgentHeader) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::lazyLoad();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -370,7 +370,7 @@ TEST_F(ConfigCatClientTest, ManualPollUserAgentHeader) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -386,7 +386,7 @@ TEST_F(ConfigCatClientTest, Concurrency_DoNotStartNewFetchIfThereIsAnOngoingFetc
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     thread t([&]() {
         sleep_for(chrono::milliseconds(500));

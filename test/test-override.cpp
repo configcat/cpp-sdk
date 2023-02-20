@@ -59,7 +59,7 @@ TEST_F(OverrideTest, Map) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<MapOverrideDataSource>(map), LocalOnly);
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     EXPECT_TRUE(client->getValue("enabledFeature", false));
     EXPECT_FALSE(client->getValue("disabledFeature", true));
@@ -83,7 +83,7 @@ TEST_F(OverrideTest, LocalOverRemote) {
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     options.override = make_shared<FlagOverrides>(make_shared<MapOverrideDataSource>(map), LocalOverRemote);
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     EXPECT_TRUE(client->getValue("fakeKey", false));
@@ -105,7 +105,7 @@ TEST_F(OverrideTest, RemoteOverLocal) {
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     options.override = make_shared<FlagOverrides>(make_shared<MapOverrideDataSource>(map), RemoteOverLocal);
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     EXPECT_FALSE(client->getValue("fakeKey", true));
@@ -118,7 +118,7 @@ TEST_F(OverrideTest, File) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/test.json"), LocalOnly);
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     EXPECT_TRUE(client->getValue("enabledFeature", false));
     EXPECT_FALSE(client->getValue("disabledFeature", true));
@@ -133,7 +133,7 @@ TEST_F(OverrideTest, SimpleFile) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/test-simple.json"), LocalOnly);
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     EXPECT_TRUE(client->getValue("enabledFeature", false));
     EXPECT_FALSE(client->getValue("disabledFeature", true));
@@ -148,7 +148,7 @@ TEST_F(OverrideTest, NonExistentFile) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/non-existent.json"), LocalOnly);
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     EXPECT_FALSE(client->getValue("enabledFeature", false));
 
@@ -166,7 +166,7 @@ TEST_F(OverrideTest, ReloadFile) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(filePath), LocalOnly);
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     EXPECT_FALSE(client->getValue("enabledFeature", true));
 

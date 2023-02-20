@@ -62,7 +62,7 @@ public:
         options.pollingMode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
 
-        client = ConfigCatClient::get(kTestSdkKey, options);
+        client = ConfigCatClient::get(kTestSdkKey, &options);
     }
 
     void TearDown() override {

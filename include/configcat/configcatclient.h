@@ -18,7 +18,7 @@ class ConfigService;
 class ConfigCatClient {
 public:
     // Creates a new or gets an already existing [ConfigCatClient] for the given [sdkKey].
-    static ConfigCatClient* get(const std::string& sdkKey, const ConfigCatOptions& options = {});
+    static ConfigCatClient* get(const std::string& sdkKey, const ConfigCatOptions* options = nullptr);
 
     // Closes an individual [ConfigCatClient] instance.
     static void close(ConfigCatClient* client);
@@ -77,7 +77,7 @@ private:
     std::shared_ptr<FlagOverrides> override;
     std::unique_ptr<ConfigService> configService;
 
-    static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instanceRepository;
+    static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instances;
 };
 
 } // namespace configcat
