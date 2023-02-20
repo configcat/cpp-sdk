@@ -31,6 +31,7 @@ jobs:
     - name: Install dependencies on macos
       if: startsWith(matrix.os, 'macos')
       run: |
+        brew install pkg-config
         git clone https://github.com/microsoft/vcpkg build/vcpkg
         ./build/vcpkg/bootstrap-vcpkg.sh
 

@@ -416,7 +416,7 @@ TEST_F(ConfigCatClientTest, Concurrency_OngoingFetchDoesNotBlockGetValue) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(1);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     thread t([&]() {
         sleep_for(chrono::milliseconds(1500));
