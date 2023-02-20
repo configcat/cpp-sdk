@@ -27,7 +27,7 @@ TEST_F(LazyLoadingTest, Get) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse, secondResponseDelay);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::lazyLoad(2);
+    options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -53,7 +53,7 @@ TEST_F(LazyLoadingTest, GetFailedRequest) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::lazyLoad(2);
+    options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -83,9 +83,9 @@ TEST_F(LazyLoadingTest, Cache) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::lazyLoad(2);
+    options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    options.cache = mockCache;
+    options.configCache = mockCache;
     auto service = ConfigService(kTestSdkKey, options);
 
     auto settings = *service.getSettings();

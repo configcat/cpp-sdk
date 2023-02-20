@@ -13,7 +13,7 @@ namespace configcat {
 
 struct ConfigCatOptions;
 class ConfigFetcher;
-class ConfigCatCache;
+class ConfigCache;
 struct ConfigEntry;
 class PollingMode;
 
@@ -43,7 +43,7 @@ private:
 
     std::shared_ptr<PollingMode> pollingMode;
     std::shared_ptr<ConfigEntry> cachedEntry;
-    std::shared_ptr<ConfigCatCache> cache;
+    std::shared_ptr<ConfigCache> cache;
     std::string cacheKey;
     std::unique_ptr<ConfigFetcher> configFetcher;
     std::shared_future<FetchResponse> responseFuture;

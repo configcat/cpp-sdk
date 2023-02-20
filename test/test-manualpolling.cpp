@@ -26,7 +26,7 @@ TEST_F(ManualPollingTest, Get) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse, secondResponseDelay);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -51,7 +51,7 @@ TEST_F(ManualPollingTest, GetFailedRefresh) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -77,9 +77,9 @@ TEST_F(ManualPollingTest, Cache) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    options.cache = mockCache;
+    options.configCache = mockCache;
     auto service = ConfigService(kTestSdkKey, options);
 
     service.refresh();
@@ -104,7 +104,7 @@ TEST_F(ManualPollingTest, EmptyCacheDoesNotInitiateHTTP) {
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 

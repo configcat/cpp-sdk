@@ -57,7 +57,7 @@ TEST_F(OverrideTest, Map) {
     };
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<MapOverrideDataSource>(map), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
 
@@ -80,7 +80,7 @@ TEST_F(OverrideTest, LocalOverRemote) {
     };
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     options.override = make_shared<FlagOverrides>(make_shared<MapOverrideDataSource>(map), LocalOverRemote);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
@@ -102,7 +102,7 @@ TEST_F(OverrideTest, RemoteOverLocal) {
     };
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     options.override = make_shared<FlagOverrides>(make_shared<MapOverrideDataSource>(map), RemoteOverLocal);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
@@ -116,7 +116,7 @@ TEST_F(OverrideTest, RemoteOverLocal) {
 
 TEST_F(OverrideTest, File) {
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/test.json"), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
 
@@ -131,7 +131,7 @@ TEST_F(OverrideTest, File) {
 
 TEST_F(OverrideTest, SimpleFile) {
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/test-simple.json"), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
 
@@ -146,7 +146,7 @@ TEST_F(OverrideTest, SimpleFile) {
 
 TEST_F(OverrideTest, NonExistentFile) {
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(directoryPath + "/data/non-existent.json"), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
 
@@ -164,7 +164,7 @@ TEST_F(OverrideTest, ReloadFile) {
     std::filesystem::last_write_time(filePath, time - 1000ms);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.override = make_shared<FlagOverrides>(make_shared<FileOverrideDataSource>(filePath), LocalOnly);
     auto client = ConfigCatClient::get(kTestSdkKey, options);
 

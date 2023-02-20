@@ -6,10 +6,10 @@
 #include <unordered_map>
 #include <string>
 
-#include "configcat/configcatcache.h"
+#include "configcat/configcache.h"
 #include "configcat/httpsessionadapter.h"
 
-class InMemoryConfigCache : public configcat::ConfigCatCache {
+class InMemoryConfigCache : public configcat::ConfigCache {
 public:
     InMemoryConfigCache() {}
 

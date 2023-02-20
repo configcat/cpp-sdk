@@ -11,9 +11,9 @@ using namespace std::this_thread;
 namespace configcat {
 
 ConfigService::ConfigService(const string& sdkKey, const ConfigCatOptions& options):
-    pollingMode(options.mode ? options.mode : PollingMode::autoPoll()),
+    pollingMode(options.pollingMode ? options.pollingMode : PollingMode::autoPoll()),
     cachedEntry(ConfigEntry::empty),
-    cache(options.cache) {
+    cache(options.configCache) {
     cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + sdkKey);
     configFetcher = make_unique<ConfigFetcher>(sdkKey, pollingMode->getPollingIdentifier(), options);
 

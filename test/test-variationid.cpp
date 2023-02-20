@@ -59,7 +59,7 @@ public:
 
     void SetUp() override {
         ConfigCatOptions options;
-        options.mode = PollingMode::manualPoll();
+        options.pollingMode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
 
         client = ConfigCatClient::get(kTestSdkKey, options);

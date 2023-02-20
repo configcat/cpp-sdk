@@ -18,7 +18,7 @@ public:
 
     void SetUp(const std::string& baseUrl = "", const std::string& sdkKey = kTestSdkKey) {
         ConfigCatOptions options;
-        options.mode = PollingMode::manualPoll();
+        options.pollingMode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
         options.baseUrl = baseUrl;
 

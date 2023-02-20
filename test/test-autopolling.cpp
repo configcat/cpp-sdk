@@ -26,7 +26,7 @@ TEST_F(AutoPollingTest, Get) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(2);
+    options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -46,7 +46,7 @@ TEST_F(AutoPollingTest, GetFailedRequest) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(2);
+    options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -67,7 +67,7 @@ TEST_F(AutoPollingTest, OnConfigChanged) {
 
     bool called = false;
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(2, 5, [&]{ called = true; });
+    options.pollingMode = PollingMode::autoPoll(2, 5, [&]{ called = true; });
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -87,7 +87,7 @@ TEST_F(AutoPollingTest, RequestTimeout) {
     mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(1);
+    options.pollingMode = PollingMode::autoPoll(1);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -109,7 +109,7 @@ TEST_F(AutoPollingTest, InitWaitTimeout) {
 
     auto startTime = std::chrono::steady_clock::now();
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(60, 1);
+    options.pollingMode = PollingMode::autoPoll(60, 1);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -130,7 +130,7 @@ TEST_F(AutoPollingTest, CancelRequest) {
 
     auto startTime = std::chrono::steady_clock::now();
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(2);
+    options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto service = ConfigService(kTestSdkKey, options);
 
@@ -151,9 +151,9 @@ TEST_F(AutoPollingTest, Cache) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(2);
+    options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    options.cache = mockCache;
+    options.configCache = mockCache;
     auto service = ConfigService(kTestSdkKey, options);
 
     auto settings = *service.getSettings();
