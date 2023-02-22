@@ -3,6 +3,7 @@
 namespace configcat {
 
 class OverrideDataSource;
+class ConfigCatLogger;
 
 // Describes how the overrides should behave.
 enum OverrideBehaviour {
@@ -21,23 +22,10 @@ enum OverrideBehaviour {
     RemoteOverLocal
 };
 
-/**
- * Describes feature flag & setting overrides.
- *
- * [dataSource] contains the flag values in a key-value map.
- * [behaviour] can be used to set preference on whether the local values should
- * override the remote values, or use local values only when a remote value doesn't exist,
- * or use it for local only mode.
- */
+// FlagOverrides abstract base class.
 class FlagOverrides {
 public:
-    FlagOverrides(std::shared_ptr<OverrideDataSource> dataSource, OverrideBehaviour behaviour):
-        dataSource(dataSource),
-        behaviour(behaviour) {
-    }
-
-    std::shared_ptr<OverrideDataSource> dataSource;
-    OverrideBehaviour behaviour;
+    virtual std::shared_ptr<OverrideDataSource> createDataSource(std::shared_ptr<ConfigCatLogger> logger) = 0;
 };
 
 } // namespace configcat

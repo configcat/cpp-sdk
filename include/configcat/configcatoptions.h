@@ -4,6 +4,7 @@
 #include <map>
 #include <functional>
 #include <vector>
+#include <mutex>
 #include "datagovernance.h"
 #include "pollingmode.h"
 #include "configcache.h"
@@ -40,68 +41,55 @@ public:
     }
 
     void addOnClientReady(const std::function<void()>& callback) {
+        std::lock_guard<std::mutex> lock(mutex);
         onClientReadyCallbacks.push_back(callback);
     }
 
     void addOnConfigChanged(const std::function<void(std::string)>& callback) {
+        std::lock_guard<std::mutex> lock(mutex);
         onConfigChangedCallbacks.push_back(callback);
     }
 
     void addOnFlagEvaluated(const std::function<void(std::string)>& callback) {
+        std::lock_guard<std::mutex> lock(mutex);
         onFlagEvaluatedCallbacks.push_back(callback);
     }
 
     void addOnError(const std::function<void(std::string)>& callback) {
+        std::lock_guard<std::mutex> lock(mutex);
         onErrorCallbacks.push_back(callback);
     }
 
     void invokeOnClientReady() {
+        std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onClientReadyCallbacks) {
-            try {
-                callback();
-            } catch (const std::exception& e) {
-                std::string error = "Exception occurred during invokeOnClientReady callback: " + std::string(e.what());
-                invokeOnError(error);
-                LOG_ERROR << error;
-            }
+            callback();
         }
     }
 
     void invokeOnConfigChanged(std::string config) {
+        std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onConfigChangedCallbacks) {
-            try {
-                callback(config);
-            } catch (const std::exception& e) {
-                std::string error = "Exception occurred during invokeOnConfigChanged callback: " + std::string(e.what());
-                invokeOnError(error);
-                LOG_ERROR << error;
-            }
+            callback(config);
         }
     }
 
     void invokeOnFlagEvaluated(std::string evaluation_details) {
+        std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onFlagEvaluatedCallbacks) {
-            try {
-                callback(evaluation_details);
-            } catch (const std::exception& e) {
-                std::string error = "Exception occurred during invokeOnFlagEvaluated callback: " + std::string(e.what());
-                invokeOnError(error);
-                LOG_ERROR << error;
-            }
+            callback(evaluation_details);
         }
     }
 
     void invokeOnError(std::string error) {
+        std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onErrorCallbacks) {
-            try {
-                callback(error);
-            } catch (const std::exception& e) {
-                LOG_ERROR << "Exception occurred during invokeOnError callback: " << e.what();
-            }
+            callback(error);
         }
     }
 
     void clear() {
+        std::lock_guard<std::mutex> lock(mutex);
         onClientReadyCallbacks.clear();
         onConfigChangedCallbacks.clear();
         onFlagEvaluatedCallbacks.clear();
@@ -109,6 +97,7 @@ public:
     }
 
 private:
+    std::mutex mutex;
     std::vector<std::function<void()>> onClientReadyCallbacks;
     std::vector<std::function<void(std::string)>> onConfigChangedCallbacks;
     std::vector<std::function<void(std::string)>> onFlagEvaluatedCallbacks;
@@ -138,7 +127,7 @@ struct ConfigCatOptions {
     std::shared_ptr<ConfigCache> configCache;
 
     // Feature flag and setting overrides.
-    std::shared_ptr<FlagOverrides> override;
+    std::shared_ptr<FlagOverrides> flagOverrides;
 
     // Proxy addresses. e.g. { "https": "your_proxy_ip:your_proxy_port" }
     std::map<std::string, std::string> proxies; // Protocol, Proxy url
@@ -154,6 +143,9 @@ struct ConfigCatOptions {
 
     /// Hooks for events sent by ConfigCatClient.
     std::shared_ptr<Hooks> hooks;
+
+    /// Custom logger.
+    std::shared_ptr<ILogger> logger;
 
     /// Indicates whether the SDK should be initialized in offline mode or not.
     bool offline = false;

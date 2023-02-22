@@ -102,39 +102,29 @@ void from_json(const json& j, Config& config) {
 }
 
 shared_ptr<Config> Config::fromJson(const string& jsonString) {
-    try {
-        json ConfigObj = json::parse(jsonString);
-        auto config = make_shared<Config>();
-        ConfigObj.get_to(*config);
-        return config;
-    } catch (json::exception& ex) {
-        LOG_ERROR << "Config JSON parsing failed. " << ex.what();
-        return Config::empty;
-    }
+    json ConfigObj = json::parse(jsonString);
+    auto config = make_shared<Config>();
+    ConfigObj.get_to(*config);
+    return config;
 }
 
 shared_ptr<Config> Config::fromFile(const string& filePath) {
-    try {
-        ifstream file(filePath);
-        json data = json::parse(file);
-        auto config = make_shared<Config>();
-        if (auto it = data.find("flags"); it != data.end()) {
-            // Simple (key-value) json format
-            config->entries = make_shared<unordered_map<string, Setting>>();
-            for (auto& [key, value] : it->items()) {
-                Setting setting;
-                value.get_to(setting.value);
-                config->entries->insert({key, setting});
-            }
-        } else {
-            // Complex (full-featured) json format
-            data.get_to(*config);
+    ifstream file(filePath);
+    json data = json::parse(file);
+    auto config = make_shared<Config>();
+    if (auto it = data.find("flags"); it != data.end()) {
+        // Simple (key-value) json format
+        config->entries = make_shared<unordered_map<string, Setting>>();
+        for (auto& [key, value] : it->items()) {
+            Setting setting;
+            value.get_to(setting.value);
+            config->entries->insert({key, setting});
         }
-        return config;
-    } catch (json::exception& ex) {
-        LOG_ERROR << "Config JSON parsing failed. " << ex.what();
-        return Config::empty;
+    } else {
+        // Complex (full-featured) json format
+        data.get_to(*config);
     }
+    return config;
 }
 
 } // namespace configcat

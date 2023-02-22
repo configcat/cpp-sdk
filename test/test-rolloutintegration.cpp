@@ -4,6 +4,8 @@
 #include <list>
 #include "configcat/configcatuser.h"
 #include "configcat/configcatclient.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 #include "utils.h"
 #include "test.h"
 #include "configcat/log.h"
@@ -16,17 +18,7 @@ using MatrixData = vector<vector<string>>;
 class RolloutIntegrationTest : public ::testing::Test {
 public:
     string directoryPath = RemoveFileName(__FILE__);
-    LogLevel logLevel;
-
-    RolloutIntegrationTest() {
-        // Minimal logging during rollout integration tests
-        logLevel = getLogLevel();
-        setLogLevel(LOG_LEVEL_WARNING);
-    }
-
-    ~RolloutIntegrationTest() {
-        setLogLevel(logLevel);
-    }
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 
     MatrixData loadMatrixData(const string& filePath) {
         MatrixData data;

@@ -7,25 +7,27 @@
 #include "configservice.h"
 #include "configcat/flagoverrides.h"
 #include "configcat/overridedatasource.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 
 using namespace std;
 
 namespace configcat {
 
+std::mutex ConfigCatClient::instancesMutex;
 std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> ConfigCatClient::instances;
 
 ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCatOptions* options) {
     if (sdkKey.empty()) {
-        LOG_ERROR << "The SDK key cannot be empty.";
-        assert(false);
-        return nullptr;
+        throw std::invalid_argument("The SDK key cannot be empty.");
     }
 
+    lock_guard<mutex> lock(instancesMutex);
     auto client = instances.find(sdkKey);
     if (client != instances.end()) {
         if (options) {
-            LOG_WARN << "Client for sdk_key `" << sdkKey
-                     << "` is already created and will be reused; options passed are being ignored.";
+            LOG_WARN_OBJECT(client->second->logger) << "Client for sdk_key `" << sdkKey
+                << "` is already created and will be reused; options passed are being ignored.";
         }
         return client->second.get();
     }
@@ -39,6 +41,7 @@ ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCat
 }
 
 void ConfigCatClient::close(ConfigCatClient* client) {
+    lock_guard<mutex> lock(instancesMutex);
     for (auto it = instances.begin(); it != instances.end(); ++it) {
         if (it->second.get() == client) {
             instances.erase(it);
@@ -46,11 +49,12 @@ void ConfigCatClient::close(ConfigCatClient* client) {
         }
     }
 
-    LOG_ERROR << "Client does not exist.";
+    LOG_ERROR_OBJECT(client->logger) << "Client does not exist.";
     assert(false);
 }
 
 void ConfigCatClient::closeAll() {
+    lock_guard<mutex> lock(instancesMutex);
     instances.clear();
 }
 
@@ -59,26 +63,33 @@ size_t ConfigCatClient::instanceCount() {
 }
 
 ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options) {
-    rolloutEvaluator = make_unique<RolloutEvaluator>();
-    override = options.override;
+    hooks = options.hooks ? options.hooks : make_shared<Hooks>();
+    logger = make_shared<ConfigCatLogger>(
+        options.logger ? options.logger : make_shared<ConsoleLogger>(), hooks
+    );
 
-    if (override && override->behaviour == LocalOnly) {
-        if (!override->dataSource) {
-            LOG_WARN << "Override DataSource should be presented in LocalOnly override behaviour";
-        }
-    } else {
-        configService = make_unique<ConfigService>(sdkKey, options);
+    defaultUser = options.defaultUser;
+    rolloutEvaluator = make_unique<RolloutEvaluator>(logger);
+
+    if (options.flagOverrides) {
+        overrideDataSource = options.flagOverrides->createDataSource(logger);
+    }
+
+    auto configCache = options.configCache ? options.configCache : make_shared<NullConfigCache>();
+
+    if (!overrideDataSource || overrideDataSource->getBehaviour() != LocalOnly) {
+        configService = make_unique<ConfigService>(sdkKey, logger, hooks, options);
     }
 }
 
 const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient::getSettings() const {
-    if (override && override->dataSource) {
-        switch (override->behaviour) {
+    if (overrideDataSource) {
+        switch (overrideDataSource->getBehaviour()) {
             case LocalOnly:
-                return override->dataSource->getOverrides();
+                return overrideDataSource->getOverrides();
             case LocalOverRemote: {
                 auto remote = configService ? configService->getSettings() : nullptr;
-                auto local = override->dataSource->getOverrides();
+                auto local = overrideDataSource->getOverrides();
                 auto result = make_shared<std::unordered_map<std::string, Setting>>();
                 if (remote) {
                     for (auto& it : *remote) {
@@ -95,7 +106,7 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
             }
             case RemoteOverLocal:
                 auto remote = configService ? configService->getSettings() : nullptr;
-                auto local = override->dataSource->getOverrides();
+                auto local = overrideDataSource->getOverrides();
                 auto result = make_shared<std::unordered_map<std::string, Setting>>();
                 if (local) {
                     for (auto& it : *local) {

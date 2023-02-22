@@ -4,15 +4,16 @@ using namespace std;
 
 namespace configcat {
 
-MapOverrideDataSource::MapOverrideDataSource(const std::unordered_map<std::string, Value>& source):
-    overrides(make_shared<std::unordered_map<std::string, Setting>>()) {
+MapFlagOverrides::MapFlagOverrides(const std::unordered_map<std::string, Value>& source, OverrideBehaviour behaviour):
+    overrides(make_shared<std::unordered_map<std::string, Setting>>()),
+    behaviour(behaviour) {
     for (const auto& it : source) {
         overrides->insert({it.first, {it.second}});
     }
 }
 
-const std::shared_ptr<std::unordered_map<std::string, Setting>> MapOverrideDataSource::getOverrides() {
-    return overrides;
+std::shared_ptr<OverrideDataSource> MapFlagOverrides::createDataSource(std::shared_ptr<ConfigCatLogger> logger) {
+    return make_shared<MapOverrideDataSource>(overrides, behaviour);
 }
 
 } // namespace configcat

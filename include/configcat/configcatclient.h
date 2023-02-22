@@ -4,12 +4,14 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <mutex>
 #include "keyvalue.h"
 #include "configcatoptions.h"
 
 namespace configcat {
 
 class ConfigCatUser;
+class ConfigCatLogger;
 class ConfigFetcher;
 class RolloutEvaluator;
 class FlagOverrides;
@@ -73,10 +75,14 @@ private:
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
     const std::shared_ptr<std::unordered_map<std::string, Setting>> getSettings() const;
 
+    std::shared_ptr<Hooks> hooks;
+    std::shared_ptr<ConfigCatLogger> logger;
+    std::shared_ptr<ConfigCatUser> defaultUser;
     std::unique_ptr<RolloutEvaluator> rolloutEvaluator;
-    std::shared_ptr<FlagOverrides> override;
+    std::shared_ptr<OverrideDataSource> overrideDataSource;
     std::unique_ptr<ConfigService> configService;
 
+    static std::mutex instancesMutex;
     static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instances;
 };
 

@@ -1,5 +1,6 @@
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/configcatlogger.h"
 #include "configfetcher.h"
 #include "configentry.h"
 #include <hash-library/sha1.h>
@@ -10,12 +11,14 @@ using namespace std::this_thread;
 
 namespace configcat {
 
-ConfigService::ConfigService(const string& sdkKey, const ConfigCatOptions& options):
+ConfigService::ConfigService(const string& sdkKey, shared_ptr<ConfigCatLogger> logger, std::shared_ptr<Hooks> hooks, const ConfigCatOptions& options):
+    logger(logger),
+    hooks(hooks),
     pollingMode(options.pollingMode ? options.pollingMode : PollingMode::autoPoll()),
     cachedEntry(ConfigEntry::empty),
     cache(options.configCache) {
     cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + sdkKey);
-    configFetcher = make_unique<ConfigFetcher>(sdkKey, pollingMode->getPollingIdentifier(), options);
+    configFetcher = make_unique<ConfigFetcher>(sdkKey, logger, pollingMode->getPollingIdentifier(), options);
 
     if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
         startTime = chrono::steady_clock::now();
@@ -75,9 +78,13 @@ shared_ptr<Config> ConfigService::fetchIfOlder(chrono::time_point<chrono::steady
         if (cachedEntry == ConfigEntry::empty || cachedEntry->fetchTime > time) {
             auto jsonString = readConfigCache();
             if (!jsonString.empty() && jsonString != cachedEntry->jsonString) {
-                auto config = Config::fromJson(jsonString);
-                if (config && config != Config::empty) {
-                    cachedEntry = make_shared<ConfigEntry>(jsonString, config);
+                try {
+                    auto config = Config::fromJson(jsonString);
+                    if (config && config != Config::empty) {
+                        cachedEntry = make_shared<ConfigEntry>(jsonString, config);
+                    }
+                } catch (exception& exception) {
+                    LOG_ERROR << "Config JSON parsing failed. " << exception.what();
                 }
             }
             if (cachedEntry && cachedEntry->fetchTime > time) {
@@ -114,9 +121,7 @@ shared_ptr<Config> ConfigService::fetchIfOlder(chrono::time_point<chrono::steady
         writeConfigCache(cachedEntry->jsonString);
         if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
             auto& autoPoll = (AutoPollingMode&)*pollingMode;
-            if (autoPoll.onConfigChanged) {
-                autoPoll.onConfigChanged();
-            }
+            hooks->invokeOnConfigChanged("");
         }
     } else if (response.notModified()) {
         cachedEntry->fetchTime = chrono::steady_clock::now();

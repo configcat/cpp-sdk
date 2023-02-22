@@ -12,14 +12,16 @@
 namespace configcat {
 
 struct ConfigCatOptions;
+class ConfigCatLogger;
 class ConfigFetcher;
 class ConfigCache;
 struct ConfigEntry;
 class PollingMode;
+class Hooks;
 
 class ConfigService {
 public:
-    ConfigService(const std::string& sdkKey, const ConfigCatOptions& options);
+    ConfigService(const std::string& sdkKey, std::shared_ptr<ConfigCatLogger> logger, std::shared_ptr<Hooks> hooks, const ConfigCatOptions& options);
     ~ConfigService();
 
     const std::shared_ptr<std::unordered_map<std::string, Setting>> getSettings();
@@ -41,6 +43,8 @@ private:
     bool stopRequested = false;
     std::atomic<bool> ongoingFetch = false;
 
+    std::shared_ptr<ConfigCatLogger> logger;
+    std::shared_ptr<Hooks> hooks;
     std::shared_ptr<PollingMode> pollingMode;
     std::shared_ptr<ConfigEntry> cachedEntry;
     std::shared_ptr<ConfigCache> cache;

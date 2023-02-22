@@ -10,8 +10,7 @@ template<typename... Args>
 inline std::string string_format(const std::string& format, Args... args) {
     int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
     if (size_s <= 0) {
-        LOG_ERROR << "Error during string formatting.";
-        return {};
+        throw std::runtime_error("Error during string formatting.");
     }
     auto size = static_cast<size_t>(size_s);
     std::unique_ptr<char[]> buf(new char[size]);

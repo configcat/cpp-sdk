@@ -27,4 +27,17 @@ public:
     virtual ~ConfigCache() = default;
 };
 
+class NullConfigCache : public ConfigCache {
+public:
+    inline static const std::string emptyString = "";
+
+    const std::string& read(const std::string& key) override {
+        return emptyString;
+    }
+
+    void write(const std::string& key, const std::string& value) override {
+        // do nothing
+    }
+};
+
 } // namespace configcat

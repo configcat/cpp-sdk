@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "configfetcher.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 #include "mock.h"
 #include "utils.h"
 #include "configentry.h"
@@ -15,6 +17,7 @@ public:
     static constexpr char kTestJson[] = R"({ "f": { "fakeKey": { "v": "fakeValue", "p": [], "r": [] } } })";
     unique_ptr<ConfigFetcher> fetcher;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 
     void SetUp(const std::string& baseUrl = "", const std::string& sdkKey = kTestSdkKey) {
         ConfigCatOptions options;
@@ -22,7 +25,7 @@ public:
         options.httpSessionAdapter = mockHttpSessionAdapter;
         options.baseUrl = baseUrl;
 
-        fetcher = make_unique<ConfigFetcher>(sdkKey, "m", options);
+        fetcher = make_unique<ConfigFetcher>(sdkKey, logger, "m", options);
     }
 
     void TearDown() override {

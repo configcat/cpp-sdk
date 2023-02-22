@@ -1,6 +1,6 @@
 #include "rolloutevaluator.h"
 #include "configcat/configcatuser.h"
-#include "configcat/log.h"
+#include "configcat/configcatlogger.h"
 #include "utils.h"
 #include <algorithm>
 #include <sstream>
@@ -11,7 +11,8 @@ using namespace std;
 
 namespace configcat {
 
-RolloutEvaluator::RolloutEvaluator():
+RolloutEvaluator::RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger):
+    logger(logger),
     sha1(make_unique<SHA1>()) {
 }
 
@@ -19,7 +20,7 @@ RolloutEvaluator::~RolloutEvaluator() {
 }
 
 std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting, const string& key, const ConfigCatUser* user) {
-    LogEntry logEntry(LOG_LEVEL_INFO);
+    LogEntry logEntry(logger, LOG_LEVEL_INFO);
     logEntry << "Evaluating getValue(" << key << ")";
 
     if (!user) {

@@ -6,10 +6,9 @@ using namespace std;
 namespace configcat {
 
 shared_ptr<PollingMode> PollingMode::autoPoll(uint32_t autoPollIntervalInSeconds,
-                                              uint32_t maxInitWaitTimeInSeconds,
-                                              function<void()> onConfigChanged) {
+                                              uint32_t maxInitWaitTimeInSeconds) {
     return shared_ptr<AutoPollingMode>(
-        new AutoPollingMode(autoPollIntervalInSeconds, maxInitWaitTimeInSeconds, onConfigChanged)
+        new AutoPollingMode(autoPollIntervalInSeconds, maxInitWaitTimeInSeconds)
     );
 }
 

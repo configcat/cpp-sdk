@@ -3,6 +3,8 @@
 #include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 #include <thread>
 
 using namespace configcat;
@@ -16,6 +18,7 @@ public:
     static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
 
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 };
 
 TEST_F(ManualPollingTest, Get) {
@@ -28,7 +31,7 @@ TEST_F(ManualPollingTest, Get) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     service.refresh();
 
@@ -53,7 +56,7 @@ TEST_F(ManualPollingTest, GetFailedRefresh) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     service.refresh();
 
@@ -80,7 +83,7 @@ TEST_F(ManualPollingTest, Cache) {
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
     options.configCache = mockCache;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     service.refresh();
 
@@ -106,7 +109,7 @@ TEST_F(ManualPollingTest, EmptyCacheDoesNotInitiateHTTP) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = service.getSettings();
     EXPECT_EQ(settings, nullptr);

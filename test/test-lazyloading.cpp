@@ -3,6 +3,8 @@
 #include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 #include <thread>
 #include <chrono>
 
@@ -17,6 +19,7 @@ public:
     static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
 
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 };
 
 TEST_F(LazyLoadingTest, Get) {
@@ -29,7 +32,7 @@ TEST_F(LazyLoadingTest, Get) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = *service.getSettings();
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
@@ -55,7 +58,7 @@ TEST_F(LazyLoadingTest, GetFailedRequest) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = *service.getSettings();
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
@@ -86,7 +89,7 @@ TEST_F(LazyLoadingTest, Cache) {
     options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     options.configCache = mockCache;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = *service.getSettings();
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));

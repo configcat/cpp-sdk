@@ -3,6 +3,8 @@
 #include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 #include <thread>
 #include <chrono>
 
@@ -17,6 +19,7 @@ public:
     static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
 
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 };
 
 TEST_F(AutoPollingTest, Get) {
@@ -28,7 +31,7 @@ TEST_F(AutoPollingTest, Get) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = *service.getSettings();
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
@@ -48,7 +51,7 @@ TEST_F(AutoPollingTest, GetFailedRequest) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = *service.getSettings();
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
@@ -66,10 +69,12 @@ TEST_F(AutoPollingTest, OnConfigChanged) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     bool called = false;
+    auto hooks = make_shared<Hooks>();
+    hooks->addOnConfigChanged([&](auto config){ called = true; });
     ConfigCatOptions options;
-    options.pollingMode = PollingMode::autoPoll(2, 5, [&]{ called = true; });
+    options.pollingMode = PollingMode::autoPoll(2, 5);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, hooks, options);
 
     sleep_for(seconds(1));
 
@@ -89,7 +94,7 @@ TEST_F(AutoPollingTest, RequestTimeout) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(1);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     sleep_for(seconds(2));
 
@@ -111,7 +116,7 @@ TEST_F(AutoPollingTest, InitWaitTimeout) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(60, 1);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = service.getSettings();
     EXPECT_EQ(settings, nullptr);
@@ -132,7 +137,7 @@ TEST_F(AutoPollingTest, CancelRequest) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = service.getSettings();
     EXPECT_EQ(settings, nullptr);
@@ -154,7 +159,7 @@ TEST_F(AutoPollingTest, Cache) {
     options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
     options.configCache = mockCache;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
 
     auto settings = *service.getSettings();
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));

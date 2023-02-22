@@ -9,10 +9,11 @@ class SHA1;
 namespace configcat {
 
 class ConfigCatUser;
+class ConfigCatLogger;
 
 class RolloutEvaluator {
 public:
-    RolloutEvaluator();
+    RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger);
     ~RolloutEvaluator();
 
     std::tuple<Value, std::string> evaluate(const Setting& setting, const std::string& key, const ConfigCatUser* user);
@@ -35,6 +36,7 @@ public:
                                                         const std::string& error);
 
 private:
+    std::shared_ptr<ConfigCatLogger> logger;
     std::unique_ptr<SHA1> sha1;
 };
 
