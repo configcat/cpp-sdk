@@ -8,6 +8,7 @@
 #include "datagovernance.h"
 #include "pollingmode.h"
 #include "configcache.h"
+#include "config.h"
 #include "httpsessionadapter.h"
 #include "flagoverrides.h"
 #include "log.h"
@@ -23,7 +24,7 @@ struct ProxyAuthentication {
 class Hooks {
 public:
     explicit Hooks(const std::function<void()>& onClientReady = nullptr,
-          const std::function<void(std::string)>& onConfigChanged = nullptr,
+          const std::function<void(std::shared_ptr<std::unordered_map<std::string, Setting>>)>& onConfigChanged = nullptr,
           const std::function<void(std::string)>& onFlagEvaluated = nullptr,
           const std::function<void(std::string)>& onError = nullptr) {
         if (onClientReady) {
@@ -45,7 +46,7 @@ public:
         onClientReadyCallbacks.push_back(callback);
     }
 
-    void addOnConfigChanged(const std::function<void(std::string)>& callback) {
+    void addOnConfigChanged(const std::function<void(std::shared_ptr<std::unordered_map<std::string, Setting>>)>& callback) {
         std::lock_guard<std::mutex> lock(mutex);
         onConfigChangedCallbacks.push_back(callback);
     }
@@ -67,7 +68,7 @@ public:
         }
     }
 
-    void invokeOnConfigChanged(std::string config) {
+    void invokeOnConfigChanged(std::shared_ptr<std::unordered_map<std::string, Setting>> config) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onConfigChangedCallbacks) {
             callback(config);
@@ -99,7 +100,7 @@ public:
 private:
     std::mutex mutex;
     std::vector<std::function<void()>> onClientReadyCallbacks;
-    std::vector<std::function<void(std::string)>> onConfigChangedCallbacks;
+    std::vector<std::function<void(std::shared_ptr<std::unordered_map<std::string, Setting>>)>> onConfigChangedCallbacks;
     std::vector<std::function<void(std::string)>> onFlagEvaluatedCallbacks;
     std::vector<std::function<void(std::string)>> onErrorCallbacks;
 };

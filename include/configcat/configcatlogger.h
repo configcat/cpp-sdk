@@ -104,6 +104,8 @@ public:
         return *this;
     }
 
+    const std::string& getMessage() { return message; }
+
 private:
     std::shared_ptr<ConfigCatLogger> logger;
     LogLevel level;

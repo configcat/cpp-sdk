@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <sstream>
+#include <limits>
 
 namespace configcat {
 
@@ -141,6 +142,7 @@ struct Config {
     std::shared_ptr<Preferences> preferences;
     std::shared_ptr<std::unordered_map<std::string, Setting>> entries;
 
+    std::string toJson();
     static std::shared_ptr<Config> fromJson(const std::string& jsonString);
     static std::shared_ptr<Config> fromFile(const std::string& filePath);
 
@@ -148,6 +150,33 @@ struct Config {
 
     Config() {};
     Config(const Config&) = delete; // Disable copy
+};
+
+constexpr double kDistantFuture = std::numeric_limits<double>::max();
+constexpr double kDistantPast = std::numeric_limits<double>::min();
+
+struct ConfigEntry {
+    static constexpr char kConfig[] = "config";
+    static constexpr char kETag[] = "etag";
+    static constexpr char kFetchTime[] = "fetch_time";
+
+    static inline std::shared_ptr<ConfigEntry> empty = std::make_shared<ConfigEntry>(Config::empty, "empty");
+
+    ConfigEntry(std::shared_ptr<Config> config = Config::empty,
+                const std::string& eTag = "",
+                double fetchTime = kDistantPast):
+            config(config),
+            eTag(eTag),
+            fetchTime(fetchTime) {
+    }
+    ConfigEntry(const ConfigEntry&) = delete; // Disable copy
+
+    static std::shared_ptr<ConfigEntry> fromJson(const std::string& jsonString);
+    std::string toJson() const;
+
+    std::shared_ptr<Config> config;
+    std::string eTag;
+    double fetchTime;
 };
 
 } // namespace configcat

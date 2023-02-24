@@ -5,7 +5,6 @@
 #include "configcat/consolelogger.h"
 #include "mock.h"
 #include "utils.h"
-#include "configentry.h"
 
 using namespace configcat;
 using namespace std;

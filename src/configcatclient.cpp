@@ -9,6 +9,7 @@
 #include "configcat/overridedatasource.h"
 #include "configcat/configcatlogger.h"
 #include "configcat/consolelogger.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -70,7 +71,6 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
 
     defaultUser = options.defaultUser;
     rolloutEvaluator = make_unique<RolloutEvaluator>(logger);
-
     if (options.flagOverrides) {
         overrideDataSource = options.flagOverrides->createDataSource(logger);
     }
@@ -78,17 +78,18 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
     auto configCache = options.configCache ? options.configCache : make_shared<NullConfigCache>();
 
     if (!overrideDataSource || overrideDataSource->getBehaviour() != LocalOnly) {
-        configService = make_unique<ConfigService>(sdkKey, logger, hooks, options);
+        configService = make_unique<ConfigService>(sdkKey, logger, hooks, configCache, options);
     }
 }
 
-const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient::getSettings() const {
+SettingResult ConfigCatClient::getSettings() const {
     if (overrideDataSource) {
         switch (overrideDataSource->getBehaviour()) {
             case LocalOnly:
-                return overrideDataSource->getOverrides();
+                return { overrideDataSource->getOverrides(), kDistantPast };
             case LocalOverRemote: {
-                auto remote = configService ? configService->getSettings() : nullptr;
+                auto settingResult = configService->getSettings();
+                auto remote = settingResult.settings;
                 auto local = overrideDataSource->getOverrides();
                 auto result = make_shared<std::unordered_map<std::string, Setting>>();
                 if (remote) {
@@ -102,10 +103,11 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
                     }
                 }
 
-                return result;
+                return { result, settingResult.fetchTime };
             }
             case RemoteOverLocal:
-                auto remote = configService ? configService->getSettings() : nullptr;
+                auto settingResult = configService->getSettings();
+                auto remote = settingResult.settings;
                 auto local = overrideDataSource->getOverrides();
                 auto result = make_shared<std::unordered_map<std::string, Setting>>();
                 if (local) {
@@ -119,11 +121,11 @@ const std::shared_ptr<std::unordered_map<std::string, Setting>> ConfigCatClient:
                     }
                 }
 
-                return result;
+                return { result, settingResult.fetchTime };
         }
     }
 
-    return configService ? configService->getSettings() : nullptr;
+    return configService->getSettings();
 }
 
 bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
@@ -147,7 +149,9 @@ std::string ConfigCatClient::getValue(const std::string& key, const std::string&
 }
 
 std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const ConfigCatUser* user) const {
-    auto settings = getSettings();
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         LOG_ERROR << "Config JSON is not present.";
         return {};
@@ -170,7 +174,9 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
 }
 
 std::vector<std::string> ConfigCatClient::getAllKeys() const {
-    auto settings = getSettings();
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         return {};
     }
@@ -184,7 +190,9 @@ std::vector<std::string> ConfigCatClient::getAllKeys() const {
 }
 
 string ConfigCatClient::getVariationId(const string& key, const string& defaultVariationId, const ConfigCatUser* user) const {
-    auto settings = getSettings();
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         LOG_ERROR << "Config JSON is not present. Returning defaultVariationId: " << defaultVariationId << ".";
         return defaultVariationId;
@@ -207,7 +215,9 @@ string ConfigCatClient::getVariationId(const string& key, const string& defaultV
 }
 
 std::vector<std::string> ConfigCatClient::getAllVariationIds(const ConfigCatUser* user) const {
-    auto settings = getSettings();
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         return {};
     }
@@ -223,7 +233,9 @@ std::vector<std::string> ConfigCatClient::getAllVariationIds(const ConfigCatUser
 }
 
 std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& variationId) const {
-    auto settings = getSettings();
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         LOG_ERROR << "Config JSON is not present. Returning null.";
         return nullptr;
@@ -253,7 +265,9 @@ std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& var
 }
 
 std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const ConfigCatUser* user) const {
-    auto settings = getSettings();
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         return {};
     }
@@ -270,7 +284,9 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
 
 template<typename ValueType>
 ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user) const {
-    auto settings = getSettings();
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         LOG_ERROR << "Config JSON is not present. Returning defaultValue: " << defaultValue << " .";
         return defaultValue;

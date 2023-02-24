@@ -31,19 +31,19 @@ TEST_F(ManualPollingTest, Get) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
     service.refresh();
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     service.refresh();
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 }
 
@@ -56,50 +56,47 @@ TEST_F(ManualPollingTest, GetFailedRefresh) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
     service.refresh();
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     service.refresh();
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 }
 
 TEST_F(ManualPollingTest, Cache) {
     auto mockCache = make_shared<InMemoryConfigCache>();
 
-    auto firstJsonString = string_format(kTestJsonFormat, R"("test")");
-    configcat::Response firstResponse = {200, firstJsonString};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    auto secondJsonString = string_format(kTestJsonFormat, R"("test2")");
-    configcat::Response secondResponse = {200, secondJsonString};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    options.configCache = mockCache;
-    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
 
     service.refresh();
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_EQ(firstJsonString, mockCache->store.begin()->second);
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test")"));
 
     service.refresh();
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_EQ(secondJsonString, mockCache->store.begin()->second);
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
 }
 
 TEST_F(ManualPollingTest, EmptyCacheDoesNotInitiateHTTP) {
@@ -109,9 +106,9 @@ TEST_F(ManualPollingTest, EmptyCacheDoesNotInitiateHTTP) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
-    auto settings = service.getSettings();
+    auto settings = service.getSettings().settings;
     EXPECT_EQ(settings, nullptr);
 
     EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());

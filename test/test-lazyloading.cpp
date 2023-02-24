@@ -32,12 +32,12 @@ TEST_F(LazyLoadingTest, Get) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
@@ -45,7 +45,7 @@ TEST_F(LazyLoadingTest, Get) {
     // Wait for cache invalidation
     sleep_for(seconds(3));
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 }
 
@@ -58,12 +58,12 @@ TEST_F(LazyLoadingTest, GetFailedRequest) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
@@ -71,38 +71,35 @@ TEST_F(LazyLoadingTest, GetFailedRequest) {
     // Wait for cache invalidation
     sleep_for(seconds(3));
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 }
 
 TEST_F(LazyLoadingTest, Cache) {
     auto mockCache = make_shared<InMemoryConfigCache>();
 
-    auto firstJsonString = string_format(kTestJsonFormat, R"("test")");
-    configcat::Response firstResponse = {200, firstJsonString};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    auto secondJsonString = string_format(kTestJsonFormat, R"("test2")");
-    configcat::Response secondResponse = {200, secondJsonString};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::lazyLoad(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    options.configCache = mockCache;
-    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_EQ(firstJsonString, mockCache->store.begin()->second);
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test")"));
 
     // Wait for cache invalidation
     sleep_for(seconds(3));
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_EQ(secondJsonString, mockCache->store.begin()->second);
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
 }

@@ -7,6 +7,9 @@
 #include <mutex>
 #include "keyvalue.h"
 #include "configcatoptions.h"
+#include "refreshresult.h"
+#include "settingresult.h"
+
 
 namespace configcat {
 
@@ -16,6 +19,7 @@ class ConfigFetcher;
 class RolloutEvaluator;
 class FlagOverrides;
 class ConfigService;
+
 
 class ConfigCatClient {
 public:
@@ -73,7 +77,8 @@ private:
 
     template<typename ValueType>
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
-    const std::shared_ptr<std::unordered_map<std::string, Setting>> getSettings() const;
+
+    SettingResult getSettings() const;
 
     std::shared_ptr<Hooks> hooks;
     std::shared_ptr<ConfigCatLogger> logger;
