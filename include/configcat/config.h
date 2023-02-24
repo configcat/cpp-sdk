@@ -152,8 +152,9 @@ struct Config {
     Config(const Config&) = delete; // Disable copy
 };
 
-constexpr double kDistantFuture = std::numeric_limits<double>::max();
-constexpr double kDistantPast = std::numeric_limits<double>::min();
+// extra brackets to avoid numeric_limits<double>::max()/min() not recognized error on windows
+constexpr double kDistantFuture = (std::numeric_limits<double>::max)();
+constexpr double kDistantPast = (std::numeric_limits<double>::min)();
 
 struct ConfigEntry {
     static constexpr char kConfig[] = "config";

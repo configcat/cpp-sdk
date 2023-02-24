@@ -172,3 +172,64 @@ TEST_F(AutoPollingTest, Cache) {
     EXPECT_EQ(1, mockCache->store.size());
     EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
 }
+
+TEST_F(AutoPollingTest, OnlineOffline) {
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::autoPoll(1);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
+
+    EXPECT_FALSE(service.isOffline());
+
+    sleep_for(milliseconds(1500));
+
+    service.setOffline();
+    EXPECT_TRUE(service.isOffline());
+    auto settings = *service.getSettings().settings;
+    EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
+
+    sleep_for(seconds(2));
+
+    EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
+    service.setOnline();
+    EXPECT_FALSE(service.isOffline());
+
+    sleep_for(seconds(1));
+
+    EXPECT_TRUE(mockHttpSessionAdapter->requests.size() >= 3);
+}
+
+TEST_F(AutoPollingTest, InitOffline) {
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::autoPoll(1);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    options.offline = true;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
+
+    EXPECT_TRUE(service.isOffline());
+    auto settings = service.getSettings().settings;
+    EXPECT_TRUE(settings == nullptr);
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    sleep_for(seconds(2));
+
+    settings = service.getSettings().settings;
+    EXPECT_TRUE(settings == nullptr);
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    service.setOnline();
+    EXPECT_FALSE(service.isOffline());
+
+    sleep_for(milliseconds(2500));
+
+    settings = service.getSettings().settings;
+    EXPECT_EQ("test", std::get<string>((*settings)["fakeKey"].value));
+    EXPECT_TRUE(mockHttpSessionAdapter->requests.size() >= 2);
+}

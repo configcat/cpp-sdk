@@ -79,10 +79,23 @@ RefreshResult ConfigService::refresh() {
 }
 
 void ConfigService::setOnline() {
-    // TODO
+    if (!offline) {
+        return;
+    }
+
+    offline = false;
+    if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
+        auto &autoPollingMode = (AutoPollingMode &) *pollingMode;
+        // TODO
+    }
 }
 
 void ConfigService::setOffline() {
+    if (offline) {
+        return;
+    }
+
+    offline = true;
     // TODO
 }
 

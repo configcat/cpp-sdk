@@ -72,6 +72,28 @@ public:
     // Initiates a force refresh synchronously on the cached configuration.
     void forceRefresh();
 
+    // Sets the default user.
+    void setDefaultUser(std::shared_ptr<ConfigCatUser> user) {
+        defaultUser = user;
+    }
+
+    // Sets the default user to nullptr.
+    void clearDefaultUser() {
+        defaultUser.reset();
+    }
+
+    // Configures the SDK to allow HTTP requests.
+    void setOnline();
+
+    // Configures the SDK to not initiate HTTP requests and work only from its cache.
+    void setOffline();
+
+    // true when the SDK is configured not to initiate HTTP requests, otherwise false.
+    bool isOffline();
+
+    // Gets the Hooks object for subscribing events.
+    std::shared_ptr<Hooks> getHooks() { return hooks; }
+
 private:
     ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
 

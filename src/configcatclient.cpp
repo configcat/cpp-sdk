@@ -319,5 +319,27 @@ void ConfigCatClient::forceRefresh() {
     }
 }
 
+void ConfigCatClient::setOnline() {
+    if (configService) {
+        configService->setOnline();
+    }
+    LOG_DEBUG << "Switched to ONLINE mode.";
+}
+
+void ConfigCatClient::setOffline() {
+    if (configService) {
+        configService->setOffline();
+    }
+
+    LOG_DEBUG << "Switched to OFFLINE mode.";
+}
+
+bool ConfigCatClient::isOffline() {
+    if (configService) {
+        configService->isOffline();
+    }
+    return true;
+}
+
 } // namespace configcat
 
