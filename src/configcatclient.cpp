@@ -174,7 +174,7 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
         return {};
     }
 
-    auto details = evaluate(key, user, Value(), {}, setting->second, fetchTime);
+    auto details = evaluate(key, user, setting->second, fetchTime);
     return make_shared<Value>(details.value);
 }
 
@@ -215,7 +215,7 @@ string ConfigCatClient::getVariationId(const string& key, const string& defaultV
         return defaultVariationId;
     }
 
-    auto details = evaluate(key, user, Value(), {}, setting->second, fetchTime);
+    auto details = evaluate(key, user, setting->second, fetchTime);
     return details.variationId;
 }
 
@@ -230,7 +230,7 @@ std::vector<std::string> ConfigCatClient::getAllVariationIds(const ConfigCatUser
     vector<string> variationIds;
     variationIds.reserve(settings->size());
     for (auto keyValue : *settings) {
-        auto details = evaluate(keyValue.first, user, Value(), {}, keyValue.second, fetchTime);
+        auto details = evaluate(keyValue.first, user, keyValue.second, fetchTime);
         variationIds.emplace_back(details.variationId);
     }
 
@@ -280,7 +280,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
     std::unordered_map<std::string, Value> result;
     for (auto keyValue : *settings) {
         auto& key = keyValue.first;
-        auto details = evaluate(key, user, Value(), {}, keyValue.second, fetchTime);
+        auto details = evaluate(key, user, keyValue.second, fetchTime);
         result.insert({key, details.value});
     }
 
@@ -314,7 +314,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         return defaultValue;
     }
 
-    auto details = evaluate(key, user, defaultValue, {}, setting->second, fetchTime);
+    auto details = evaluate(key, user, setting->second, fetchTime);
     const ValueType* valuePtr = get_if<ValueType>(&details.value);
     if (valuePtr)
         return *valuePtr;
@@ -323,15 +323,12 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     return defaultValue;
 }
 
-template<typename ValueType>
 EvaluationDetails ConfigCatClient::evaluate(const std::string& key,
                                             const ConfigCatUser* user,
-                                            const ValueType& defaultValue,
-                                            const std::string& defaultVariationId,
                                             const Setting& setting,
                                             double fetchTime) const {
     user = user != nullptr ? user : defaultUser.get();
-    auto [value, variationId, rule, percentageRule, error] = rolloutEvaluator->evaluate(key, user, defaultValue, defaultVariationId, setting);
+    auto [value, variationId, rule, percentageRule, error] = rolloutEvaluator->evaluate(key, user, setting);
 
     EvaluationDetails details(key,
                               value,

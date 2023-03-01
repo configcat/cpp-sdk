@@ -19,12 +19,9 @@ RolloutEvaluator::RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger):
 RolloutEvaluator::~RolloutEvaluator() {
 }
 
-template<typename ValueType>
 tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> RolloutEvaluator::evaluate(
     const string& key,
     const ConfigCatUser* user,
-    const ValueType& defaultValue,
-    const string& defaultVariationId,
     const Setting& setting) {
     LogEntry logEntry(logger, LOG_LEVEL_INFO);
     logEntry << "Evaluating getValue(" << key << ")";

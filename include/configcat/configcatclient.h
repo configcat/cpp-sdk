@@ -103,11 +103,8 @@ private:
 
     SettingResult getSettings() const;
 
-    template<typename ValueType>
     EvaluationDetails evaluate(const std::string& key,
                                const ConfigCatUser* user,
-                               const ValueType& defaultValue,
-                               const std::string& defaultVariationId,
                                const Setting& setting,
                                double fetchTime) const;
 
