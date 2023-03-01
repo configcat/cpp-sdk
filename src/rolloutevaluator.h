@@ -16,7 +16,14 @@ public:
     RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger);
     ~RolloutEvaluator();
 
-    std::tuple<Value, std::string> evaluate(const Setting& setting, const std::string& key, const ConfigCatUser* user);
+    // Evaluate the feature flag or setting
+    // Returns [value, variationId, matchedEvaluationRule, matchedEvaluationPercentageRule, error]
+    template<typename ValueType>
+    std::tuple<Value, std::string, const RolloutRule*, const RolloutPercentageItem*, std::string> evaluate(const std::string& key,
+                                            const ConfigCatUser* user,
+                                            const ValueType& defaultValue,
+                                            const std::string& defaultVariationId,
+                                            const Setting& setting);
 
     inline static std::string formatNoMatchRule(const std::string& comparisonAttribute,
                                                 const std::string& userValue,

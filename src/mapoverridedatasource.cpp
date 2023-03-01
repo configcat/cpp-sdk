@@ -5,7 +5,7 @@ using namespace std;
 namespace configcat {
 
 MapFlagOverrides::MapFlagOverrides(const std::unordered_map<std::string, Value>& source, OverrideBehaviour behaviour):
-    overrides(make_shared<std::unordered_map<std::string, Setting>>()),
+    overrides(make_shared<Settings>()),
     behaviour(behaviour) {
     for (const auto& it : source) {
         overrides->insert({it.first, {it.second}});

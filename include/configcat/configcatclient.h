@@ -9,6 +9,7 @@
 #include "configcatoptions.h"
 #include "refreshresult.h"
 #include "settingresult.h"
+#include "evaluationdetails.h"
 
 
 namespace configcat {
@@ -101,6 +102,14 @@ private:
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
 
     SettingResult getSettings() const;
+
+    template<typename ValueType>
+    EvaluationDetails evaluate(const std::string& key,
+                               const ConfigCatUser* user,
+                               const ValueType& defaultValue,
+                               const std::string& defaultVariationId,
+                               const Setting& setting,
+                               double fetchTime) const;
 
     std::shared_ptr<Hooks> hooks;
     std::shared_ptr<ConfigCatLogger> logger;

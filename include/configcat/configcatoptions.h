@@ -12,6 +12,7 @@
 #include "httpsessionadapter.h"
 #include "flagoverrides.h"
 #include "log.h"
+#include "evaluationdetails.h"
 
 namespace configcat {
 
@@ -24,9 +25,9 @@ struct ProxyAuthentication {
 class Hooks {
 public:
     explicit Hooks(const std::function<void()>& onClientReady = nullptr,
-          const std::function<void(std::shared_ptr<std::unordered_map<std::string, Setting>>)>& onConfigChanged = nullptr,
-          const std::function<void(std::string)>& onFlagEvaluated = nullptr,
-          const std::function<void(std::string)>& onError = nullptr) {
+          const std::function<void(std::shared_ptr<Settings>)>& onConfigChanged = nullptr,
+          const std::function<void(const EvaluationDetails&)>& onFlagEvaluated = nullptr,
+          const std::function<void(const std::string&)>& onError = nullptr) {
         if (onClientReady) {
             onClientReadyCallbacks.push_back(onClientReady);
         }
@@ -46,12 +47,12 @@ public:
         onClientReadyCallbacks.push_back(callback);
     }
 
-    void addOnConfigChanged(const std::function<void(std::shared_ptr<std::unordered_map<std::string, Setting>>)>& callback) {
+    void addOnConfigChanged(const std::function<void(std::shared_ptr<Settings>)>& callback) {
         std::lock_guard<std::mutex> lock(mutex);
         onConfigChangedCallbacks.push_back(callback);
     }
 
-    void addOnFlagEvaluated(const std::function<void(std::string)>& callback) {
+    void addOnFlagEvaluated(const std::function<void(const EvaluationDetails&)>& callback) {
         std::lock_guard<std::mutex> lock(mutex);
         onFlagEvaluatedCallbacks.push_back(callback);
     }
@@ -68,21 +69,21 @@ public:
         }
     }
 
-    void invokeOnConfigChanged(std::shared_ptr<std::unordered_map<std::string, Setting>> config) {
+    void invokeOnConfigChanged(std::shared_ptr<Settings> config) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onConfigChangedCallbacks) {
             callback(config);
         }
     }
 
-    void invokeOnFlagEvaluated(std::string evaluation_details) {
+    void invokeOnFlagEvaluated(const EvaluationDetails& evaluation_details) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onFlagEvaluatedCallbacks) {
             callback(evaluation_details);
         }
     }
 
-    void invokeOnError(std::string error) {
+    void invokeOnError(const std::string& error) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onErrorCallbacks) {
             callback(error);
@@ -100,9 +101,9 @@ public:
 private:
     std::mutex mutex;
     std::vector<std::function<void()>> onClientReadyCallbacks;
-    std::vector<std::function<void(std::shared_ptr<std::unordered_map<std::string, Setting>>)>> onConfigChangedCallbacks;
-    std::vector<std::function<void(std::string)>> onFlagEvaluatedCallbacks;
-    std::vector<std::function<void(std::string)>> onErrorCallbacks;
+    std::vector<std::function<void(std::shared_ptr<Settings>)>> onConfigChangedCallbacks;
+    std::vector<std::function<void(const EvaluationDetails&)>> onFlagEvaluatedCallbacks;
+    std::vector<std::function<void(const std::string&)>> onErrorCallbacks;
 };
 
 // Configuration options for ConfigCatClient.

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <chrono>
 
 #include "configcat/configcatclient.h"
 #include "configcat/configcatuser.h"
@@ -12,6 +13,7 @@
 #include "utils.h"
 
 using namespace std;
+using namespace std::chrono;
 
 namespace configcat {
 
@@ -91,7 +93,7 @@ SettingResult ConfigCatClient::getSettings() const {
                 auto settingResult = configService->getSettings();
                 auto remote = settingResult.settings;
                 auto local = overrideDataSource->getOverrides();
-                auto result = make_shared<std::unordered_map<std::string, Setting>>();
+                auto result = make_shared<Settings>();
                 if (remote) {
                     for (auto& it : *remote) {
                         result->insert_or_assign(it.first, it.second);
@@ -109,7 +111,7 @@ SettingResult ConfigCatClient::getSettings() const {
                 auto settingResult = configService->getSettings();
                 auto remote = settingResult.settings;
                 auto local = overrideDataSource->getOverrides();
-                auto result = make_shared<std::unordered_map<std::string, Setting>>();
+                auto result = make_shared<Settings>();
                 if (local) {
                     for (auto& it : *local) {
                         result->insert_or_assign(it.first, it.second);
@@ -153,7 +155,10 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LOG_ERROR << "Config JSON is not present.";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+        logEntry << "Evaluating getValue(\"" << key << "\") failed. Cache is empty. "
+                 << "Returning nullptr.";
+        hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, {}, logEntry.getMessage()));
         return {};
     }
 
@@ -169,8 +174,8 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
         return {};
     }
 
-    auto [value, variationId] = rolloutEvaluator->evaluate(setting->second, key, user);
-    return make_shared<Value>(value);
+    auto details = evaluate(key, user, Value(), {}, setting->second, fetchTime);
+    return make_shared<Value>(details.value);
 }
 
 std::vector<std::string> ConfigCatClient::getAllKeys() const {
@@ -210,8 +215,8 @@ string ConfigCatClient::getVariationId(const string& key, const string& defaultV
         return defaultVariationId;
     }
 
-    auto [value, variationId] = rolloutEvaluator->evaluate(setting->second, key, user);
-    return variationId;
+    auto details = evaluate(key, user, Value(), {}, setting->second, fetchTime);
+    return details.variationId;
 }
 
 std::vector<std::string> ConfigCatClient::getAllVariationIds(const ConfigCatUser* user) const {
@@ -225,8 +230,8 @@ std::vector<std::string> ConfigCatClient::getAllVariationIds(const ConfigCatUser
     vector<string> variationIds;
     variationIds.reserve(settings->size());
     for (auto keyValue : *settings) {
-        auto [value, variationId] = rolloutEvaluator->evaluate(keyValue.second, keyValue.first, user);
-        variationIds.emplace_back(variationId);
+        auto details = evaluate(keyValue.first, user, Value(), {}, keyValue.second, fetchTime);
+        variationIds.emplace_back(details.variationId);
     }
 
     return variationIds;
@@ -275,8 +280,8 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
     std::unordered_map<std::string, Value> result;
     for (auto keyValue : *settings) {
         auto& key = keyValue.first;
-        auto [value, variationId] = rolloutEvaluator->evaluate(keyValue.second, key, user);
-        result.insert({key, value});
+        auto details = evaluate(key, user, Value(), {}, keyValue.second, fetchTime);
+        result.insert({key, details.value});
     }
 
     return result;
@@ -288,7 +293,10 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LOG_ERROR << "Config JSON is not present. Returning defaultValue: " << defaultValue << " .";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+        logEntry << "Evaluating getValue(\"" << key << "\") failed. Cache is empty. "
+                 << "Returning defaultValue: " << defaultValue << " .";
+        hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
 
@@ -299,18 +307,43 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         for (auto keyValue : *settings) {
             keys.emplace_back(keyValue.first);
         }
-        LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys
-                  << " Returning defaultValue: " << defaultValue << " .";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+        logEntry << "Value not found for key " << key << ". Here are the available keys: " << keys
+                 << " Returning defaultValue: " << defaultValue << " .";
+        hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
 
-    auto [value, variationId] = rolloutEvaluator->evaluate(setting->second, key, user);
-    const ValueType* valuePtr = get_if<ValueType>(&value);
+    auto details = evaluate(key, user, defaultValue, {}, setting->second, fetchTime);
+    const ValueType* valuePtr = get_if<ValueType>(&details.value);
     if (valuePtr)
         return *valuePtr;
 
     LOG_ERROR << "Evaluating getValue(\"" << key << "\") failed. Returning defaultValue: " << defaultValue << " .";
     return defaultValue;
+}
+
+template<typename ValueType>
+EvaluationDetails ConfigCatClient::evaluate(const std::string& key,
+                                            const ConfigCatUser* user,
+                                            const ValueType& defaultValue,
+                                            const std::string& defaultVariationId,
+                                            const Setting& setting,
+                                            double fetchTime) const {
+    user = user != nullptr ? user : defaultUser.get();
+    auto [value, variationId, rule, percentageRule, error] = rolloutEvaluator->evaluate(key, user, defaultValue, defaultVariationId, setting);
+
+    EvaluationDetails details(key,
+                              value,
+                              variationId,
+                              time_point<system_clock, duration<double>>(duration<double>(fetchTime)),
+                              user,
+                              error.empty() ? false : true,
+                              error,
+                              rule,
+                              percentageRule);
+    hooks->invokeOnFlagEvaluated(details);
+    return details;
 }
 
 void ConfigCatClient::forceRefresh() {

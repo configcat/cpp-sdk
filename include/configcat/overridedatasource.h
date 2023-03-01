@@ -3,11 +3,10 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include "config.h"
 #include "flagoverrides.h"
 
 namespace configcat {
-
-struct Setting;
 
 // Describes a data source for [FlagOverrides].
 class OverrideDataSource {
@@ -18,7 +17,7 @@ public:
     OverrideBehaviour getBehaviour() const { return behaviour; }
 
     // Gets all the overrides defined in the given source.
-    virtual const std::shared_ptr<std::unordered_map<std::string, Setting>> getOverrides() = 0;
+    virtual const std::shared_ptr<Settings> getOverrides() = 0;
 
 private:
     OverrideBehaviour behaviour;

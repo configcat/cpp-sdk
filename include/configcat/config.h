@@ -14,6 +14,7 @@ using ValueType = std::variant<bool, std::string, int, double>;
 // Disable implicit conversion from pointer types (const char*) to bool when constructing std::variant
 // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0608r3.html
 struct Value : public ValueType {
+    Value() : ValueType() {}
     Value(bool v) : ValueType(v) {}
     Value(const char* v) : ValueType(std::string(v)) {}
     Value(const std::string& v) : ValueType(v) {}
@@ -125,6 +126,8 @@ struct Setting {
     std::string variationId;
 };
 
+using Settings = std::unordered_map<std::string, Setting>;
+
 struct Config {
     static constexpr char kValue[] = "v";
     static constexpr char kComparator[] = "t";
@@ -140,7 +143,7 @@ struct Config {
     static constexpr char kEntries[] = "f";
 
     std::shared_ptr<Preferences> preferences;
-    std::shared_ptr<std::unordered_map<std::string, Setting>> entries;
+    std::shared_ptr<Settings> entries;
 
     std::string toJson();
     static std::shared_ptr<Config> fromJson(const std::string& jsonString);

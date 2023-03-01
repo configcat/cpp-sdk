@@ -5,7 +5,7 @@
 namespace configcat {
 
 struct SettingResult {
-    const std::shared_ptr<std::unordered_map<std::string, Setting>> settings;
+    const std::shared_ptr<Settings> settings;
     double fetchTime;
 };
 
