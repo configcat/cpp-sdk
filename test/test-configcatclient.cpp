@@ -337,6 +337,32 @@ TEST_F(ConfigCatClientTest, GetAllValues) {
     EXPECT_EQ(false, std::get<bool>(allValues.at("key2")));
 }
 
+TEST_F(ConfigCatClientTest, GetValueDetails) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+
+    ConfigCatUser user("test@test1.com");
+    auto details = client->getValueDetails("testStringKey", "", &user);
+
+    EXPECT_EQ("fake1", get<string>(details.value));
+    EXPECT_EQ("testStringKey", details.key);
+    EXPECT_EQ("id1", details.variationId);
+    EXPECT_FALSE(details.isDefaultValue);
+    EXPECT_TRUE(details.error.empty());
+    EXPECT_TRUE(details.matchedEvaluationPercentageRule == nullptr);
+    EXPECT_EQ("fake1", get<string>(details.matchedEvaluationRule->value));
+    EXPECT_EQ(CONTAINS, details.matchedEvaluationRule->comparator);
+    EXPECT_EQ("Identifier", details.matchedEvaluationRule->comparisonAttribute);
+    EXPECT_EQ("@test1.com", details.matchedEvaluationRule->comparisonValue);
+    EXPECT_EQ(user.toJson(), details.user->toJson());
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    EXPECT_GE(now, details.fetchTime);
+    EXPECT_LE(now, details.fetchTime + std::chrono::seconds(1));
+}
+
 TEST_F(ConfigCatClientTest, AutoPollUserAgentHeader) {
     configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
     mockHttpSessionAdapter->enqueueResponse(response);

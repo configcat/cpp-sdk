@@ -55,6 +55,19 @@ public:
      */
     std::shared_ptr<Value> getValue(const std::string& key, const ConfigCatUser* user = nullptr) const;
 
+    /**
+     * Gets the value and evaluation details of a feature flag or setting identified by the given `key`.
+     *
+     * Parameter [key]: the identifier of the configuration value.
+     * Parameter [defaultValue]: in case of any failure, this value will be returned.
+     * Parameter [user]: the user object to identify the caller.
+     */
+    EvaluationDetails getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails getValueDetails(const std::string& key, int defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
+
     // Gets all the setting keys.
     std::vector<std::string> getAllKeys() const;
 
@@ -100,6 +113,9 @@ private:
 
     template<typename ValueType>
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
+
+    template<typename ValueType>
+    EvaluationDetails _getValueDetails(const std::string& key, ValueType defaultValue, const ConfigCatUser* user = nullptr) const;
 
     SettingResult getSettings() const;
 

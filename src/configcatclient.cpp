@@ -178,6 +178,57 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     return make_shared<Value>(details.value);
 }
 
+EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
+    return _getValueDetails(key, defaultValue, user);
+}
+
+EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, int defaultValue, const ConfigCatUser* user) const {
+    return _getValueDetails(key, defaultValue, user);
+}
+
+EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user) const {
+    return _getValueDetails(key, defaultValue, user);
+}
+EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user) const {
+    return _getValueDetails(key, defaultValue, user);
+}
+
+EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
+    return _getValueDetails(key, defaultValue, user);
+}
+
+template<typename ValueType>
+EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, ValueType defaultValue, const ConfigCatUser* user) const {
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
+    if (!settings || settings->empty()) {
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+        logEntry << "Evaluating getValueDetails(\"" << key << "\") failed. Cache is empty. "
+                 << "Returning defaultValue: " << defaultValue << " .";
+        auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
+        hooks->invokeOnFlagEvaluated(details);
+        return details;
+    }
+
+    auto setting = settings->find(key);
+    if (setting == settings->end()) {
+        vector<string> keys;
+        keys.reserve(settings->size());
+        for (auto keyValue : *settings) {
+            keys.emplace_back(keyValue.first);
+        }
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+        logEntry << "Value not found for key " << key << ". Here are the available keys: " << keys
+                 << " Returning defaultValue: " << defaultValue << " .";
+        auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
+        hooks->invokeOnFlagEvaluated(details);
+        return details;
+    }
+
+    return evaluate(key, user, setting->second, fetchTime);
+}
+
 std::vector<std::string> ConfigCatClient::getAllKeys() const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
