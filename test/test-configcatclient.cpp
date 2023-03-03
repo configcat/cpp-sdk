@@ -337,6 +337,58 @@ TEST_F(ConfigCatClientTest, GetAllValues) {
     EXPECT_EQ(false, std::get<bool>(allValues.at("key2")));
 }
 
+TEST_F(ConfigCatClientTest, GetAllValueDetails) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    auto allDetails = client->getAllValueDetails();
+
+    auto details_by_key = [&](const std::vector<EvaluationDetails>& all_details, const std::string& key) -> const EvaluationDetails* {
+        for (const auto& details : all_details) {
+            if (details.key == key) {
+                return &details;
+            }
+        }
+        return nullptr;
+    };
+
+    EXPECT_EQ(6, allDetails.size());
+    auto details = details_by_key(allDetails, "testBoolKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testBoolKey", details->key);
+    EXPECT_EQ(true, get<bool>(details->value));
+
+    details = details_by_key(allDetails, "testStringKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testStringKey", details->key);
+    EXPECT_EQ("testValue", get<string>(details->value));
+    EXPECT_EQ("id", details->variationId);
+
+    details = details_by_key(allDetails, "testIntKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testIntKey", details->key);
+    EXPECT_EQ(1, get<int>(details->value));
+
+    details = details_by_key(allDetails, "testDoubleKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testDoubleKey", details->key);
+    EXPECT_EQ(1.1, get<double>(details->value));
+
+    details = details_by_key(allDetails, "key1");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("key1", details->key);
+    EXPECT_EQ(true, get<bool>(details->value));
+    EXPECT_EQ("fakeId1", details->variationId);
+
+    details = details_by_key(allDetails, "key2");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("key2", details->key);
+    EXPECT_EQ(false, get<bool>(details->value));
+    EXPECT_EQ("fakeId2", details->variationId);
+}
+
 TEST_F(ConfigCatClientTest, GetValueDetails) {
     SetUp();
 

@@ -325,6 +325,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
+        LOG_ERROR << "Evaluating getAllValues() failed. Cache is empty. Returning empty list.";
         return {};
     }
 
@@ -333,6 +334,24 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
         auto& key = keyValue.first;
         auto details = evaluate(key, user, keyValue.second, fetchTime);
         result.insert({key, details.value});
+    }
+
+    return result;
+}
+
+std::vector<EvaluationDetails> ConfigCatClient::getAllValueDetails(const ConfigCatUser* user) const {
+    auto settingResult = getSettings();
+    auto& settings = settingResult.settings;
+    auto& fetchTime = settingResult.fetchTime;
+    if (!settings || settings->empty()) {
+        LOG_ERROR << "Evaluating getAllValueDetails() failed. Cache is empty. Returning empty list.";
+        return {};
+    }
+
+    std::vector<EvaluationDetails> result;
+    for (auto keyValue : *settings) {
+        auto& key = keyValue.first;
+        result.push_back(evaluate(key, user, keyValue.second, fetchTime));
     }
 
     return result;
