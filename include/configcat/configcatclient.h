@@ -71,17 +71,14 @@ public:
     // Gets all the setting keys.
     std::vector<std::string> getAllKeys() const;
 
-    // Gets the Variation ID (analytics) of a feature flag or setting based on it's key.
-    std::string getVariationId(const std::string& key, const std::string& defaultVariationId, const ConfigCatUser* user = nullptr) const;
-
-    // Gets the Variation IDs (analytics) of all feature flags or settings.
-    std::vector<std::string> getAllVariationIds(const ConfigCatUser* user = nullptr) const;
-
     // Gets the key of a setting and it's value identified by the given Variation ID (analytics)
     std::shared_ptr<KeyValue> getKeyAndValue(const std::string& variationId) const;
 
     // Gets the values of all feature flags or settings.
     std::unordered_map<std::string, Value> getAllValues(const ConfigCatUser* user = nullptr) const;
+
+    // Gets the values along with evaluation details of all feature flags and settings.
+    std::vector<EvaluationDetails> getAllValueDetails(const ConfigCatUser* user = nullptr) const;
 
     // Initiates a force refresh synchronously on the cached configuration.
     void forceRefresh();
