@@ -567,3 +567,114 @@ TEST_F(ConfigCatClientTest, GetValueWithKeyNotFound) {
     EXPECT_EQ(nullptr, valuePtr);
 }
 
+TEST_F(ConfigCatClientTest, DefaultUserGetValue) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+
+    auto user1 = make_shared<ConfigCatUser>("test@test1.com");
+    auto user2 = make_shared<ConfigCatUser>("test@test2.com");
+
+    client->setDefaultUser(user1);
+    EXPECT_EQ("fake1", client->getValue("testStringKey", ""));
+    EXPECT_EQ("fake2", client->getValue("testStringKey", "", user2.get()));
+
+    client->clearDefaultUser();
+    EXPECT_EQ("testValue", client->getValue("testStringKey", ""));
+}
+
+TEST_F(ConfigCatClientTest, DefaultUserGetAllValues) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+
+    auto user1 = make_shared<ConfigCatUser>("test@test1.com");
+    auto user2 = make_shared<ConfigCatUser>("test@test2.com");
+
+    client->setDefaultUser(user1);
+    auto allValues = client->getAllValues();
+    EXPECT_EQ(6, allValues.size());
+    EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
+    EXPECT_EQ("fake1", get<string>(allValues["testStringKey"]));
+    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
+    EXPECT_TRUE(get<bool>(allValues["key1"]));
+    EXPECT_FALSE(get<bool>(allValues["key2"]));
+
+    allValues = client->getAllValues(user2.get());
+    EXPECT_EQ(6, allValues.size());
+    EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
+    EXPECT_EQ("fake2", get<string>(allValues["testStringKey"]));
+    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
+    EXPECT_TRUE(get<bool>(allValues["key1"]));
+    EXPECT_FALSE(get<bool>(allValues["key2"]));
+
+    client->clearDefaultUser();
+    allValues = client->getAllValues();
+    EXPECT_EQ(6, allValues.size());
+    EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
+    EXPECT_EQ("testValue", get<string>(allValues["testStringKey"]));
+    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
+    EXPECT_TRUE(get<bool>(allValues["key1"]));
+    EXPECT_FALSE(get<bool>(allValues["key2"]));
+}
+
+TEST_F(ConfigCatClientTest, OnlineOffline) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    EXPECT_FALSE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+
+    client->setOffline();
+    EXPECT_TRUE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+
+    client->setOnline();
+    EXPECT_FALSE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
+}
+
+TEST_F(ConfigCatClientTest, InitOffline) {
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::manualPoll();
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    options.offline = true;
+    client = ConfigCatClient::get(kTestSdkKey, &options);
+
+    EXPECT_TRUE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    client->setOnline();
+    EXPECT_FALSE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+}
+

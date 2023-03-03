@@ -387,13 +387,12 @@ void ConfigCatClient::setOffline() {
     if (configService) {
         configService->setOffline();
     }
-
     LOG_DEBUG << "Switched to OFFLINE mode.";
 }
 
 bool ConfigCatClient::isOffline() {
     if (configService) {
-        configService->isOffline();
+        return configService->isOffline();
     }
     return true;
 }
