@@ -94,7 +94,8 @@ public:
                                          value ? valueToString(*value).c_str() : "##null##"));
                     }
                 } else {
-                    auto variationId = client->getVariationId(settingKey, "", user.get());
+                    auto details = client->getValueDetails(settingKey, "", user.get());
+                    auto variationId = details.variationId;
                     if (variationId != expected) {
                         errors.push_back(
                                 string_format("Index: [%d:%d] Identifier: %s, Key: %s. Expected: %s, Result: %s",

@@ -74,47 +74,48 @@ TEST_F(VariationIdTest, GetVariationId) {
     configcat::Response response = {200, kTestJson};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
-    auto variationId = client->getVariationId("key1", "");
+    auto details = client->getValueDetails("key1", "");
 
-    EXPECT_EQ("fakeId1", variationId);
+    EXPECT_EQ("fakeId1", details.variationId);
 }
 
 TEST_F(VariationIdTest, GetVariationIdNotFound) {
     configcat::Response response = {200, kTestJson};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
-    auto variationId = client->getVariationId("nonexisting", "default");
-
-    EXPECT_EQ("default", variationId);
+    auto details = client->getValueDetails("nonexisting", "default");
+    EXPECT_EQ("", details.variationId);
 }
 
 TEST_F(VariationIdTest, GetVarationIdInvalidJson) {
     configcat::Response response = {200, "{"};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
-    auto variationId = client->getVariationId("key1", "default");
+    auto details = client->getValueDetails("key1", "");
 
-    EXPECT_EQ("default", variationId);
+    EXPECT_EQ("", details.variationId);
 }
 
 TEST_F(VariationIdTest, GetAllVariationIds) {
     configcat::Response response = {200, kTestJson};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
-    auto variationIds = client->getAllVariationIds();
+    auto allDetails = client->getAllValueDetails();
 
-    EXPECT_EQ(2, variationIds.size());
-    EXPECT_TRUE(std::find(variationIds.begin(), variationIds.end(), "fakeId1") != variationIds.end());
-    EXPECT_TRUE(std::find(variationIds.begin(), variationIds.end(), "fakeId2") != variationIds.end());
+    EXPECT_EQ(2, allDetails.size());
+    EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails& details) {
+        return details.variationId == "fakeId1"; }) != allDetails.end());
+    EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails& details) {
+        return details.variationId == "fakeId2"; }) != allDetails.end());
 }
 
-TEST_F(VariationIdTest, GetAllVariationIdsEmpty) {
+TEST_F(VariationIdTest, GetAllValueDetailsEmpty) {
     configcat::Response response = {200, "{}"};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
-    auto variationIds = client->getAllVariationIds();
+    auto allDetails = client->getAllValueDetails();
 
-    EXPECT_EQ(0, variationIds.size());
+    EXPECT_EQ(0, allDetails.size());
 }
 
 TEST_F(VariationIdTest, GetKeyAndValue) {

@@ -245,49 +245,6 @@ std::vector<std::string> ConfigCatClient::getAllKeys() const {
     return keys;
 }
 
-string ConfigCatClient::getVariationId(const string& key, const string& defaultVariationId, const ConfigCatUser* user) const {
-    auto settingResult = getSettings();
-    auto& settings = settingResult.settings;
-    auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
-        LOG_ERROR << "Config JSON is not present. Returning defaultVariationId: " << defaultVariationId << ".";
-        return defaultVariationId;
-    }
-
-    auto setting = settings->find(key);
-    if (setting == settings->end()) {
-        vector<string> keys;
-        keys.reserve(settings->size());
-        for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
-        }
-        LOG_ERROR << "Variation ID not found for key " << key << ". Here are the available keys: " << keys
-                  << " Returning defaultVariationId: " << defaultVariationId << ".";
-        return defaultVariationId;
-    }
-
-    auto details = evaluate(key, user, setting->second, fetchTime);
-    return details.variationId;
-}
-
-std::vector<std::string> ConfigCatClient::getAllVariationIds(const ConfigCatUser* user) const {
-    auto settingResult = getSettings();
-    auto& settings = settingResult.settings;
-    auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
-        return {};
-    }
-
-    vector<string> variationIds;
-    variationIds.reserve(settings->size());
-    for (auto keyValue : *settings) {
-        auto details = evaluate(keyValue.first, user, keyValue.second, fetchTime);
-        variationIds.emplace_back(details.variationId);
-    }
-
-    return variationIds;
-}
-
 std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& variationId) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
