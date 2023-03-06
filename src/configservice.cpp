@@ -24,10 +24,10 @@ ConfigService::ConfigService(const string& sdkKey,
     cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + sdkKey);
     configFetcher = make_unique<ConfigFetcher>(sdkKey, logger, pollingMode->getPollingIdentifier(), options);
     offline = options.offline;
+    startTime = chrono::steady_clock::now();
 
     if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
-        startTime = chrono::steady_clock::now();
-        thread = make_unique<std::thread>([this] { run(); });
+        startPoll();
     } else {
         setInitialized();
     }
@@ -85,8 +85,7 @@ void ConfigService::setOnline() {
 
     offline = false;
     if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
-        auto &autoPollingMode = (AutoPollingMode &) *pollingMode;
-        // TODO
+        startPoll();
     }
 }
 
@@ -96,7 +95,15 @@ void ConfigService::setOffline() {
     }
 
     offline = true;
-    // TODO
+    if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
+        {
+            lock_guard<mutex> lock(initMutex);
+            stopRequested = true;
+        }
+        stop.notify_all();
+        if (thread && thread->joinable())
+            thread->join();
+    }
 }
 
 tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, bool preferCache) {
@@ -193,6 +200,10 @@ void ConfigService::writeCache(const std::shared_ptr<ConfigEntry>& configEntry) 
     }
 }
 
+void ConfigService::startPoll() {
+    thread = make_unique<std::thread>([this] { run(); });
+};
+
 void ConfigService::run() {
     auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
     fetchIfOlder(getUtcNowSecondsSinceEpoch() - autoPollingMode.autoPollIntervalInSeconds);
@@ -203,7 +214,6 @@ void ConfigService::run() {
         setInitialized();
     }
     init.notify_all();
-
 
     do {
         {

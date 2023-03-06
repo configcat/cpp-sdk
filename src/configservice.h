@@ -43,6 +43,7 @@ private:
     void setInitialized();
     std::shared_ptr<ConfigEntry> readCache();
     void writeCache(const std::shared_ptr<ConfigEntry>& configEntry);
+    void startPoll();
     void run();
 
     std::chrono::time_point<std::chrono::steady_clock> startTime;

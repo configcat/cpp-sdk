@@ -18,15 +18,15 @@ public:
                       const std::string& error = "",
                       const RolloutRule* matchedEvaluationRule = nullptr,
                       const RolloutPercentageItem* matchedEvaluationPercentageRule = nullptr)
-            : key(key)
-            , value(value)
-            , variationId(variationId)
-            , fetchTime(fetchTime)
-            , user(user)
-            , isDefaultValue(isDefaultValue)
-            , error(error)
-            , matchedEvaluationRule(matchedEvaluationRule)
-            , matchedEvaluationPercentageRule(matchedEvaluationPercentageRule)
+        : key(key)
+        , value(value)
+        , variationId(variationId)
+        , fetchTime(fetchTime)
+        , user(user)
+        , isDefaultValue(isDefaultValue)
+        , error(error)
+        , matchedEvaluationRule(matchedEvaluationRule)
+        , matchedEvaluationPercentageRule(matchedEvaluationPercentageRule)
     {}
 
     static EvaluationDetails fromError(const std::string& key, const Value& value, const std::string& error, const std::string& variationId = {}) {
