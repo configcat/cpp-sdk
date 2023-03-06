@@ -76,10 +76,10 @@ public:
         }
     }
 
-    void invokeOnFlagEvaluated(const EvaluationDetails& evaluation_details) {
+    void invokeOnFlagEvaluated(const EvaluationDetails& details) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onFlagEvaluatedCallbacks) {
-            callback(evaluation_details);
+            callback(details);
         }
     }
 

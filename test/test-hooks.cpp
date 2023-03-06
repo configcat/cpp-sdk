@@ -54,6 +54,8 @@ TEST_F(HooksTest, Init) {
 
     EXPECT_TRUE(hookCallbacks.error.empty());
     EXPECT_EQ(0, hookCallbacks.errorCallCount);
+
+    ConfigCatClient::close(client);
 }
 
 TEST_F(HooksTest, Subscribe) {
@@ -90,6 +92,8 @@ TEST_F(HooksTest, Subscribe) {
 
     EXPECT_TRUE(hookCallbacks.error.empty());
     EXPECT_EQ(0, hookCallbacks.errorCallCount);
+
+    ConfigCatClient::close(client);
 }
 
 TEST_F(HooksTest, Evaluation) {
@@ -128,4 +132,6 @@ TEST_F(HooksTest, Evaluation) {
     auto now =  std::chrono::system_clock::now();
     EXPECT_GT(details.fetchTime, now - std::chrono::seconds(1));
     EXPECT_LE(details.fetchTime, now);
+
+    ConfigCatClient::close(client);
 }
