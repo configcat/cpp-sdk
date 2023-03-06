@@ -47,6 +47,12 @@ struct RolloutPercentageItem {
 
     // The rule's variation ID (for analytical purposes).
     std::string variationId;
+
+    bool operator==(const RolloutPercentageItem& other) const {
+        return value == other.value
+               && percentage == other.percentage
+               && variationId == other.variationId;
+    }
 };
 
 enum Comparator: int {
@@ -110,6 +116,14 @@ struct RolloutRule {
 
     // The rule's variation ID (for analytical purposes).
     std::string variationId;
+
+    bool operator==(const RolloutRule& other) const {
+        return value == other.value &&
+               comparisonAttribute == other.comparisonAttribute &&
+               comparator == other.comparator &&
+               comparisonValue == other.comparisonValue &&
+               variationId == other.variationId;
+    }
 };
 
 struct Setting {
@@ -124,6 +138,13 @@ struct Setting {
 
     // Variation ID (for analytical purposes).
     std::string variationId;
+
+    bool operator==(const Setting& other) const {
+        return value == other.value
+               && percentageItems == other.percentageItems
+               && rolloutRules == other.rolloutRules
+               && variationId == other.variationId;
+    }
 };
 
 using Settings = std::unordered_map<std::string, Setting>;

@@ -227,7 +227,7 @@ TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchNotModified) {
     EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
 }
 
-TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed) {
+TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed404) {
     SetUp();
 
     configcat::Response response = {404, ""};
@@ -237,6 +237,21 @@ TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed) {
     auto fetchResponse = fetcher->fetchConfiguration(eTag);
 
     EXPECT_TRUE(fetchResponse.isFailed());
+    EXPECT_FALSE(fetchResponse.isTransientError);
+    EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
+}
+
+TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed403) {
+    SetUp();
+
+    configcat::Response response = {403, ""};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    auto eTag = "";
+    auto fetchResponse = fetcher->fetchConfiguration(eTag);
+
+    EXPECT_TRUE(fetchResponse.isFailed());
+    EXPECT_FALSE(fetchResponse.isTransientError);
     EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
 }
 

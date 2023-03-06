@@ -9,8 +9,8 @@ class ConfigCatUser;
 
 struct EvaluationDetails {
 public:
-    EvaluationDetails(const std::string& key,
-                      const Value& value,
+    EvaluationDetails(const std::string& key = "",
+                      const Value& value = {},
                       const std::string& variationId = "",
                       const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
                       const ConfigCatUser* user = nullptr,

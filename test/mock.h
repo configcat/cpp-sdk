@@ -8,6 +8,8 @@
 
 #include "configcat/configcache.h"
 #include "configcat/httpsessionadapter.h"
+#include "configcat/config.h"
+#include "configcat/evaluationdetails.h"
 
 class InMemoryConfigCache : public configcat::ConfigCache {
 public:
@@ -22,6 +24,53 @@ public:
     }
 
     std::unordered_map<std::string, std::string> store;
+};
+
+class SingleValueCache : public configcat::ConfigCache {
+public:
+    SingleValueCache(const std::string& value): value(value) {}
+
+    const std::string& read(const std::string& key) override {
+        return value;
+    }
+
+    void write(const std::string& key, const std::string& value) override {
+        this->value = value;
+    }
+
+    std::string value;
+};
+
+class HookCallbacks {
+public:
+    bool isReady = false;
+    int isReadyCallCount = 0;
+    std::shared_ptr<configcat::Settings> changedConfig;
+    int changedConfigCallCount = 0;
+    configcat::EvaluationDetails evaluationDetails;
+    int evaluationDetailsCallCount = 0;
+    std::string error;
+    int errorCallCount = 0;
+
+    void onClientReady() {
+        isReady = true;
+        isReadyCallCount += 1;
+    }
+
+    void onConfigChanged(std::shared_ptr<configcat::Settings> config) {
+        changedConfig = config;
+        changedConfigCallCount += 1;
+    }
+
+    void onFlagEvaluated(const configcat::EvaluationDetails& details) {
+        evaluationDetails = details;
+        evaluationDetailsCallCount += 1;
+    }
+
+    void onError(const std::string& error) {
+        this->error = error;
+        errorCallCount += 1;
+    }
 };
 
 class MockHttpSessionAdapter : public configcat::HttpSessionAdapter {

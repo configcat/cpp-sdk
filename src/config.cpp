@@ -170,7 +170,7 @@ shared_ptr<ConfigEntry> ConfigEntry::fromJson(const std::string& jsonString) {
     auto config = make_shared<Config>();
     auto configObj = configEntryObj.at(kConfig);
     configObj.get_to(*config);
-    return make_shared<ConfigEntry>(config, configEntryObj.at(kETag), configEntryObj.at(kFetchTime));
+    return make_shared<ConfigEntry>(config, configEntryObj.value(kETag, ""), configEntryObj.value(kFetchTime, kDistantPast));
 }
 
 string ConfigEntry::toJson() const {

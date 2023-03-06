@@ -57,7 +57,7 @@ public:
         onFlagEvaluatedCallbacks.push_back(callback);
     }
 
-    void addOnError(const std::function<void(std::string)>& callback) {
+    void addOnError(const std::function<void(const std::string&)>& callback) {
         std::lock_guard<std::mutex> lock(mutex);
         onErrorCallbacks.push_back(callback);
     }
