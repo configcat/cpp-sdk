@@ -194,7 +194,8 @@ void ConfigService::writeCache(const std::shared_ptr<ConfigEntry>& configEntry) 
 }
 
 void ConfigService::run() {
-    fetchIfOlder(kDistantFuture);
+    auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
+    fetchIfOlder(getUtcNowSecondsSinceEpoch() - autoPollingMode.autoPollIntervalInSeconds);
 
     {
         // Initialization finished
@@ -203,7 +204,7 @@ void ConfigService::run() {
     }
     init.notify_all();
 
-    auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
+
     do {
         {
             unique_lock<mutex> lock(initMutex);
@@ -213,7 +214,7 @@ void ConfigService::run() {
             }
         }
 
-        fetchIfOlder(kDistantFuture);
+        fetchIfOlder(getUtcNowSecondsSinceEpoch() - autoPollingMode.autoPollIntervalInSeconds);
     } while (true);
 }
 

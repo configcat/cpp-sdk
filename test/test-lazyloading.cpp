@@ -104,6 +104,51 @@ TEST_F(LazyLoadingTest, Cache) {
     EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
 }
 
+TEST_F(LazyLoadingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
+    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
+        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
+        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch()) + "}");
+
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::lazyLoad(1);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
+
+    auto settings = *service.getSettings().settings;
+
+    EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    sleep_for(seconds(1));
+
+    settings = *service.getSettings().settings;
+
+    EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+}
+
+TEST_F(LazyLoadingTest, FetchConfigWhenCacheIsExpired) {
+    auto cacheTimeToLiveSeconds = 1;
+    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
+        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
+        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch() - cacheTimeToLiveSeconds) + "}");
+
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::lazyLoad(cacheTimeToLiveSeconds);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
+
+    auto settings = *service.getSettings().settings;
+    EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+}
+
 TEST_F(LazyLoadingTest, OnlineOffline) {
     configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
     mockHttpSessionAdapter->enqueueResponse(response);

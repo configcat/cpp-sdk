@@ -173,6 +173,91 @@ TEST_F(AutoPollingTest, Cache) {
     EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
 }
 
+TEST_F(AutoPollingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
+    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
+        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
+        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch()) + "}");
+
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+
+    auto pollIntervalSeconds = 2;
+    auto maxInitWaitTimeSeconds = 1;
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::autoPoll(pollIntervalSeconds, maxInitWaitTimeSeconds);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+
+    auto startTime = chrono::steady_clock::now();
+
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
+    auto settings = *service.getSettings().settings;
+
+    auto endTime = chrono::steady_clock::now();
+    auto elapsedTimeInSeconds = chrono::duration<double>(endTime - startTime).count();
+
+    // max init wait time should be ignored when cache is not expired
+    EXPECT_LE(elapsedTimeInSeconds, maxInitWaitTimeSeconds);
+
+    EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    sleep_for(seconds(3));
+
+    settings = *service.getSettings().settings;
+
+    EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+}
+
+TEST_F(AutoPollingTest, FetchConfigWhenCacheIsExpired) {
+    auto pollIntervalSeconds = 2;
+    auto maxInitWaitTimeSeconds = 1;
+    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
+        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
+        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch() - pollIntervalSeconds) + "}");
+
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::autoPoll(pollIntervalSeconds, maxInitWaitTimeSeconds);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
+
+    auto settings = *service.getSettings().settings;
+    EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+}
+
+TEST_F(AutoPollingTest, initWaitTimeReturnCached) {
+    auto pollIntervalSeconds = 60;
+    auto maxInitWaitTimeSeconds = 1;
+    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
+        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
+        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch() - 2 * pollIntervalSeconds) + "}");
+
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test2")")};
+    constexpr int responseDelay = 5;
+    mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
+
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::autoPoll(pollIntervalSeconds, maxInitWaitTimeSeconds);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+
+    auto startTime = chrono::steady_clock::now();
+
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
+    auto settings = *service.getSettings().settings;
+
+    auto endTime = chrono::steady_clock::now();
+    auto elapsedTimeInSeconds = chrono::duration<double>(endTime - startTime).count();
+
+    EXPECT_GT(elapsedTimeInSeconds, maxInitWaitTimeSeconds);
+    EXPECT_LE(elapsedTimeInSeconds, maxInitWaitTimeSeconds + 1);
+    EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
+}
+
 TEST_F(AutoPollingTest, OnlineOffline) {
     configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
     mockHttpSessionAdapter->enqueueResponse(response);
