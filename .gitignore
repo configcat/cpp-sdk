@@ -1,4 +1,5 @@
 cmake-build-debug
-build
 cmake-build-debug-docker
+cmake-build-debug-local-container
+build
 .dccache

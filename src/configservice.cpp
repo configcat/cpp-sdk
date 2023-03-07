@@ -26,7 +26,7 @@ ConfigService::ConfigService(const string& sdkKey,
     offline = options.offline;
     startTime = chrono::steady_clock::now();
 
-    if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
+    if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !offline) {
         startPoll();
     } else {
         setInitialized();
