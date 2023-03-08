@@ -25,8 +25,8 @@ public:
         , user(user)
         , isDefaultValue(isDefaultValue)
         , error(error)
-        , matchedEvaluationRule(matchedEvaluationRule)
-        , matchedEvaluationPercentageRule(matchedEvaluationPercentageRule)
+        , matchedEvaluationRule(matchedEvaluationRule ? std::optional<RolloutRule>{*matchedEvaluationRule} : std::nullopt)
+        , matchedEvaluationPercentageRule(matchedEvaluationPercentageRule ? std::optional<RolloutPercentageItem>{*matchedEvaluationPercentageRule} : std::nullopt)
     {}
 
     static EvaluationDetails fromError(const std::string& key, const Value& value, const std::string& error, const std::string& variationId = {}) {
@@ -40,8 +40,8 @@ public:
     const ConfigCatUser* user;
     bool isDefaultValue;
     std::string error;
-    const RolloutRule* matchedEvaluationRule;
-    const RolloutPercentageItem* matchedEvaluationPercentageRule;
+    std::optional<RolloutRule> matchedEvaluationRule;
+    std::optional<RolloutPercentageItem> matchedEvaluationPercentageRule;
 };
 
 } // namespace configcat

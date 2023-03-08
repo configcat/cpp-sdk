@@ -120,7 +120,7 @@ TEST_F(HooksTest, Evaluation) {
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);
     EXPECT_TRUE(details.error.empty());
-    EXPECT_TRUE(details.matchedEvaluationPercentageRule == nullptr);
+    EXPECT_TRUE(details.matchedEvaluationPercentageRule == nullopt);
 
     auto rule = details.matchedEvaluationRule;
     EXPECT_EQ("fake1", get<string>(rule->value));
