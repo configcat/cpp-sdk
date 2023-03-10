@@ -1,6 +1,6 @@
 #include "rolloutevaluator.h"
 #include "configcat/configcatuser.h"
-#include "configcat/log.h"
+#include "configcat/configcatlogger.h"
 #include "utils.h"
 #include <algorithm>
 #include <sstream>
@@ -11,15 +11,19 @@ using namespace std;
 
 namespace configcat {
 
-RolloutEvaluator::RolloutEvaluator():
+RolloutEvaluator::RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger):
+    logger(logger),
     sha1(make_unique<SHA1>()) {
 }
 
 RolloutEvaluator::~RolloutEvaluator() {
 }
 
-std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting, const string& key, const ConfigCatUser* user) {
-    LogEntry logEntry(LOG_LEVEL_INFO);
+tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> RolloutEvaluator::evaluate(
+    const string& key,
+    const ConfigCatUser* user,
+    const Setting& setting) {
+    LogEntry logEntry(logger, LOG_LEVEL_INFO);
     logEntry << "Evaluating getValue(" << key << ")";
 
     if (!user) {
@@ -30,7 +34,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
         }
 
         logEntry << "\n" << "Returning " << setting.value;
-        return {setting.value, setting.variationId};
+        return {setting.value, setting.variationId, {}, {}, logEntry.getMessage()};
     }
 
     logEntry << "\n" << "User object: " << user;
@@ -57,7 +61,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                     trim(token);
                     if (token == userValue) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                        return {rule.value, rule.variationId};
+                        return {rule.value, rule.variationId, &rule, {}, {}};
                     }
                 }
                 break;
@@ -75,21 +79,21 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                 }
                 if (!found) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId};
+                    return {rule.value, rule.variationId, &rule, {}, {}};
                 }
                 break;
             }
             case CONTAINS: {
                 if (userValue.find(comparisonValue) != std::string::npos) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId};
+                    return {rule.value, rule.variationId, &rule, {}, {}};
                 }
                 break;
             }
             case NOT_CONTAINS: {
                 if (userValue.find(comparisonValue) == std::string::npos) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId};
+                    return {rule.value, rule.variationId, &rule, {}, {}};
                 }
                 break;
             }
@@ -116,7 +120,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                         (!matched && comparator == NOT_ONE_OF_SEMVER)) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue,
                                                             returnValue);
-                        return {rule.value, rule.variationId};
+                        return {rule.value, rule.variationId, &rule, {}, {}};
                     }
                 } catch (semver::semver_exception& exception) {
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
@@ -144,7 +148,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                         (comparator == GTE_SEMVER && userValueVersion >= comparisonValueVersion)) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue,
                                                             returnValue);
-                        return {rule.value, rule.variationId};
+                        return {rule.value, rule.variationId, &rule, {}, {}};
                     }
                 } catch (semver::semver_exception& exception) {
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
@@ -186,7 +190,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                     comparator == GT_NUM     && userValueDouble >  comparisonValueDouble ||
                     comparator == GTE_NUM    && userValueDouble >= comparisonValueDouble) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId};
+                    return {rule.value, rule.variationId, &rule, {}, {}};
                 }
                 break;
             }
@@ -198,7 +202,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                     trim(token);
                     if (token == userValueHash) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                        return {rule.value, rule.variationId};
+                        return {rule.value, rule.variationId, &rule, {}, {}};
                     }
                 }
                 break;
@@ -217,7 +221,7 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
                 }
                 if (!found) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId};
+                    return {rule.value, rule.variationId, &rule, {}, {}};
                 }
                 break;
             }
@@ -234,17 +238,17 @@ std::tuple<Value, std::string> RolloutEvaluator::evaluate(const Setting& setting
         auto num = std::stoul(hash, nullptr, 16);
         auto scaled = num % 100;
         double bucket = 0;
-        for (const auto& rule : setting.percentageItems) {
-            bucket += rule.percentage;
+        for (const auto& rolloutPercentageItem : setting.percentageItems) {
+            bucket += rolloutPercentageItem.percentage;
             if (scaled < bucket) {
-                logEntry << "\n" << "Evaluating %% options. Returning " << rule.value;
-                return {rule.value, rule.variationId};
+                logEntry << "\n" << "Evaluating %% options. Returning " << rolloutPercentageItem.value;
+                return {rolloutPercentageItem.value, rolloutPercentageItem.variationId, {}, &rolloutPercentageItem, {}};
             }
         }
     }
 
     logEntry << "\n" << "Returning " << setting.value;
-    return {setting.value, setting.variationId};
+    return {setting.value, setting.variationId, {}, {}, {}};
 }
 
 std::string RolloutEvaluator::formatNoMatchRule(const std::string& comparisonAttribute,

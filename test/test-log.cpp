@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
-#include "configcat/log.h"
-#include "configcat/configcatuser.h"
+#include "configcat/configcatlogger.h"
 #include <nlohmann/json.hpp>
 
 using namespace configcat;
@@ -11,23 +10,15 @@ class LogTest : public ::testing::Test {
 public:
     class TestLogger : public ILogger {
     public:
+        TestLogger(): ILogger(LOG_LEVEL_INFO) {}
         void log(LogLevel level, const std::string& message) override {
             text += message + "\n";
         }
         std::string text;
     };
 
-    ILogger* logger;
-    TestLogger testLogger;
-
-    LogTest() {
-        logger = getLogger();
-        setLogger(&testLogger);
-    }
-
-    ~LogTest() {
-        setLogger(logger);
-    }
+    std::shared_ptr<TestLogger> testLogger = make_shared<TestLogger>();
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(testLogger, make_shared<Hooks>());
 };
 
 TEST_F(LogTest, LogUser) {
@@ -39,7 +30,7 @@ TEST_F(LogTest, LogUser) {
     );
     LOG_INFO << user;
 
-    json userJson = json::parse(testLogger.text);
+    json userJson = json::parse(testLogger->text);
 
     EXPECT_EQ("id", userJson["Identifier"]);
     EXPECT_EQ("email", userJson["Email"]);
@@ -50,11 +41,11 @@ TEST_F(LogTest, LogUser) {
 TEST_F(LogTest, LogIntVector) {
     std::vector<int> v = { 1, 2, 3 };
     LOG_INFO << v;
-    EXPECT_EQ("[1, 2, 3]\n", testLogger.text);
+    EXPECT_EQ("[1, 2, 3]\n", testLogger->text);
 }
 
 TEST_F(LogTest, LogStringVector) {
     std::vector<string> v = { "a", "b", "c" };
     LOG_INFO << v;
-    EXPECT_EQ("[a, b, c]\n", testLogger.text);
+    EXPECT_EQ("[a, b, c]\n", testLogger->text);
 }

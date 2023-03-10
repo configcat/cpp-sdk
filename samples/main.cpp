@@ -8,12 +8,12 @@ using namespace configcat;
 int main(int /*argc*/, char** /*argv*/) {
     // Info level logging helps to inspect the feature flag evaluation process.
     // Use the default warning level to avoid too detailed logging in your application.
-    configcat::setLogLevel(LOG_LEVEL_INFO);
-    ConsoleLogger logger;
-    configcat::setLogger(&logger);
+    auto logger = make_shared<ConsoleLogger>(LOG_LEVEL_INFO);
 
     // Initialize the ConfigCatClient with an SDK Key.
-    auto client = ConfigCatClient::get("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ");
+    ConfigCatOptions options;
+    options.logger = logger;
+    auto client = ConfigCatClient::get("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", &options);
 
     // Creating a user object to identify your user (optional).
     auto user = ConfigCatUser(

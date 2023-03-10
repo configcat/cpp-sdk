@@ -2,16 +2,22 @@
 
 #include <string>
 #include <algorithm>
-#include "configcat/log.h"
+#include <chrono>
 
 namespace configcat {
+
+constexpr auto kEpochTime = std::chrono::system_clock::time_point(); // January 1, 1970 UTC
+
+inline double getUtcNowSecondsSinceEpoch() {
+    auto duration = std::chrono::system_clock::now() - kEpochTime;
+    return std::chrono::duration<double>(duration).count();
+}
 
 template<typename... Args>
 inline std::string string_format(const std::string& format, Args... args) {
     int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
     if (size_s <= 0) {
-        LOG_ERROR << "Error during string formatting.";
-        return {};
+        throw std::runtime_error("Error during string formatting.");
     }
     auto size = static_cast<size_t>(size_s);
     std::unique_ptr<char[]> buf(new char[size]);
@@ -60,6 +66,10 @@ inline double str_to_double(const std::string& str, bool& error) {
 
 inline bool starts_with(const std::string& str, const std::string& cmp) {
     return str.compare(0, cmp.length(), cmp) == 0;
+}
+
+inline bool contains(const std::string& str, const std::string& sub) {
+    return str.find(sub) != std::string::npos;
 }
 
 } // namespace configcat

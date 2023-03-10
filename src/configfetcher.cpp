@@ -4,9 +4,10 @@
 #include "configcat/log.h"
 #include "configcat/httpsessionadapter.h"
 #include "configcat/configcatoptions.h"
-#include "configentry.h"
+#include "configcat/configcatlogger.h"
 #include "version.h"
 #include "platform.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -45,8 +46,9 @@ private:
     std::map<std::string, std::string> header;
 };
 
-ConfigFetcher::ConfigFetcher(const string& sdkKey, const string& mode, const ConfigCatOptions& options):
+ConfigFetcher::ConfigFetcher(const string& sdkKey, shared_ptr<ConfigCatLogger> logger, const string& mode, const ConfigCatOptions& options):
     sdkKey(sdkKey),
+    logger(logger),
     mode(mode),
     connectTimeoutMs(options.connectTimeoutMs),
     readTimeoutMs(options.readTimeoutMs) {
@@ -156,12 +158,12 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     auto response = session->Get();
 
     if (response.error.code != cpr::ErrorCode::OK) {
-        LogEntry logEntry(LOG_LEVEL_ERROR);
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
         logEntry << "An error occurred during the config fetch: " << response.error.message << ".";
         if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT) {
             logEntry << " Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]";
         }
-        return FetchResponse({failure, ConfigEntry::empty});
+        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
     }
 
     switch (response.status_code) {
@@ -172,24 +174,35 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
         case 204: {
             const auto it = response.header.find(kEtagHeaderName);
             string eTag = it != response.header.end() ? it->second : "";
-            auto& jsonString = response.text;
-            auto config = Config::fromJson(jsonString);
-            if (config == Config::empty) {
-                return FetchResponse({failure, ConfigEntry::empty});
+            try {
+                auto config = Config::fromJson(response.text);
+                LOG_DEBUG << "Fetch was successful: new config fetched.";
+                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, getUtcNowSecondsSinceEpoch()));
+            } catch (exception& exception) {
+                LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+                logEntry << "Config JSON parsing failed. " << exception.what();
+                return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
             }
-
-            LOG_DEBUG << "Fetch was successful: new config fetched.";
-            return FetchResponse({fetched, make_shared<ConfigEntry>(jsonString, config, eTag, std::chrono::steady_clock::now())});
         }
 
         case 304:
             LOG_DEBUG << "Fetch was successful: config not modified.";
             return FetchResponse({notModified, ConfigEntry::empty});
 
-        default:
-            LOG_ERROR << "Double-check your API KEY at https://app.configcat.com/apikey. " <<
-                "Received unexpected response: " << response.status_code;
-            return FetchResponse({failure, ConfigEntry::empty});
+
+        case 403:
+        case 404: {
+            LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+            logEntry << "Double-check your API KEY at https://app.configcat.com/apikey. " <<
+                     "Received unexpected response: " << response.status_code;
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), false);
+        }
+
+        default: {
+            LogEntry logEntry(logger, LOG_LEVEL_ERROR);
+            logEntry << "Unexpected HTTP response was received: " << response.status_code;
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+        }
     }
 }
 

@@ -1,9 +1,10 @@
 #include <gtest/gtest.h>
 #include "configfetcher.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 #include "mock.h"
 #include "utils.h"
-#include "configentry.h"
 
 using namespace configcat;
 using namespace std;
@@ -15,14 +16,15 @@ public:
     static constexpr char kTestJson[] = R"({ "f": { "fakeKey": { "v": "fakeValue", "p": [], "r": [] } } })";
     unique_ptr<ConfigFetcher> fetcher;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 
     void SetUp(const std::string& baseUrl = "", const std::string& sdkKey = kTestSdkKey) {
         ConfigCatOptions options;
-        options.mode = PollingMode::manualPoll();
+        options.pollingMode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
         options.baseUrl = baseUrl;
 
-        fetcher = make_unique<ConfigFetcher>(sdkKey, "m", options);
+        fetcher = make_unique<ConfigFetcher>(sdkKey, logger, "m", options);
     }
 
     void TearDown() override {
@@ -225,7 +227,7 @@ TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchNotModified) {
     EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
 }
 
-TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed) {
+TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed404) {
     SetUp();
 
     configcat::Response response = {404, ""};
@@ -235,6 +237,21 @@ TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed) {
     auto fetchResponse = fetcher->fetchConfiguration(eTag);
 
     EXPECT_TRUE(fetchResponse.isFailed());
+    EXPECT_FALSE(fetchResponse.isTransientError);
+    EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
+}
+
+TEST_F(ConfigFetcherTest, Fetcher_SimpleFetchFailed403) {
+    SetUp();
+
+    configcat::Response response = {403, ""};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    auto eTag = "";
+    auto fetchResponse = fetcher->fetchConfiguration(eTag);
+
+    EXPECT_TRUE(fetchResponse.isFailed());
+    EXPECT_FALSE(fetchResponse.isTransientError);
     EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
 }
 

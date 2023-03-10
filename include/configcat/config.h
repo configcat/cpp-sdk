@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <sstream>
+#include <limits>
 
 namespace configcat {
 
@@ -13,6 +14,7 @@ using ValueType = std::variant<bool, std::string, int, double>;
 // Disable implicit conversion from pointer types (const char*) to bool when constructing std::variant
 // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0608r3.html
 struct Value : public ValueType {
+    Value() : ValueType() {}
     Value(bool v) : ValueType(v) {}
     Value(const char* v) : ValueType(std::string(v)) {}
     Value(const std::string& v) : ValueType(v) {}
@@ -45,6 +47,12 @@ struct RolloutPercentageItem {
 
     // The rule's variation ID (for analytical purposes).
     std::string variationId;
+
+    bool operator==(const RolloutPercentageItem& other) const {
+        return value == other.value
+               && percentage == other.percentage
+               && variationId == other.variationId;
+    }
 };
 
 enum Comparator: int {
@@ -108,6 +116,14 @@ struct RolloutRule {
 
     // The rule's variation ID (for analytical purposes).
     std::string variationId;
+
+    bool operator==(const RolloutRule& other) const {
+        return value == other.value &&
+               comparisonAttribute == other.comparisonAttribute &&
+               comparator == other.comparator &&
+               comparisonValue == other.comparisonValue &&
+               variationId == other.variationId;
+    }
 };
 
 struct Setting {
@@ -122,7 +138,16 @@ struct Setting {
 
     // Variation ID (for analytical purposes).
     std::string variationId;
+
+    bool operator==(const Setting& other) const {
+        return value == other.value
+               && percentageItems == other.percentageItems
+               && rolloutRules == other.rolloutRules
+               && variationId == other.variationId;
+    }
 };
+
+using Settings = std::unordered_map<std::string, Setting>;
 
 struct Config {
     static constexpr char kValue[] = "v";
@@ -139,8 +164,9 @@ struct Config {
     static constexpr char kEntries[] = "f";
 
     std::shared_ptr<Preferences> preferences;
-    std::shared_ptr<std::unordered_map<std::string, Setting>> entries;
+    std::shared_ptr<Settings> entries;
 
+    std::string toJson();
     static std::shared_ptr<Config> fromJson(const std::string& jsonString);
     static std::shared_ptr<Config> fromFile(const std::string& filePath);
 
@@ -148,6 +174,34 @@ struct Config {
 
     Config() {};
     Config(const Config&) = delete; // Disable copy
+};
+
+// extra brackets to avoid numeric_limits<double>::max()/min() not recognized error on windows
+constexpr double kDistantFuture = (std::numeric_limits<double>::max)();
+constexpr double kDistantPast = (std::numeric_limits<double>::min)();
+
+struct ConfigEntry {
+    static constexpr char kConfig[] = "config";
+    static constexpr char kETag[] = "etag";
+    static constexpr char kFetchTime[] = "fetch_time";
+
+    static inline std::shared_ptr<ConfigEntry> empty = std::make_shared<ConfigEntry>(Config::empty, "empty");
+
+    ConfigEntry(std::shared_ptr<Config> config = Config::empty,
+                const std::string& eTag = "",
+                double fetchTime = kDistantPast):
+            config(config),
+            eTag(eTag),
+            fetchTime(fetchTime) {
+    }
+    ConfigEntry(const ConfigEntry&) = delete; // Disable copy
+
+    static std::shared_ptr<ConfigEntry> fromJson(const std::string& jsonString);
+    std::string toJson() const;
+
+    std::shared_ptr<Config> config;
+    std::string eTag;
+    double fetchTime;
 };
 
 } // namespace configcat

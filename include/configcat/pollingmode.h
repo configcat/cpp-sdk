@@ -20,11 +20,9 @@ public:
      *
      * [autoPollIntervalInSeconds] sets at least how often this policy should fetch the latest configuration and refresh the cache.
      * [maxInitWaitTimeInSeconds] sets the maximum waiting time between initialization and the first config acquisition in seconds.
-     * [onConfigChanged] sets a configuration changed event handler.
      */
     static std::shared_ptr<PollingMode> autoPoll(uint32_t autoPollIntervalInSeconds = 60,
-                                                 uint32_t maxInitWaitTimeInSeconds = 5,
-                                                 std::function<void()> onConfigChanged = {});
+                                                 uint32_t maxInitWaitTimeInSeconds = 5);
 
     /**
      * Creates a configured lazy loading polling configuration.
@@ -51,15 +49,13 @@ public:
 
     const uint32_t autoPollIntervalInSeconds;
     const uint32_t maxInitWaitTimeInSeconds;
-    const std::function<void()> onConfigChanged;
 
     const char* getPollingIdentifier() const override { return kIdentifier; }
 
 private:
-    AutoPollingMode(uint32_t autoPollIntervalInSeconds, uint32_t maxInitWaitTimeInSeconds, std::function<void()> onConfigChanged):
+    AutoPollingMode(uint32_t autoPollIntervalInSeconds, uint32_t maxInitWaitTimeInSeconds):
     autoPollIntervalInSeconds(autoPollIntervalInSeconds),
-    maxInitWaitTimeInSeconds(maxInitWaitTimeInSeconds),
-    onConfigChanged(onConfigChanged) {
+    maxInitWaitTimeInSeconds(maxInitWaitTimeInSeconds) {
     }
 };
 

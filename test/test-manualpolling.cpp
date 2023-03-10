@@ -3,6 +3,8 @@
 #include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/configcatlogger.h"
+#include "configcat/consolelogger.h"
 #include <thread>
 
 using namespace configcat;
@@ -16,6 +18,7 @@ public:
     static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
 
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
+    shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 };
 
 TEST_F(ManualPollingTest, Get) {
@@ -26,21 +29,21 @@ TEST_F(ManualPollingTest, Get) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse, secondResponseDelay);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
     service.refresh();
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     service.refresh();
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 }
 
@@ -51,52 +54,49 @@ TEST_F(ManualPollingTest, GetFailedRefresh) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
     service.refresh();
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     service.refresh();
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 }
 
 TEST_F(ManualPollingTest, Cache) {
     auto mockCache = make_shared<InMemoryConfigCache>();
 
-    auto firstJsonString = string_format(kTestJsonFormat, R"("test")");
-    configcat::Response firstResponse = {200, firstJsonString};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    auto secondJsonString = string_format(kTestJsonFormat, R"("test2")");
-    configcat::Response secondResponse = {200, secondJsonString};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    options.cache = mockCache;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
 
     service.refresh();
 
-    auto settings = *service.getSettings();
+    auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_EQ(firstJsonString, mockCache->store.begin()->second);
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test")"));
 
     service.refresh();
 
-    settings = *service.getSettings();
+    settings = *service.getSettings().settings;
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_EQ(secondJsonString, mockCache->store.begin()->second);
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
 }
 
 TEST_F(ManualPollingTest, EmptyCacheDoesNotInitiateHTTP) {
@@ -104,13 +104,62 @@ TEST_F(ManualPollingTest, EmptyCacheDoesNotInitiateHTTP) {
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto service = ConfigService(kTestSdkKey, options);
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
-    auto settings = service.getSettings();
+    auto settings = service.getSettings().settings;
     EXPECT_EQ(settings, nullptr);
 
     EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
 }
 
+TEST_F(ManualPollingTest, OnlineOffline) {
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::manualPoll();
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
+
+    EXPECT_FALSE(service.isOffline());
+    EXPECT_TRUE(service.refresh().success);
+    auto settings = *service.getSettings().settings;
+    EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+
+    service.setOffline();
+    EXPECT_TRUE(service.isOffline());
+    EXPECT_FALSE(service.refresh().success);
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+
+    service.setOnline();
+
+    EXPECT_FALSE(service.isOffline());
+    EXPECT_TRUE(service.refresh().success);
+    EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
+}
+
+TEST_F(ManualPollingTest, InitOffline) {
+    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::manualPoll();
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    options.offline = true;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
+
+    EXPECT_TRUE(service.isOffline());
+    EXPECT_FALSE(service.refresh().success);
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    service.setOnline();
+
+    EXPECT_FALSE(service.isOffline());
+    EXPECT_TRUE(service.refresh().success);
+    auto settings = *service.getSettings().settings;
+    EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+}

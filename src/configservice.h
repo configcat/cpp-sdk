@@ -7,28 +7,43 @@
 #include <future>
 #include <condition_variable>
 #include "configcat/config.h"
+#include "configcat/refreshresult.h"
+#include "configcat/settingresult.h"
 #include "configfetcher.h"
+
 
 namespace configcat {
 
 struct ConfigCatOptions;
+class ConfigCatLogger;
 class ConfigFetcher;
-class ConfigCatCache;
+class ConfigCache;
 struct ConfigEntry;
 class PollingMode;
+class Hooks;
 
 class ConfigService {
 public:
-    ConfigService(const std::string& sdkKey, const ConfigCatOptions& options);
+    ConfigService(const std::string& sdkKey,
+                  std::shared_ptr<ConfigCatLogger> logger,
+                  std::shared_ptr<Hooks> hooks,
+                  std::shared_ptr<ConfigCache> configCache,
+                  const ConfigCatOptions& options);
     ~ConfigService();
 
-    const std::shared_ptr<std::unordered_map<std::string, Setting>> getSettings();
-    void refresh();
+    SettingResult getSettings();
+    RefreshResult refresh();
+    void setOnline();
+    void setOffline();
+    bool isOffline() { return offline; }
 
 private:
-    std::shared_ptr<Config> fetchIfOlder(std::chrono::time_point<std::chrono::steady_clock> time, bool preferCache = false);
-    std::string readConfigCache();
-    void writeConfigCache(const std::string& jsonString);
+    // Returns the ConfigEntry object and error message in case of any error.
+    std::tuple<std::shared_ptr<ConfigEntry>, std::string> fetchIfOlder(double time, bool preferCache = false);
+    void setInitialized();
+    std::shared_ptr<ConfigEntry> readCache();
+    void writeCache(const std::shared_ptr<ConfigEntry>& configEntry);
+    void startPoll();
     void run();
 
     std::chrono::time_point<std::chrono::steady_clock> startTime;
@@ -41,11 +56,15 @@ private:
     bool stopRequested = false;
     std::atomic<bool> ongoingFetch = false;
 
+    std::shared_ptr<ConfigCatLogger> logger;
+    std::shared_ptr<Hooks> hooks;
     std::shared_ptr<PollingMode> pollingMode;
     std::shared_ptr<ConfigEntry> cachedEntry;
-    std::shared_ptr<ConfigCatCache> cache;
+    std::string cachedEntryString;
+    std::shared_ptr<ConfigCache> configCache;
     std::string cacheKey;
     std::unique_ptr<ConfigFetcher> configFetcher;
+    std::atomic<bool> offline = false;
     std::shared_future<FetchResponse> responseFuture;
 };
 

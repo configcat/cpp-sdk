@@ -5,7 +5,7 @@
 namespace configcat {
 
 // A cache API used to make custom cache implementations.
-class ConfigCatCache {
+class ConfigCache {
 public:
     /**
      * Child classes has to implement this method, the [ConfigCatClient] is
@@ -24,7 +24,20 @@ public:
      */
     virtual void write(const std::string& key, const std::string& value) = 0;
 
-    virtual ~ConfigCatCache() = default;
+    virtual ~ConfigCache() = default;
+};
+
+class NullConfigCache : public ConfigCache {
+public:
+    inline static const std::string emptyString = "";
+
+    const std::string& read(const std::string& key) override {
+        return emptyString;
+    }
+
+    void write(const std::string& key, const std::string& value) override {
+        // do nothing
+    }
 };
 
 } // namespace configcat

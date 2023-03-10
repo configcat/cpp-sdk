@@ -20,10 +20,10 @@ public:
 
     void SetUp(const std::string& sdkKey = kTestSdkKey) {
         ConfigCatOptions options;
-        options.mode = PollingMode::manualPoll();
+        options.pollingMode = PollingMode::manualPoll();
         options.httpSessionAdapter = mockHttpSessionAdapter;
 
-        client = ConfigCatClient::get(kTestSdkKey, options);
+        client = ConfigCatClient::get(kTestSdkKey, &options);
     }
 
     void TearDown() override {
@@ -203,9 +203,9 @@ TEST_F(ConfigCatClientTest, ForceRefreshLazy) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::lazyLoad(120);
+    options.pollingMode = PollingMode::lazyLoad(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("test", value);
@@ -223,9 +223,9 @@ TEST_F(ConfigCatClientTest, ForceRefreshAuto) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(120);
+    options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("test", value);
@@ -240,9 +240,9 @@ TEST_F(ConfigCatClientTest, FailingAutoPoll) {
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(120);
+    options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("", value);
@@ -251,14 +251,16 @@ TEST_F(ConfigCatClientTest, FailingAutoPoll) {
 TEST_F(ConfigCatClientTest, FromCacheOnly) {
     auto mockCache = make_shared<InMemoryConfigCache>();
     auto cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + kTestSdkKey);
-    mockCache->write(cacheKey, string_format(kTestJsonFormat, R"("fake")"));
+    auto config = Config::fromJson(string_format(kTestJsonFormat, R"("fake")"));
+    auto configEntry = ConfigEntry(config);
+    mockCache->write(cacheKey, configEntry.toJson());
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(120);
-    options.cache = mockCache;
+    options.pollingMode = PollingMode::autoPoll(120);
+    options.configCache = mockCache;
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("fake", value);
@@ -267,14 +269,16 @@ TEST_F(ConfigCatClientTest, FromCacheOnly) {
 TEST_F(ConfigCatClientTest, FromCacheOnlyRefresh) {
     auto mockCache = make_shared<InMemoryConfigCache>();
     auto cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + kTestSdkKey);
-    mockCache->write(cacheKey, string_format(kTestJsonFormat, R"("fake")"));
+    auto config = Config::fromJson(string_format(kTestJsonFormat, R"("fake")"));
+    auto configEntry = ConfigEntry(config);
+    mockCache->write(cacheKey, configEntry.toJson());
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(120);
-    options.cache = mockCache;
+    options.pollingMode = PollingMode::autoPoll(120);
+    options.configCache = mockCache;
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -285,9 +289,9 @@ TEST_F(ConfigCatClientTest, FailingAutoPollRefresh) {
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(120);
+    options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     client->forceRefresh();
 
@@ -299,9 +303,9 @@ TEST_F(ConfigCatClientTest, FailingExpiringCache) {
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(120);
+    options.pollingMode = PollingMode::autoPoll(120);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     auto value = client->getValue("fakeKey", "");
     EXPECT_EQ("", value);
@@ -333,14 +337,92 @@ TEST_F(ConfigCatClientTest, GetAllValues) {
     EXPECT_EQ(false, std::get<bool>(allValues.at("key2")));
 }
 
+TEST_F(ConfigCatClientTest, GetAllValueDetails) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    auto allDetails = client->getAllValueDetails();
+
+    auto details_by_key = [&](const std::vector<EvaluationDetails>& all_details, const std::string& key) -> const EvaluationDetails* {
+        for (const auto& details : all_details) {
+            if (details.key == key) {
+                return &details;
+            }
+        }
+        return nullptr;
+    };
+
+    EXPECT_EQ(6, allDetails.size());
+    auto details = details_by_key(allDetails, "testBoolKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testBoolKey", details->key);
+    EXPECT_EQ(true, get<bool>(details->value));
+
+    details = details_by_key(allDetails, "testStringKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testStringKey", details->key);
+    EXPECT_EQ("testValue", get<string>(details->value));
+    EXPECT_EQ("id", details->variationId);
+
+    details = details_by_key(allDetails, "testIntKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testIntKey", details->key);
+    EXPECT_EQ(1, get<int>(details->value));
+
+    details = details_by_key(allDetails, "testDoubleKey");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("testDoubleKey", details->key);
+    EXPECT_EQ(1.1, get<double>(details->value));
+
+    details = details_by_key(allDetails, "key1");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("key1", details->key);
+    EXPECT_EQ(true, get<bool>(details->value));
+    EXPECT_EQ("fakeId1", details->variationId);
+
+    details = details_by_key(allDetails, "key2");
+    EXPECT_NE(nullptr, details);
+    EXPECT_EQ("key2", details->key);
+    EXPECT_EQ(false, get<bool>(details->value));
+    EXPECT_EQ("fakeId2", details->variationId);
+}
+
+TEST_F(ConfigCatClientTest, GetValueDetails) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+
+    ConfigCatUser user("test@test1.com");
+    auto details = client->getValueDetails("testStringKey", "", &user);
+
+    EXPECT_EQ("fake1", get<string>(details.value));
+    EXPECT_EQ("testStringKey", details.key);
+    EXPECT_EQ("id1", details.variationId);
+    EXPECT_FALSE(details.isDefaultValue);
+    EXPECT_TRUE(details.error.empty());
+    EXPECT_TRUE(details.matchedEvaluationPercentageRule == nullopt);
+    EXPECT_EQ("fake1", get<string>(details.matchedEvaluationRule->value));
+    EXPECT_EQ(CONTAINS, details.matchedEvaluationRule->comparator);
+    EXPECT_EQ("Identifier", details.matchedEvaluationRule->comparisonAttribute);
+    EXPECT_EQ("@test1.com", details.matchedEvaluationRule->comparisonValue);
+    EXPECT_EQ(user.toJson(), details.user->toJson());
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    EXPECT_GE(now, details.fetchTime);
+    EXPECT_LE(now, details.fetchTime + std::chrono::seconds(1));
+}
+
 TEST_F(ConfigCatClientTest, AutoPollUserAgentHeader) {
     configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll();
+    options.pollingMode = PollingMode::autoPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -353,9 +435,9 @@ TEST_F(ConfigCatClientTest, LazyPollUserAgentHeader) {
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::lazyLoad();
+    options.pollingMode = PollingMode::lazyLoad();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -368,9 +450,9 @@ TEST_F(ConfigCatClientTest, ManualPollUserAgentHeader) {
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::manualPoll();
+    options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
     client->forceRefresh();
 
     auto value = client->getValue("fakeKey", "");
@@ -384,9 +466,9 @@ TEST_F(ConfigCatClientTest, Concurrency_DoNotStartNewFetchIfThereIsAnOngoingFetc
     mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(2);
+    options.pollingMode = PollingMode::autoPoll(2);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     thread t([&]() {
         sleep_for(chrono::milliseconds(500));
@@ -414,9 +496,9 @@ TEST_F(ConfigCatClientTest, Concurrency_OngoingFetchDoesNotBlockGetValue) {
     mockHttpSessionAdapter->enqueueResponse(secondResponse, responseDelay);
 
     ConfigCatOptions options;
-    options.mode = PollingMode::autoPoll(1);
+    options.pollingMode = PollingMode::autoPoll(1);
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get(kTestSdkKey, options);
+    auto client = ConfigCatClient::get(kTestSdkKey, &options);
 
     thread t([&]() {
         sleep_for(chrono::milliseconds(1500));
@@ -483,5 +565,116 @@ TEST_F(ConfigCatClientTest, GetValueWithKeyNotFound) {
     ConfigCatUser* user = nullptr;
     shared_ptr<Value> valuePtr = client->getValue("nonexisting", user);
     EXPECT_EQ(nullptr, valuePtr);
+}
+
+TEST_F(ConfigCatClientTest, DefaultUserGetValue) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+
+    auto user1 = make_shared<ConfigCatUser>("test@test1.com");
+    auto user2 = make_shared<ConfigCatUser>("test@test2.com");
+
+    client->setDefaultUser(user1);
+    EXPECT_EQ("fake1", client->getValue("testStringKey", ""));
+    EXPECT_EQ("fake2", client->getValue("testStringKey", "", user2.get()));
+
+    client->clearDefaultUser();
+    EXPECT_EQ("testValue", client->getValue("testStringKey", ""));
+}
+
+TEST_F(ConfigCatClientTest, DefaultUserGetAllValues) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+
+    auto user1 = make_shared<ConfigCatUser>("test@test1.com");
+    auto user2 = make_shared<ConfigCatUser>("test@test2.com");
+
+    client->setDefaultUser(user1);
+    auto allValues = client->getAllValues();
+    EXPECT_EQ(6, allValues.size());
+    EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
+    EXPECT_EQ("fake1", get<string>(allValues["testStringKey"]));
+    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
+    EXPECT_TRUE(get<bool>(allValues["key1"]));
+    EXPECT_FALSE(get<bool>(allValues["key2"]));
+
+    allValues = client->getAllValues(user2.get());
+    EXPECT_EQ(6, allValues.size());
+    EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
+    EXPECT_EQ("fake2", get<string>(allValues["testStringKey"]));
+    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
+    EXPECT_TRUE(get<bool>(allValues["key1"]));
+    EXPECT_FALSE(get<bool>(allValues["key2"]));
+
+    client->clearDefaultUser();
+    allValues = client->getAllValues();
+    EXPECT_EQ(6, allValues.size());
+    EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
+    EXPECT_EQ("testValue", get<string>(allValues["testStringKey"]));
+    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
+    EXPECT_TRUE(get<bool>(allValues["key1"]));
+    EXPECT_FALSE(get<bool>(allValues["key2"]));
+}
+
+TEST_F(ConfigCatClientTest, OnlineOffline) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    EXPECT_FALSE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+
+    client->setOffline();
+    EXPECT_TRUE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
+
+    client->setOnline();
+    EXPECT_FALSE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
+}
+
+TEST_F(ConfigCatClientTest, InitOffline) {
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::manualPoll();
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    options.offline = true;
+    client = ConfigCatClient::get(kTestSdkKey, &options);
+
+    EXPECT_TRUE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    client->setOnline();
+    EXPECT_FALSE(client->isOffline());
+
+    client->forceRefresh();
+
+    EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 }
 
