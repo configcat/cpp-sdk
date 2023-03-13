@@ -55,11 +55,11 @@ string valueToString(const ValueType& value) {
 
 // Config serialization
 
-void to_json(json& j, const Value& value) {
+void to_json(json& j, const ValueType& value) {
     std::visit([&](auto&& arg){j = arg;}, value);
 }
 
-void from_json(const json& j, Value& value) {
+void from_json(const json& j, ValueType& value) {
     if (j.is_boolean()) {
         value = j.get<bool>();
     } else if (j.is_string()) {
