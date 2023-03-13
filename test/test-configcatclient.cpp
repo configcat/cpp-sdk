@@ -404,7 +404,7 @@ TEST_F(ConfigCatClientTest, GetValueDetails) {
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);
     EXPECT_TRUE(details.error.empty());
-    EXPECT_TRUE(details.matchedEvaluationPercentageRule == nullopt);
+    EXPECT_TRUE(details.matchedEvaluationPercentageRule == std::nullopt);
     EXPECT_EQ("fake1", get<string>(details.matchedEvaluationRule->value));
     EXPECT_EQ(CONTAINS, details.matchedEvaluationRule->comparator);
     EXPECT_EQ("Identifier", details.matchedEvaluationRule->comparisonAttribute);

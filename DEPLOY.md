@@ -26,6 +26,7 @@ Use the **same version** for the git tag as in [src/version.h](src/version.h).
 
 ## Vcpkg Package
 - Fork the [vcpkg](https://github.com/microsoft/vcpkg) repo on GitHub.
+- In the repo directory run `./bootstrap-vcpkg.sh`.
 - Calculate `SHA512` of the released `.tar.gz` file.  
    - Download `.tar.gz` file
       ```bash
@@ -53,8 +54,8 @@ Use the **same version** for the git tag as in [src/version.h](src/version.h).
       ...
   }
   ```
-- Commit & Push
+- Commit & Push with commit message like `[configcat] Update to version 2.5.5`.
 - Run `./vcpkg x-add-version --all`
-- Commit & Push
-- Create a PR from the fork to [vcpkg](https://github.com/microsoft/vcpkg) master branch.
+- Commit & Push with commit message like `[configcat] Update to version 2.5.5`.
+- Create a PR from the fork to [vcpkg](https://github.com/microsoft/vcpkg) master branch. PR's title should be like `[configcat] Update to version 2.5.5`.
 - Make sure the PR is merged by the vcpkg team.
