@@ -28,7 +28,7 @@ public:
 
         fstream file(filePath);
         if (file.fail()) {
-            LOG_ERROR << "File open failed: " << filePath;
+            LOG_ERROR(0) << "File open failed: " << filePath;
             return {};
         }
 
@@ -112,7 +112,7 @@ public:
 
         if (!errors.empty()) {
             for (auto& error : errors) {
-                LOG_ERROR << error;
+                LOG_ERROR(0) << error;
             }
 
             FAIL() << "Errors found: " << errors.size();

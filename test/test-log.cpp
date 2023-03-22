@@ -28,7 +28,7 @@ TEST_F(LogTest, LogUser) {
         "country",
         {{"custom", "test"}}
     );
-    LOG_INFO << user;
+    LOG_INFO(0) << user;
 
     json userJson = json::parse(testLogger->text);
 
@@ -40,12 +40,12 @@ TEST_F(LogTest, LogUser) {
 
 TEST_F(LogTest, LogIntVector) {
     std::vector<int> v = { 1, 2, 3 };
-    LOG_INFO << v;
+    LOG_INFO(0) << v;
     EXPECT_EQ("[1, 2, 3]\n", testLogger->text);
 }
 
 TEST_F(LogTest, LogStringVector) {
     std::vector<string> v = { "a", "b", "c" };
-    LOG_INFO << v;
+    LOG_INFO(0) << v;
     EXPECT_EQ("[a, b, c]\n", testLogger->text);
 }

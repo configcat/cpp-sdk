@@ -123,17 +123,16 @@ FetchResponse ConfigFetcher::executeFetch(const std::string& eTag, int executeCo
     // Try to download again with the new url
 
     if (preferences->redirect == ShouldRedirect) {
-        LOG_WARN << "Your dataGovernance parameter at ConfigCatClient "
-                    "initialization is not in sync with your preferences on the ConfigCat "
-                    "Dashboard: https://app.configcat.com/organization/data-governance. "
-                    "Only Organization Admins can access this preference.";
+        LOG_WARN(3002) <<
+            "The `dataGovernance` parameter specified at the client initialization is not in sync with the preferences on the ConfigCat Dashboard. "
+            "Read more: https://configcat.com/docs/advanced/data-governance/";
     }
 
     if (executeCount > 0) {
         return executeFetch(eTag, executeCount - 1);
     }
 
-    LOG_ERROR << "Redirect loop during config.json fetch. Please contact support@configcat.com.";
+    LOG_ERROR(1104) << "Redirection loop encountered while trying to fetch config JSON. Please contact us at https://configcat.com/support/";
     return response;
 }
 
@@ -158,11 +157,13 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     auto response = session->Get();
 
     if (response.error.code != cpr::ErrorCode::OK) {
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-        logEntry << "An error occurred during the config fetch: " << response.error.message << ".";
-        if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT) {
-            logEntry << " Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]";
-        }
+        LogEntry logEntry = response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT
+            ? LogEntry(logger, LOG_LEVEL_ERROR, 1102) <<
+                "Request timed out while trying to fetch config JSON. "
+                "Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]"
+            : LogEntry(logger, LOG_LEVEL_ERROR, 1103) <<
+                "Unexpected error occurred while trying to fetch config JSON: " << response.error.message;
+
         return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
     }
 
@@ -179,8 +180,10 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
                 LOG_DEBUG << "Fetch was successful: new config fetched.";
                 return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, getUtcNowSecondsSinceEpoch()));
             } catch (exception& exception) {
-                LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-                logEntry << "Config JSON parsing failed. " << exception.what();
+                LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105);
+                logEntry <<
+                    "Fetching config JSON was successful but the HTTP response content was invalid. "
+                    "Config JSON parsing failed. " << exception.what();
                 return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
             }
         }
@@ -192,15 +195,16 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
 
         case 403:
         case 404: {
-            LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-            logEntry << "Double-check your API KEY at https://app.configcat.com/apikey. " <<
-                     "Received unexpected response: " << response.status_code;
+            LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1100);
+            logEntry <<
+                "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey. "
+                "Received unexpected response: " << response.status_code;
             return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), false);
         }
 
         default: {
-            LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-            logEntry << "Unexpected HTTP response was received: " << response.status_code;
+            LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1101);
+            logEntry << "Unexpected HTTP response was received while trying to fetch config JSON: " << response.status_code;
             return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
         }
     }
