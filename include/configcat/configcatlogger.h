@@ -7,7 +7,6 @@
 
 namespace configcat {
 
-//class ConfigCatLogger : public ILogger {
 class ConfigCatLogger {
 public:
     ConfigCatLogger(std::shared_ptr<ILogger> logger, std::shared_ptr<Hooks> hooks):
