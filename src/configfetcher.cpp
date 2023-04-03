@@ -157,7 +157,7 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     auto response = session->Get();
 
     if (response.error.code != cpr::ErrorCode::OK) {
-        LogEntry logEntry = response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT
+        LogEntry logEntry = (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT)
             ? LogEntry(logger, LOG_LEVEL_ERROR, 1102) <<
                 "Request timed out while trying to fetch config JSON. "
                 "Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]"

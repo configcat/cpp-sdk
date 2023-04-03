@@ -20,9 +20,7 @@ public:
         }
 
         if (logger) {
-            std::stringstream ss;
-            ss << "[" << eventId << "] " << message;
-            logger->log(level, ss.str());
+            logger->log(level, "[" + std::to_string(eventId) + "] " + message);
         }
     }
 

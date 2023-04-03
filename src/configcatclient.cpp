@@ -172,7 +172,7 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
         }
         LOG_ERROR(1001) <<
             "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
-            "Returning nullptr. Available keys: [" << keys << "].";
+            "Returning nullptr. Available keys: " << keys << ".";
         return {};
     }
 
@@ -223,7 +223,7 @@ EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, Valu
         logEntry <<
             "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
             "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
-            "Available keys: [" << keys << "].";
+            "Available keys: " << keys << ".";
         auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
         hooks->invokeOnFlagEvaluated(details);
         return details;
@@ -340,7 +340,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         logEntry <<
             "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
             "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
-            "Available keys: [" << keys << "].";
+            "Available keys: " << keys << ".";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
