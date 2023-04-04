@@ -39,7 +39,7 @@ ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCat
 
     client = instances.insert({
         sdkKey,
-        move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, options ? *options : ConfigCatOptions())))
+        std::move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, options ? *options : ConfigCatOptions())))
     }).first;
 
     return client->second.get();
@@ -168,7 +168,7 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
         vector<string> keys;
         keys.reserve(settings->size());
         for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
+            keys.emplace_back("'" + keyValue.first + "'");
         }
         LOG_ERROR(1001) <<
             "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
@@ -217,7 +217,7 @@ EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, Valu
         vector<string> keys;
         keys.reserve(settings->size());
         for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
+            keys.emplace_back("'" + keyValue.first + "'");
         }
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
         logEntry <<
@@ -334,7 +334,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         vector<string> keys;
         keys.reserve(settings->size());
         for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
+            keys.emplace_back("'" + keyValue.first + "'");
         }
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
         logEntry <<
