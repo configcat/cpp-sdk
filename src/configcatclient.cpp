@@ -158,7 +158,7 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
-        logEntry << "Config JSON is not present. Returning nullptr.";
+        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning nullptr.";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, {}, logEntry.getMessage()));
         return {};
     }
@@ -206,7 +206,7 @@ EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, Valu
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
-        logEntry << "Config JSON is not present. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
+        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
         hooks->invokeOnFlagEvaluated(details);
         return details;
@@ -324,7 +324,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
-        logEntry << "Config JSON is not present. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
+        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
