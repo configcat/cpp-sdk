@@ -87,6 +87,8 @@ void ConfigService::setOnline() {
     if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier) {
         startPoll();
     }
+
+    LOG_INFO(5200) << "Switched to ONLINE mode.";
 }
 
 void ConfigService::setOffline() {
@@ -104,6 +106,8 @@ void ConfigService::setOffline() {
         if (thread && thread->joinable())
             thread->join();
     }
+
+    LOG_INFO(5200) << "Switched to OFFLINE mode.";
 }
 
 tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, bool preferCache) {
@@ -134,8 +138,8 @@ tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, 
 
         // If we are in offline mode we are not allowed to initiate fetch.
         if (offline) {
-            auto offlineWarning = "The SDK is in offline mode, it can not initiate HTTP calls.";
-            LOG_WARN << offlineWarning;
+            auto offlineWarning = "Client is in offline mode, it cannot initiate HTTP calls.";
+            LOG_WARN(3200) << offlineWarning;
             return { cachedEntry, offlineWarning };
         }
 
@@ -187,7 +191,7 @@ shared_ptr<ConfigEntry> ConfigService::readCache() {
         cachedEntryString = jsonString;
         return ConfigEntry::fromJson(jsonString);
     } catch (exception& exception) {
-        LOG_ERROR << "An error occurred during the cache read. " << exception.what();
+        LOG_ERROR(2200) << "Error occurred while reading the cache. " << exception.what();
         return ConfigEntry::empty;
     }
 }
@@ -196,7 +200,7 @@ void ConfigService::writeCache(const std::shared_ptr<ConfigEntry>& configEntry) 
     try {
         configCache->write(cacheKey, configEntry->toJson());
     } catch (exception& exception) {
-        LOG_ERROR << "An error occurred during the cache write. " << exception.what();
+        LOG_ERROR(2201) << "Error occurred while writing the cache. " << exception.what();
     }
 }
 

@@ -3,3 +3,5 @@ cmake-build-debug-docker
 cmake-build-debug-local-container
 build
 .dccache
+.vs
+vcpkg_installed

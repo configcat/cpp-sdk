@@ -29,15 +29,17 @@ ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCat
     auto client = instances.find(sdkKey);
     if (client != instances.end()) {
         if (options) {
-            LOG_WARN_OBJECT(client->second->logger) << "Client for sdk_key `" << sdkKey
-                << "` is already created and will be reused; options passed are being ignored.";
+            LOG_WARN_OBJECT(client->second->logger, 3000) <<
+                "There is an existing client instance for the specified SDK Key. "
+                "No new client instance will be created and the specified options are ignored. "
+                "Returning the existing client instance. SDK Key: '" << sdkKey << "'.";
         }
         return client->second.get();
     }
 
     client = instances.insert({
         sdkKey,
-        move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, options ? *options : ConfigCatOptions())))
+        std::move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, options ? *options : ConfigCatOptions())))
     }).first;
 
     return client->second.get();
@@ -52,7 +54,7 @@ void ConfigCatClient::close(ConfigCatClient* client) {
         }
     }
 
-    LOG_ERROR_OBJECT(client->logger) << "Client does not exist.";
+    LOG_ERROR_OBJECT(client->logger, 0) << "Client does not exist.";
     assert(false);
 }
 
@@ -155,9 +157,8 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-        logEntry << "Evaluating getValue(\"" << key << "\") failed. Cache is empty. "
-                 << "Returning nullptr.";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
+        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning nullptr.";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, {}, logEntry.getMessage()));
         return {};
     }
@@ -167,10 +168,11 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
         vector<string> keys;
         keys.reserve(settings->size());
         for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
+            keys.emplace_back("'" + keyValue.first + "'");
         }
-        LOG_ERROR << "Value not found for key " << key << ". Here are the available keys: " << keys
-                  << " Returning nullptr.";
+        LOG_ERROR(1001) <<
+            "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
+            "Returning nullptr. Available keys: " << keys << ".";
         return {};
     }
 
@@ -203,9 +205,8 @@ EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, Valu
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-        logEntry << "Evaluating getValueDetails(\"" << key << "\") failed. Cache is empty. "
-                 << "Returning defaultValue: " << defaultValue << " .";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
+        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
         hooks->invokeOnFlagEvaluated(details);
         return details;
@@ -216,11 +217,13 @@ EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, Valu
         vector<string> keys;
         keys.reserve(settings->size());
         for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
+            keys.emplace_back("'" + keyValue.first + "'");
         }
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-        logEntry << "Value not found for key " << key << ". Here are the available keys: " << keys
-                 << " Returning defaultValue: " << defaultValue << " .";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
+        logEntry <<
+            "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
+            "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
+            "Available keys: " << keys << ".";
         auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
         hooks->invokeOnFlagEvaluated(details);
         return details;
@@ -250,7 +253,7 @@ std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& var
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LOG_ERROR << "Config JSON is not present. Returning null.";
+        LOG_ERROR(1000) << "Config JSON is not present. Returning null.";
         return nullptr;
     }
 
@@ -282,7 +285,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LOG_ERROR << "Evaluating getAllValues() failed. Cache is empty. Returning empty list.";
+        LOG_ERROR(1000) << "Config JSON is not present. Returning empty map.";
         return {};
     }
 
@@ -301,7 +304,7 @@ std::vector<EvaluationDetails> ConfigCatClient::getAllValueDetails(const ConfigC
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LOG_ERROR << "Evaluating getAllValueDetails() failed. Cache is empty. Returning empty list.";
+        LOG_ERROR(1000) << "Config JSON is not present. Returning empty list.";
         return {};
     }
 
@@ -320,9 +323,8 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings || settings->empty()) {
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-        logEntry << "Evaluating getValue(\"" << key << "\") failed. Cache is empty. "
-                 << "Returning defaultValue: " << defaultValue << " .";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
+        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
@@ -332,11 +334,13 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         vector<string> keys;
         keys.reserve(settings->size());
         for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
+            keys.emplace_back("'" + keyValue.first + "'");
         }
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR);
-        logEntry << "Value not found for key " << key << ". Here are the available keys: " << keys
-                 << " Returning defaultValue: " << defaultValue << " .";
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
+        logEntry <<
+            "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
+            "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
+            "Available keys: " << keys << ".";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
@@ -346,7 +350,9 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     if (valuePtr)
         return *valuePtr;
 
-    LOG_ERROR << "Evaluating getValue(\"" << key << "\") failed. Returning defaultValue: " << defaultValue << " .";
+    LOG_ERROR(1002) <<
+        "Error occurred in the `getValue` method while evaluating setting '" << key << "'. "
+        "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
     return defaultValue;
 }
 
@@ -380,14 +386,15 @@ void ConfigCatClient::setOnline() {
     if (configService) {
         configService->setOnline();
     }
-    LOG_DEBUG << "Switched to ONLINE mode.";
+    else {
+        LOG_WARN(3202) << "Client is configured to use the `LocalOnly` override behavior, thus `setOnline()` has no effect.";
+    }
 }
 
 void ConfigCatClient::setOffline() {
     if (configService) {
         configService->setOffline();
     }
-    LOG_DEBUG << "Switched to OFFLINE mode.";
 }
 
 bool ConfigCatClient::isOffline() {

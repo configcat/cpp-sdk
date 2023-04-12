@@ -23,14 +23,15 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
     const string& key,
     const ConfigCatUser* user,
     const Setting& setting) {
-    LogEntry logEntry(logger, LOG_LEVEL_INFO);
+    LogEntry logEntry(logger, LOG_LEVEL_INFO, 5000);
     logEntry << "Evaluating getValue(" << key << ")";
 
     if (!user) {
         if (!setting.rolloutRules.empty() || !setting.percentageItems.empty()) {
-            LOG_WARN << "UserObject missing! You should pass a UserObject to getValue(), "
-                     << "in order to make targeting work properly. "
-                     << "Read more: https://configcat.com/docs/advanced/user-object/";
+            LOG_WARN(3001) <<
+                "Cannot evaluate targeting rules and % options for setting '" << key << "' (User Object is missing). "
+                "You should pass a User Object to the evaluation methods like `getValue()` in order to make targeting work properly. "
+                "Read more: https://configcat.com/docs/advanced/user-object/";
         }
 
         logEntry << "\n" << "Returning " << setting.value;
@@ -126,7 +127,7 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
                                                              comparisonValue, exception.what());
                     logEntry << "\n" << message;
-                    LOG_WARN << message;
+                    LOG_WARN(0) << message;
                 }
                 break;
             }
@@ -154,7 +155,7 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
                                                              comparisonValue, exception.what());
                     logEntry << "\n" << message;
-                    LOG_WARN << message;
+                    LOG_WARN(0) << message;
                 }
                 break;
             }
@@ -170,7 +171,7 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
                     string reason = string_format("Cannot convert string \"%s\" to double.", userValue.c_str());
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, reason);
                     logEntry << "\n" << message;
-                    LOG_WARN << message;
+                    LOG_WARN(0) << message;
                     break;
                 }
 
@@ -179,7 +180,7 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
                     string reason = string_format("Cannot convert string \"%s\" to double.", comparisonValue.c_str());
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, reason);
                     logEntry << "\n" << message;
-                    LOG_WARN << message;
+                    LOG_WARN(0) << message;
                     break;
                 }
 

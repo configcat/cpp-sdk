@@ -20,7 +20,10 @@ FileOverrideDataSource::FileOverrideDataSource(const string& filePath, OverrideB
     filePath(filePath),
     logger(logger) {
     if (!filesystem::exists(filePath)) {
-        LOG_ERROR <<  "The file " << filePath << " does not exists.";
+        LOG_ERROR(1300) <<
+            "Cannot find the local config file '" << filePath << "'. "
+            "This is a path that your application provided to the ConfigCat SDK by passing it to the constructor of the `FileFlagOverrides` class. "
+            "Read more: https://configcat.com/docs/sdk-reference/cpp/#json-file";
     }
 }
 
@@ -38,9 +41,9 @@ void FileOverrideDataSource::reloadFileContent() {
             overrides = config->entries;
         }
     } catch (filesystem::filesystem_error exception) {
-        LOG_ERROR << "Could not read the content of the file " << filePath << ". " << exception.what();
+        LOG_ERROR(1302) << "Failed to read the local config file '" << filePath << "'. " << exception.what();
     } catch (exception& exception) {
-        LOG_ERROR << "Could not decode json from file " << filePath << ". " << exception.what();
+        LOG_ERROR(2302) << "Failed to decode JSON from the local config file '" << filePath << "'. " << exception.what();
     }
 }
 

@@ -30,7 +30,7 @@ public:
         vector<char> filePath(file_template.begin(), file_template.end());
         filePath.push_back('\0');
         if (!mktemp(filePath.data())) {
-            LOG_ERROR << "Cannot create temp filePath.";
+            LOG_ERROR(0) << "Cannot create temp filePath.";
             return {};
         }
 
