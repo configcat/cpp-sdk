@@ -5,6 +5,7 @@ This is a sample application to demonstrate how to use the ConfigCat C++ SDK.
 ## Table of Contents
 
 - [Instructions for CMake](#instructions-for-cmake)
+- [Instructions for GNU Make](#instructions-for-gnu-make)
 - [Instructions for CLion](#instructions-for-clion)
 - [Instructions for Visual Studio](#instructions-for-visual-studio)
 
@@ -31,8 +32,8 @@ This is a sample application to demonstrate how to use the ConfigCat C++ SDK.
 ### 3. Build with CMake
 
 ```bash
-  cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
-  cmake --build build
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
+cmake --build build
 ```
 
 ### 4. Run
@@ -45,6 +46,29 @@ This is a sample application to demonstrate how to use the ConfigCat C++ SDK.
   ```bash
   ./build/example
   ```
+
+## Instructions for GNU Make
+
+### 1. Install [Vcpkg](https://github.com/microsoft/vcpkg)
+
+```bash
+git clone https://github.com/microsoft/vcpkg
+./vcpkg/bootstrap-vcpkg.sh
+```
+
+### 2. Build
+
+Makefile uses the `VCPKG_ROOT` environment variable to install the ConfigCat package and its dependencies.
+
+```bash
+(export VCPKG_ROOT=[path to vcpkg] && make)
+```
+
+### 3. Run
+
+```bash
+./example
+```
 
 ## Instructions for CLion
 
