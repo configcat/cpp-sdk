@@ -63,7 +63,7 @@ SettingResult ConfigService::getSettings() {
             if (!initialized) {
                 setInitialized();
                 auto config = cachedEntry->config;
-                return { cachedEntry != ConfigEntry::empty && config ? config->entries : nullptr, cachedEntry->fetchTime };
+                return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, cachedEntry->fetchTime };
             }
         }
     }
