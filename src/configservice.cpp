@@ -70,7 +70,7 @@ SettingResult ConfigService::getSettings() {
 
     auto [ entry, _ ] = fetchIfOlder(kDistantPast, true);
     auto config = entry->config;
-    return { cachedEntry != ConfigEntry::empty && config ? config->entries : nullptr, entry->fetchTime };
+    return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
 }
 
 RefreshResult ConfigService::refresh() {
