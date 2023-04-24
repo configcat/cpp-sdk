@@ -50,7 +50,7 @@ SettingResult ConfigService::getSettings() {
         auto now = chrono::steady_clock::now();
         auto [ entry, _ ] = fetchIfOlder(getUtcNowSecondsSinceEpoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
         auto config = cachedEntry->config;
-        return { cachedEntry != ConfigEntry::empty && config ? config->entries : nullptr, entry->fetchTime };
+        return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
     } else if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !initialized) {
         auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
         auto elapsedTime = chrono::duration<double>(chrono::steady_clock::now() - startTime).count();
