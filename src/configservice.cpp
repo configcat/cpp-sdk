@@ -50,7 +50,7 @@ SettingResult ConfigService::getSettings() {
         auto now = chrono::steady_clock::now();
         auto [ entry, _ ] = fetchIfOlder(getUtcNowSecondsSinceEpoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
         auto config = cachedEntry->config;
-        return { config ? config->entries : nullptr, entry->fetchTime };
+        return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
     } else if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !initialized) {
         auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
         auto elapsedTime = chrono::duration<double>(chrono::steady_clock::now() - startTime).count();
@@ -63,14 +63,14 @@ SettingResult ConfigService::getSettings() {
             if (!initialized) {
                 setInitialized();
                 auto config = cachedEntry->config;
-                return { config ? config->entries : nullptr, cachedEntry->fetchTime };
+                return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, cachedEntry->fetchTime };
             }
         }
     }
 
     auto [ entry, _ ] = fetchIfOlder(kDistantPast, true);
     auto config = entry->config;
-    return { config ? config->entries : nullptr, entry->fetchTime };
+    return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
 }
 
 RefreshResult ConfigService::refresh() {

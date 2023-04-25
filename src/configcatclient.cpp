@@ -156,7 +156,7 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
+    if (!settings) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
         logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning nullptr.";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, {}, logEntry.getMessage()));
@@ -204,7 +204,7 @@ EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, Valu
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
+    if (!settings) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
         logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
@@ -236,7 +236,8 @@ std::vector<std::string> ConfigCatClient::getAllKeys() const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
+    if (!settings) {
+        LOG_ERROR(1000) << "Config JSON is not present. Returning empty list.";
         return {};
     }
 
@@ -252,7 +253,7 @@ std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& var
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
+    if (!settings) {
         LOG_ERROR(1000) << "Config JSON is not present. Returning null.";
         return nullptr;
     }
@@ -277,6 +278,7 @@ std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& var
         }
     }
 
+    LOG_ERROR(2011) << "Could not find the setting for the specified variation ID: '" << variationId << "'.";
     return nullptr;
 }
 
@@ -284,7 +286,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
+    if (!settings) {
         LOG_ERROR(1000) << "Config JSON is not present. Returning empty map.";
         return {};
     }
@@ -303,7 +305,7 @@ std::vector<EvaluationDetails> ConfigCatClient::getAllValueDetails(const ConfigC
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
+    if (!settings) {
         LOG_ERROR(1000) << "Config JSON is not present. Returning empty list.";
         return {};
     }
@@ -322,7 +324,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
-    if (!settings || settings->empty()) {
+    if (!settings) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
         logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
