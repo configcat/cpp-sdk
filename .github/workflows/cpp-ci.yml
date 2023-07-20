@@ -21,7 +21,7 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: 1
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install dependencies on ubuntu
       if: startsWith(matrix.os, 'ubuntu')
       run: |
@@ -58,7 +58,7 @@ jobs:
       CXXFLAGS: "--coverage -fno-inline"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           git clone https://github.com/microsoft/vcpkg build/vcpkg
