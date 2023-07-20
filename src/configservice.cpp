@@ -21,7 +21,7 @@ ConfigService::ConfigService(const string& sdkKey,
     pollingMode(options.pollingMode ? options.pollingMode : PollingMode::autoPoll()),
     cachedEntry(ConfigEntry::empty),
     configCache(configCache) {
-    cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + sdkKey);
+    cacheKey = generateCacheKey(sdkKey);
     configFetcher = make_unique<ConfigFetcher>(sdkKey, logger, pollingMode->getPollingIdentifier(), options);
     offline = options.offline;
     startTime = chrono::steady_clock::now();
@@ -110,6 +110,9 @@ void ConfigService::setOffline() {
     LOG_INFO(5200) << "Switched to OFFLINE mode.";
 }
 
+string ConfigService::generateCacheKey(const string& sdkKey) {
+    return SHA1()(sdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
+}
 tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, bool preferCache) {
     {
         lock_guard<mutex> lock(fetchMutex);
@@ -189,7 +192,7 @@ shared_ptr<ConfigEntry> ConfigService::readCache() {
         }
 
         cachedEntryString = jsonString;
-        return ConfigEntry::fromJson(jsonString);
+        return ConfigEntry::fromString(jsonString);
     } catch (exception& exception) {
         LOG_ERROR(2200) << "Error occurred while reading the cache. " << exception.what();
         return ConfigEntry::empty;
@@ -198,7 +201,7 @@ shared_ptr<ConfigEntry> ConfigService::readCache() {
 
 void ConfigService::writeCache(const std::shared_ptr<ConfigEntry>& configEntry) {
     try {
-        configCache->write(cacheKey, configEntry->toJson());
+        configCache->write(cacheKey, configEntry->serialize());
     } catch (exception& exception) {
         LOG_ERROR(2201) << "Error occurred while writing the cache. " << exception.what();
     }

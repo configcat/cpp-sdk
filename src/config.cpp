@@ -1,6 +1,7 @@
 #include "configcat/config.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <cmath>
 
 using namespace std;
 using json = nlohmann::json;
@@ -165,20 +166,39 @@ shared_ptr<Config> Config::fromFile(const string& filePath) {
     return config;
 }
 
-shared_ptr<ConfigEntry> ConfigEntry::fromJson(const std::string& jsonString) {
-    json configEntryObj = json::parse(jsonString);
-    auto config = make_shared<Config>();
-    auto configObj = configEntryObj.at(kConfig);
-    configObj.get_to(*config);
-    return make_shared<ConfigEntry>(config, configEntryObj.value(kETag, ""), configEntryObj.value(kFetchTime, kDistantPast));
+shared_ptr<ConfigEntry> ConfigEntry::fromString(const string& text) {
+    if (text.empty())
+        return ConfigEntry::empty;
+
+    auto fetchTimeIndex = text.find('\n');
+    auto eTagIndex = text.find('\n', fetchTimeIndex + 1);
+    if (fetchTimeIndex == string::npos || eTagIndex == string::npos) {
+        throw std::invalid_argument("Number of values is fewer than expected.");
+    }
+
+    auto fetchTimeString = text.substr(0, fetchTimeIndex);
+    double fetchTime;
+    try {
+        fetchTime = std::stod(fetchTimeString);
+    } catch (const std::exception& e) {
+        throw std::invalid_argument("Invalid fetch time: " + fetchTimeString + ". " + e.what());
+    }
+
+    auto eTag = text.substr(fetchTimeIndex + 1, eTagIndex - fetchTimeIndex - 1);
+    if (eTag.empty()) {
+        throw std::invalid_argument("Empty eTag value");
+    }
+
+    auto configJsonString = text.substr(eTagIndex + 1);
+    try {
+        return make_shared<ConfigEntry>(Config::fromJson(configJsonString), eTag, configJsonString, fetchTime / 1000.0);
+    } catch (const std::exception& e) {
+        throw std::invalid_argument("Invalid config JSON: " + configJsonString + ". " + e.what());
+    }
 }
 
-string ConfigEntry::toJson() const {
-    return "{"s +
-       '"' + kConfig + '"' + ":" + (config ? config->toJson() : "{}") +
-       "," + '"' + kETag + '"' + ":" + '"' + eTag + '"' +
-       "," + '"' + kFetchTime + '"' + ":" + to_string(fetchTime) +
-   "}";
+string ConfigEntry::serialize() const {
+    return to_string(static_cast<uint64_t>(floor(fetchTime * 1000))) + "\n" + eTag + "\n" + configJsonString;
 }
 
 } // namespace configcat

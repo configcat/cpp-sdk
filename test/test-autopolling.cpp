@@ -174,9 +174,13 @@ TEST_F(AutoPollingTest, Cache) {
 }
 
 TEST_F(AutoPollingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
-    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
-        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
-        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch()) + "}");
+    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(jsonString),
+        "test-etag",
+        jsonString,
+        getUtcNowSecondsSinceEpoch()).serialize()
+    );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
@@ -212,9 +216,13 @@ TEST_F(AutoPollingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
 TEST_F(AutoPollingTest, FetchConfigWhenCacheIsExpired) {
     auto pollIntervalSeconds = 2;
     auto maxInitWaitTimeSeconds = 1;
-    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
-        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
-        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch() - pollIntervalSeconds) + "}");
+    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(jsonString),
+        "test-etag",
+        jsonString,
+        getUtcNowSecondsSinceEpoch() - pollIntervalSeconds).serialize()
+    );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
@@ -232,9 +240,13 @@ TEST_F(AutoPollingTest, FetchConfigWhenCacheIsExpired) {
 TEST_F(AutoPollingTest, initWaitTimeReturnCached) {
     auto pollIntervalSeconds = 60;
     auto maxInitWaitTimeSeconds = 1;
-    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
-        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
-        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch() - 2 * pollIntervalSeconds) + "}");
+    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(jsonString),
+        "test-etag",
+        jsonString,
+        getUtcNowSecondsSinceEpoch() - 2 * pollIntervalSeconds).serialize()
+    );
 
     configcat::Response response = {200, string_format(kTestJsonFormat, R"("test2")")};
     constexpr int responseDelay = 5;

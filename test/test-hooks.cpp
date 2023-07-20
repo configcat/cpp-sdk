@@ -5,8 +5,6 @@
 #include "configcat/configcatclient.h"
 #include "configcat/configcatoptions.h"
 #include "configcat/configcatlogger.h"
-#include "configcat/consolelogger.h"
-#include <thread>
 #include <chrono>
 
 using namespace configcat;
@@ -32,7 +30,11 @@ TEST_F(HooksTest, Init) {
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
-    options.configCache = make_shared<SingleValueCache>(R"({"config":)"s + kTestJsonString + R"(,"etag":"test-etag"})");
+    options.configCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(kTestJsonString),
+        "test-etag",
+        kTestJsonString).serialize()
+    );
     options.hooks = hooks;
     auto client = ConfigCatClient::get("test", &options);
 
@@ -70,7 +72,11 @@ TEST_F(HooksTest, Subscribe) {
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
-    options.configCache = make_shared<SingleValueCache>(R"({"config":)"s + kTestJsonString + R"(,"etag":"test-etag"})");
+    options.configCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(kTestJsonString),
+        "test-etag",
+        kTestJsonString).serialize()
+    );
     options.hooks = hooks;
     auto client = ConfigCatClient::get("test", &options);
 
