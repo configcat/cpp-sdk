@@ -1,3 +1,3 @@
 #pragma once
 
-#define CONFIGCAT_VERSION "2.0.1"
+#define CONFIGCAT_VERSION "3.0.0"
