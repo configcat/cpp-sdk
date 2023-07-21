@@ -178,7 +178,7 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
             try {
                 auto config = Config::fromJson(response.text);
                 LOG_DEBUG << "Fetch was successful: new config fetched.";
-                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, getUtcNowSecondsSinceEpoch()));
+                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, response.text, getUtcNowSecondsSinceEpoch()));
             } catch (exception& exception) {
                 LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105);
                 logEntry <<

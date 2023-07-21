@@ -37,6 +37,8 @@ public:
     void setOffline();
     bool isOffline() { return offline; }
 
+    static std::string generateCacheKey(const std::string& sdkKey);
+
 private:
     // Returns the ConfigEntry object and error message in case of any error.
     std::tuple<std::shared_ptr<ConfigEntry>, std::string> fetchIfOlder(double time, bool preferCache = false);

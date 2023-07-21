@@ -105,9 +105,13 @@ TEST_F(LazyLoadingTest, Cache) {
 }
 
 TEST_F(LazyLoadingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
-    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
-        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
-        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch()) + "}");
+    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(jsonString),
+        "test-etag",
+        jsonString,
+        getUtcNowSecondsSinceEpoch()).serialize()
+    );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
@@ -132,9 +136,13 @@ TEST_F(LazyLoadingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
 
 TEST_F(LazyLoadingTest, FetchConfigWhenCacheIsExpired) {
     auto cacheTimeToLiveSeconds = 1;
-    auto mockCache = make_shared<SingleValueCache>(R"({"config":)"s
-        + string_format(kTestJsonFormat, R"("test")") + R"(,"etag":"test-etag")"
-        + R"(,"fetch_time":)" + to_string(getUtcNowSecondsSinceEpoch() - cacheTimeToLiveSeconds) + "}");
+    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(jsonString),
+        "test-etag",
+        jsonString,
+        getUtcNowSecondsSinceEpoch() - cacheTimeToLiveSeconds).serialize()
+    );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);

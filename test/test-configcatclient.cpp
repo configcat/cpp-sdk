@@ -250,10 +250,11 @@ TEST_F(ConfigCatClientTest, FailingAutoPoll) {
 
 TEST_F(ConfigCatClientTest, FromCacheOnly) {
     auto mockCache = make_shared<InMemoryConfigCache>();
-    auto cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + kTestSdkKey);
-    auto config = Config::fromJson(string_format(kTestJsonFormat, R"("fake")"));
-    auto configEntry = ConfigEntry(config);
-    mockCache->write(cacheKey, configEntry.toJson());
+    auto cacheKey = SHA1()(""s + kTestSdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
+    auto jsonString = string_format(kTestJsonFormat, R"("fake")");
+    auto config = Config::fromJson(jsonString);
+    auto configEntry = ConfigEntry(config, "test-etag", jsonString, getUtcNowSecondsSinceEpoch());
+    mockCache->write(cacheKey, configEntry.serialize());
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
     ConfigCatOptions options;
@@ -268,10 +269,11 @@ TEST_F(ConfigCatClientTest, FromCacheOnly) {
 
 TEST_F(ConfigCatClientTest, FromCacheOnlyRefresh) {
     auto mockCache = make_shared<InMemoryConfigCache>();
-    auto cacheKey = SHA1()(string("cpp_") + ConfigFetcher::kConfigJsonName + "_" + kTestSdkKey);
-    auto config = Config::fromJson(string_format(kTestJsonFormat, R"("fake")"));
-    auto configEntry = ConfigEntry(config);
-    mockCache->write(cacheKey, configEntry.toJson());
+    auto cacheKey = SHA1()(""s + kTestSdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
+    auto jsonString = string_format(kTestJsonFormat, R"("fake")");
+    auto config = Config::fromJson(jsonString);
+    auto configEntry = ConfigEntry(config, "test-etag", jsonString, getUtcNowSecondsSinceEpoch());
+    mockCache->write(cacheKey, configEntry.serialize());
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
     ConfigCatOptions options;
