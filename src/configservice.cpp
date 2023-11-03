@@ -57,7 +57,7 @@ SettingResult ConfigService::getSettings() {
         if (elapsedTime < autoPollingMode.maxInitWaitTimeInSeconds) {
             unique_lock<mutex> lock(initMutex);
             chrono::duration<double> timeout(autoPollingMode.maxInitWaitTimeInSeconds - elapsedTime);
-            init.wait_for(lock, timeout, [&]{ return initialized; });
+            init.wait_until(lock, chrono::system_clock::now() + timeout, [&]{ return initialized; });
 
             // Max wait time expired without result, notify subscribers with the cached config.
             if (!initialized) {
@@ -225,7 +225,8 @@ void ConfigService::run() {
     do {
         {
             unique_lock<mutex> lock(initMutex);
-            stop.wait_for(lock, chrono::seconds(autoPollingMode.autoPollIntervalInSeconds), [&]{ return stopRequested; });
+            auto timeout = chrono::seconds(autoPollingMode.autoPollIntervalInSeconds);
+            stop.wait_until(lock, chrono::system_clock::now() + timeout, [&]{ return stopRequested; });
             if (stopRequested) {
                 break;
             }
