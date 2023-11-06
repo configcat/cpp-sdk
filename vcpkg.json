@@ -1,9 +1,19 @@
 {
   "name": "configcat",
   "dependencies": [
-    "cpr",
     "nlohmann-json",
     "hash-library",
-    "z4kn4fein-semver"
+    "z4kn4fein-semver",
+    {
+      "name": "curl",
+      "default-features": false,
+      "features": [
+        "ssl"
+      ]
+    },
+    {
+      "name": "openssl",
+      "platform": "linux"
+    }
   ]
 }
