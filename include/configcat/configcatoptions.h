@@ -13,13 +13,9 @@
 #include "flagoverrides.h"
 #include "log.h"
 #include "evaluationdetails.h"
+#include "proxyauthentication.h"
 
 namespace configcat {
-
-struct ProxyAuthentication {
-    std::string user;
-    std::string password;
-};
 
 // Hooks for events sent by `ConfigCatClient`.
 class Hooks {

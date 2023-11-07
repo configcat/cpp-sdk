@@ -121,4 +121,4 @@ Contributions are welcome. For more info please read the [Contribution Guideline
 - [Blog](https://configcat.com/blog)
 
 ## External Libraries
-ConfigCat C++ SDK uses these wonderful libraries: [cpr](https://github.com/libcpr/cpr), [hash-library](https://create.stephan-brumme.com/hash-library), [libcurl](https://curl.se/libcurl), [nlohmann-json](https://github.com/nlohmann/json), [z4kn4fein-semver](https://github.com/z4kn4fein/cpp-semver).
+ConfigCat C++ SDK uses these wonderful libraries: [hash-library](https://create.stephan-brumme.com/hash-library), [libcurl](https://curl.se/libcurl), [nlohmann-json](https://github.com/nlohmann/json), [z4kn4fein-semver](https://github.com/z4kn4fein/cpp-semver).

@@ -17,7 +17,7 @@ CPPFLAGS += -I$(VCPKG_ROOT)/installed/$(TRIPLET)/include
 LDFLAGS += -L$(VCPKG_ROOT)/installed/$(TRIPLET)/lib
 
 # Library flags
-LDLIBS += -lconfigcat -lcpr -lcurl -lz -lssl -lcrypto -lpthread -lhash-library
+LDLIBS += -lconfigcat -lcurl -lz -lssl -lcrypto -lpthread -lhash-library
 
 # Build target
 TARGET = example

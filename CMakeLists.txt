@@ -18,7 +18,7 @@ include(CMakePackageConfigHelpers)
 
 option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
 
-find_package(cpr REQUIRED)
+find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(unofficial-hash-library REQUIRED)
 find_package(semver REQUIRED)
@@ -62,7 +62,7 @@ file(GLOB SOURCES "src/*")
 add_library(configcat ${SOURCES})
 add_library(configcat::configcat ALIAS configcat)
 
-set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
+set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} CURL::libcurl nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
 
 target_link_libraries(configcat
     PRIVATE ${CONFIGCAT_LIBRARIES}

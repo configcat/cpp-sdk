@@ -1,17 +1,20 @@
 #pragma once
 
 #include <string>
+#include <map>
 #include <memory>
 #include <atomic>
+#include <curl/curl.h>
 
-namespace cpr { class Session; }
+#include <configcat/proxyauthentication.h>
 
 namespace configcat {
 
 struct ConfigCatOptions;
 class ConfigCatLogger;
 struct ConfigEntry;
-class SessionInterceptor;
+class HttpSessionAdapter;
+class LibCurlResourceGuard;
 
 enum Status {
     fetched,
@@ -53,7 +56,7 @@ public:
     static constexpr char kUserAgentHeaderName[] = "X-ConfigCat-UserAgent";
     static constexpr char kPlatformHeaderName[] = "X-ConfigCat-Platform";
     static constexpr char kIfNoneMatchHeaderName[] = "If-None-Match";
-    static constexpr char kEtagHeaderName[] = "Etag";
+    static constexpr char kEtagHeaderName[] = "ETag";
 
     ConfigFetcher(const std::string& sdkKey, std::shared_ptr<ConfigCatLogger> logger, const std::string& mode, const ConfigCatOptions& options);
     ~ConfigFetcher();
@@ -67,15 +70,23 @@ private:
     FetchResponse executeFetch(const std::string& eTag, int executeCount);
     FetchResponse fetch(const std::string& eTag);
 
+    // CURL progress functions
+    int ProgressFunction(curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+    friend int ProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+
     std::string sdkKey;
     std::shared_ptr<ConfigCatLogger> logger;
     std::string mode;
     uint32_t connectTimeoutMs; // milliseconds (0 means it never times out during transfer)
     uint32_t readTimeoutMs; // milliseconds (0 means it never times out during transfer)
-    std::shared_ptr<SessionInterceptor> sessionInterceptor;
-    std::unique_ptr<cpr::Session> session;
+    std::map<std::string, std::string> proxies; // Protocol, Proxy url
+    std::map<std::string, ProxyAuthentication> proxyAuthentications; // Protocol, ProxyAuthentication
+    std::shared_ptr<HttpSessionAdapter> httpSessionAdapter;
+    std::shared_ptr<LibCurlResourceGuard> libCurlResourceGuard;
+    CURL* curl = nullptr;
     bool urlIsCustom = false;
     std::string url;
+    std::string userAgent;
     std::atomic<bool> closed = false;
 };
 

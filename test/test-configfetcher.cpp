@@ -259,7 +259,7 @@ TEST_F(ConfigFetcherTest, Fetcher_FetchNotModifiedEtag) {
     SetUp();
 
     auto eTag = "test";
-    configcat::Response firstResponse = {200, kTestJson, {{"Etag", eTag}}};
+    configcat::Response firstResponse = {200, kTestJson, {{"ETag", eTag}}};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
     configcat::Response secondResponse = {304, ""};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
@@ -276,4 +276,25 @@ TEST_F(ConfigFetcherTest, Fetcher_FetchNotModifiedEtag) {
     EXPECT_TRUE(fetchResponse.notModified());
     EXPECT_EQ(ConfigEntry::empty, fetchResponse.entry);
     EXPECT_EQ(eTag, mockHttpSessionAdapter->requests.back().header["If-None-Match"]);
+}
+
+TEST_F(ConfigFetcherTest, Fethcer_ServerSideEtag) {
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::manualPoll();
+
+    auto fetcher = make_unique<ConfigFetcher>("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", logger, "m", options);
+
+    auto fetchResponse = fetcher->fetchConfiguration();
+    auto eTag = fetchResponse.entry->eTag;
+    EXPECT_TRUE(!eTag.empty());
+    EXPECT_TRUE(fetchResponse.isFetched());
+    EXPECT_FALSE(fetchResponse.notModified());
+
+    fetchResponse = fetcher->fetchConfiguration(eTag);
+    EXPECT_FALSE(fetchResponse.isFetched());
+    EXPECT_TRUE(fetchResponse.notModified());
+
+    fetchResponse = fetcher->fetchConfiguration("");
+    EXPECT_TRUE(fetchResponse.isFetched());
+    EXPECT_FALSE(fetchResponse.notModified());
 }
