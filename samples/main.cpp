@@ -10,6 +10,9 @@ int main(int /*argc*/, char** /*argv*/) {
     // Use the default warning level to avoid too detailed logging in your application.
     auto logger = make_shared<ConsoleLogger>(LOG_LEVEL_INFO);
 
+    // Print the ConfigCat C++ SDK version.
+    cout << "ConfigCat C++ SDK version: " << configcat::version << endl;
+
     // Initialize the ConfigCatClient with an SDK Key.
     ConfigCatOptions options;
     options.logger = logger;
