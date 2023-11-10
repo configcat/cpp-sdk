@@ -1,7 +1,7 @@
 include(CMakeFindDependencyMacro)
 @PACKAGE_INIT@
 
-find_package(cpr REQUIRED)
+find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(unofficial-hash-library REQUIRED)
 find_package(semver REQUIRED)
