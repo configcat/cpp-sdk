@@ -2,5 +2,6 @@
   "name": "example",
   "dependencies": [
     "configcat"
-  ]
+  ],
+  "builtin-baseline": "877eaea99993eac466024d583eb720d717a3917b"
 }

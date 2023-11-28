@@ -59,3 +59,21 @@ Use the **same version** for the git tag as in [src/version.h](src/version.h).
 - Commit & Push with commit message like `[configcat] Update to version 2.5.5`.
 - Create a PR from the fork to [vcpkg](https://github.com/microsoft/vcpkg) master branch. PR's title should be like `[configcat] Update to version 2.5.5`.
 - Make sure the PR is merged by the vcpkg team.
+
+## Update Example Projects
+
+- Get the new `builtin-baseline` hash from the [vcpkg](https://github.com/microsoft/vcpkg) master branch. The builtin-baseline hash is the commit hash of the vcpkg repo when the PR was merged.
+  ```bash
+  git log --grep="configcat"
+  ```
+  >Example: `commit 877eaea99993eac466024d583eb720d717a3917b`
+- Update the baseline hash in the [samples/vcpkg.json](samples/vcpkg.json) file.
+  ```json
+  {
+    "name": "example",
+    "dependencies": [
+      "configcat"
+    ],
+    "builtin-baseline": "new-baseline-hash"
+  }
+  ```
