@@ -4,17 +4,15 @@
 #include <map>
 #include <memory>
 #include <atomic>
-#include <curl/curl.h>
 
-#include <configcat/proxyauthentication.h>
+#include "configcat/proxyauthentication.h"
+#include "configcat/httpsessionadapter.h"
 
 namespace configcat {
 
 struct ConfigCatOptions;
 class ConfigCatLogger;
 struct ConfigEntry;
-class HttpSessionAdapter;
-class LibCurlResourceGuard;
 
 enum Status {
     fetched,
@@ -48,7 +46,7 @@ struct FetchResponse {
     }
 };
 
-class ConfigFetcher {
+class ConfigFetcher : public HttpSessionAdapterListener {
 public:
     static constexpr char kConfigJsonName[] = "config_v5.json";
     static constexpr char kGlobalBaseUrl[] = "https://cdn-global.configcat.com";
@@ -66,13 +64,11 @@ public:
     // Fetches the current ConfigCat configuration json.
     FetchResponse fetchConfiguration(const std::string& eTag = "");
 
+    bool isClosed() const override { return closed; }
+
 private:
     FetchResponse executeFetch(const std::string& eTag, int executeCount);
     FetchResponse fetch(const std::string& eTag);
-
-    // CURL progress functions
-    int ProgressFunction(curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
-    friend int ProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 
     std::string sdkKey;
     std::shared_ptr<ConfigCatLogger> logger;
@@ -82,8 +78,6 @@ private:
     std::map<std::string, std::string> proxies; // Protocol, Proxy url
     std::map<std::string, ProxyAuthentication> proxyAuthentications; // Protocol, ProxyAuthentication
     std::shared_ptr<HttpSessionAdapter> httpSessionAdapter;
-    std::shared_ptr<LibCurlResourceGuard> libCurlResourceGuard;
-    CURL* curl = nullptr;
     bool urlIsCustom = false;
     std::string url;
     std::string userAgent;

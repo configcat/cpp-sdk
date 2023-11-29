@@ -16,9 +16,13 @@ include(FetchContent)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+option(CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER "Use external network adapter." OFF)
 option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
 
-find_package(CURL REQUIRED)
+if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
+    find_package(CURL REQUIRED)
+endif()
+
 find_package(nlohmann_json REQUIRED)
 find_package(unofficial-hash-library REQUIRED)
 find_package(semver REQUIRED)
@@ -62,7 +66,12 @@ file(GLOB SOURCES "src/*")
 add_library(configcat ${SOURCES})
 add_library(configcat::configcat ALIAS configcat)
 
-set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} CURL::libcurl nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
+if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
+    set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} CURL::libcurl nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
+else()
+    set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
+    target_compile_definitions(configcat PRIVATE CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED)
+endif()
 
 target_link_libraries(configcat
     PRIVATE ${CONFIGCAT_LIBRARIES}
