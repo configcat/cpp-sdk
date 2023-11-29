@@ -15,15 +15,15 @@ struct Response {
     std::string error;
 };
 
-class HttpSessionAdapterListener {
+class HttpSessionObserver {
 public:
     virtual bool isClosed() const = 0;
-    virtual ~HttpSessionAdapterListener() = default;
+    virtual ~HttpSessionObserver() = default;
 };
 
 class HttpSessionAdapter {
 public:
-    virtual bool init(const HttpSessionAdapterListener* sessionAdapterListener, uint32_t connectTimeoutMs, uint32_t readTimeoutMs) = 0;
+    virtual bool init(const HttpSessionObserver* httpSessionObserver, uint32_t connectTimeoutMs, uint32_t readTimeoutMs) = 0;
     virtual Response get(const std::string& url,
                          const std::map<std::string, std::string>& header,
                          const std::map<std::string, std::string>& proxies,

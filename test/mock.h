@@ -89,7 +89,7 @@ public:
         responses.push({response, delayInSeconds});
     }
 
-    bool init(const configcat::HttpSessionAdapterListener* sessionAdapterListener,
+    bool init(const configcat::HttpSessionObserver* httpSessionObserver,
               uint32_t connectTimeoutMs, uint32_t readTimeoutMs) override {
         return true;
     }

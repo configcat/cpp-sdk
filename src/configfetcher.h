@@ -46,7 +46,7 @@ struct FetchResponse {
     }
 };
 
-class ConfigFetcher : public HttpSessionAdapterListener {
+class ConfigFetcher : public HttpSessionObserver {
 public:
     static constexpr char kConfigJsonName[] = "config_v5.json";
     static constexpr char kGlobalBaseUrl[] = "https://cdn-global.configcat.com";

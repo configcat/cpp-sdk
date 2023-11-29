@@ -44,8 +44,8 @@ int ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_o
 }
 
 int CurlNetworkAdapter::ProgressFunction(curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-    if (listener) {
-        return listener->isClosed() ? 1 : 0;  // Return 0 to continue, or 1 to abort
+    if (httpSessionObserver) {
+        return httpSessionObserver->isClosed() ? 1 : 0;  // Return 0 to continue, or 1 to abort
     }
 
     return 0;
@@ -81,8 +81,8 @@ std::map<std::string, std::string> ParseHeader(const std::string& headerString) 
     return header;
 }
 
-bool CurlNetworkAdapter::init(const HttpSessionAdapterListener* sessionAdapterListener, uint32_t connectTimeoutMs, uint32_t readTimeoutMs) {
-    listener = sessionAdapterListener;
+bool CurlNetworkAdapter::init(const HttpSessionObserver* httpSessionObserver, uint32_t connectTimeoutMs, uint32_t readTimeoutMs) {
+    this->httpSessionObserver = httpSessionObserver;
     libCurlResourceGuard = LibCurlResourceGuard::getInstance();
     curl = curl_easy_init();
     if (!curl) {
