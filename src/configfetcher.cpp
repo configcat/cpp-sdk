@@ -1,5 +1,6 @@
-#include "configfetcher.h"
+#include <assert.h>
 
+#include "configfetcher.h"
 #include "configcat/log.h"
 #include "configcat/configcatoptions.h"
 #include "configcat/configcatlogger.h"
@@ -35,7 +36,7 @@ ConfigFetcher::ConfigFetcher(const string& sdkKey, shared_ptr<ConfigCatLogger> l
     }
 #endif
 
-    if (!httpSessionAdapter || !httpSessionAdapter->init(this, connectTimeoutMs, readTimeoutMs)) {
+    if (!httpSessionAdapter || !httpSessionAdapter->init(connectTimeoutMs, readTimeoutMs)) {
         LOG_ERROR(0) << "Cannot initialize httpSessionAdapter.";
         assert(false);
     }
@@ -48,7 +49,6 @@ void ConfigFetcher::close() {
     if (httpSessionAdapter) {
         httpSessionAdapter->close();
     }
-    closed = true;
 }
 
 FetchResponse ConfigFetcher::fetchConfiguration(const std::string& eTag) {

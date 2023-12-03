@@ -3,6 +3,7 @@
 #include "curlnetworkadapter.h"
 #include <mutex>
 #include <sstream>
+#include <vector>
 
 namespace configcat {
 
@@ -44,11 +45,7 @@ int ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_o
 }
 
 int CurlNetworkAdapter::ProgressFunction(curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-    if (httpSessionObserver) {
-        return httpSessionObserver->isClosed() ? 1 : 0;  // Return 0 to continue, or 1 to abort
-    }
-
-    return 0;
+    return closed ? 1 : 0;  // Return 0 to continue, or 1 to abort
 }
 
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::string *userp) {
@@ -81,8 +78,7 @@ std::map<std::string, std::string> ParseHeader(const std::string& headerString) 
     return header;
 }
 
-bool CurlNetworkAdapter::init(const HttpSessionObserver* httpSessionObserver, uint32_t connectTimeoutMs, uint32_t readTimeoutMs) {
-    this->httpSessionObserver = httpSessionObserver;
+bool CurlNetworkAdapter::init(uint32_t connectTimeoutMs, uint32_t readTimeoutMs) {
     libCurlResourceGuard = LibCurlResourceGuard::getInstance();
     curl = curl_easy_init();
     if (!curl) {
@@ -156,6 +152,7 @@ Response CurlNetworkAdapter::get(const std::string& url,
 }
 
 void CurlNetworkAdapter::close() {
+    closed = true;
 }
 
 CurlNetworkAdapter::~CurlNetworkAdapter() {

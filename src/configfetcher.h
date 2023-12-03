@@ -6,13 +6,13 @@
 #include <atomic>
 
 #include "configcat/proxyauthentication.h"
-#include "configcat/httpsessionadapter.h"
 
 namespace configcat {
 
 struct ConfigCatOptions;
 class ConfigCatLogger;
 struct ConfigEntry;
+class HttpSessionAdapter;
 
 enum Status {
     fetched,
@@ -46,7 +46,7 @@ struct FetchResponse {
     }
 };
 
-class ConfigFetcher : public HttpSessionObserver {
+class ConfigFetcher {
 public:
     static constexpr char kConfigJsonName[] = "config_v5.json";
     static constexpr char kGlobalBaseUrl[] = "https://cdn-global.configcat.com";
@@ -64,8 +64,6 @@ public:
     // Fetches the current ConfigCat configuration json.
     FetchResponse fetchConfiguration(const std::string& eTag = "");
 
-    bool isClosed() const override { return closed; }
-
 private:
     FetchResponse executeFetch(const std::string& eTag, int executeCount);
     FetchResponse fetch(const std::string& eTag);
@@ -81,7 +79,6 @@ private:
     bool urlIsCustom = false;
     std::string url;
     std::string userAgent;
-    std::atomic<bool> closed = false;
 };
 
 } // namespace configcat
