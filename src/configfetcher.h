@@ -4,9 +4,8 @@
 #include <map>
 #include <memory>
 #include <atomic>
-#include <curl/curl.h>
 
-#include <configcat/proxyauthentication.h>
+#include "configcat/proxyauthentication.h"
 
 namespace configcat {
 
@@ -14,7 +13,6 @@ struct ConfigCatOptions;
 class ConfigCatLogger;
 struct ConfigEntry;
 class HttpSessionAdapter;
-class LibCurlResourceGuard;
 
 enum Status {
     fetched,
@@ -70,10 +68,6 @@ private:
     FetchResponse executeFetch(const std::string& eTag, int executeCount);
     FetchResponse fetch(const std::string& eTag);
 
-    // CURL progress functions
-    int ProgressFunction(curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
-    friend int ProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
-
     std::string sdkKey;
     std::shared_ptr<ConfigCatLogger> logger;
     std::string mode;
@@ -82,12 +76,9 @@ private:
     std::map<std::string, std::string> proxies; // Protocol, Proxy url
     std::map<std::string, ProxyAuthentication> proxyAuthentications; // Protocol, ProxyAuthentication
     std::shared_ptr<HttpSessionAdapter> httpSessionAdapter;
-    std::shared_ptr<LibCurlResourceGuard> libCurlResourceGuard;
-    CURL* curl = nullptr;
     bool urlIsCustom = false;
     std::string url;
     std::string userAgent;
-    std::atomic<bool> closed = false;
 };
 
 } // namespace configcat

@@ -1,9 +1,10 @@
-#include "configfetcher.h"
+#include <assert.h>
 
+#include "configfetcher.h"
 #include "configcat/log.h"
-#include "configcat/httpsessionadapter.h"
 #include "configcat/configcatoptions.h"
 #include "configcat/configcatlogger.h"
+#include "curlnetworkadapter.h"
 #include "version.h"
 #include "platform.h"
 #include "utils.h"
@@ -11,47 +12,6 @@
 using namespace std;
 
 namespace configcat {
-
-class LibCurlResourceGuard {
-private:
-    static std::shared_ptr<LibCurlResourceGuard> instance;
-    static std::mutex mutex;
-
-    LibCurlResourceGuard() {
-        curl_global_init(CURL_GLOBAL_DEFAULT);
-    }
-
-    struct Deleter {
-        void operator()(LibCurlResourceGuard* libCurlResourceGuard) {
-            curl_global_cleanup();
-            delete libCurlResourceGuard;
-            LibCurlResourceGuard::instance.reset();
-        }
-    };
-
-public:
-    // Prevent copying
-    LibCurlResourceGuard(const LibCurlResourceGuard&) = delete;
-    LibCurlResourceGuard& operator=(const LibCurlResourceGuard&) = delete;
-
-    static std::shared_ptr<LibCurlResourceGuard> getInstance() {
-        std::lock_guard<std::mutex> lock(mutex);
-        if (!instance) {
-            instance = std::shared_ptr<LibCurlResourceGuard>(new LibCurlResourceGuard(), Deleter());
-        }
-        return instance;
-    }
-};
-std::shared_ptr<LibCurlResourceGuard> LibCurlResourceGuard::instance = nullptr;
-std::mutex LibCurlResourceGuard::mutex;
-
-int ProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-    return static_cast<ConfigFetcher*>(clientp)->ProgressFunction(dltotal, dlnow, ultotal, ulnow);
-}
-
-int ConfigFetcher::ProgressFunction(curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-    return closed ? 1 : 0;  // Return 0 to continue, or 1 to abort
-}
 
 ConfigFetcher::ConfigFetcher(const string& sdkKey, shared_ptr<ConfigCatLogger> logger, const string& mode, const ConfigCatOptions& options):
     sdkKey(sdkKey),
@@ -70,34 +30,25 @@ ConfigFetcher::ConfigFetcher(const string& sdkKey, shared_ptr<ConfigCatLogger> l
             : kEuOnlyBaseUrl;
     userAgent = string("ConfigCat-Cpp/") + mode + "-" + CONFIGCAT_VERSION;
 
-    libCurlResourceGuard = LibCurlResourceGuard::getInstance();
-    curl = curl_easy_init();
-    if (!curl) {
-        LOG_ERROR(0) << "Cannot initialize CURL.";
-        return;
+#ifndef CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED
+    if (!httpSessionAdapter) {
+        httpSessionAdapter = make_shared<CurlNetworkAdapter>();
     }
+#endif
 
-    // Timeout setup
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, connectTimeoutMs);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, readTimeoutMs);
-
-    // Enable the progress callback function to be able to abort the request
-    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
-    curl_easy_setopt(curl, CURLOPT_XFERINFODATA, this);
+    if (!httpSessionAdapter || !httpSessionAdapter->init(connectTimeoutMs, readTimeoutMs)) {
+        LOG_ERROR(0) << "Cannot initialize httpSessionAdapter.";
+        assert(false);
+    }
 }
 
 ConfigFetcher::~ConfigFetcher() {
-    if (curl) {
-        curl_easy_cleanup(curl);
-    }
 }
 
 void ConfigFetcher::close() {
     if (httpSessionAdapter) {
         httpSessionAdapter->close();
     }
-    closed = true;
 }
 
 FetchResponse ConfigFetcher::fetchConfiguration(const std::string& eTag) {
@@ -147,122 +98,48 @@ FetchResponse ConfigFetcher::executeFetch(const std::string& eTag, int executeCo
     return response;
 }
 
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::string *userp) {
-    userp->append((char*)contents, size * nmemb);
-    return size * nmemb;
-}
-
-std::map<std::string, std::string> ParseHeader(const std::string& headerString) {
-    std::map<std::string, std::string> header;
-
-    std::vector<std::string> lines;
-    std::istringstream stream(headerString);
-    std::string line;
-    while (std::getline(stream, line, '\n')) {
-        lines.push_back(line);
-    }
-
-    for (std::string& line : lines) {
-        if (line.length() > 0) {
-            const size_t colonIndex = line.find(':');
-            if (colonIndex != std::string::npos) {
-                std::string value = line.substr(colonIndex + 1);
-                value.erase(0, value.find_first_not_of("\t "));
-                value.resize(std::min<size_t>(value.size(), value.find_last_not_of("\t\n\r ") + 1));
-                header[line.substr(0, colonIndex)] = value;
-            }
-        }
-    }
-
-    return header;
-}
-
 FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
-    string requestUrl(url + "/configuration-files/" + sdkKey + "/" + kConfigJsonName);
-    std::map<std::string, std::string> responseHeaders;
-    std::string readBuffer;
-    long response_code = 0;
-
     if (!httpSessionAdapter) {
-        if (!curl) {
-            LogEntry logEntry = LogEntry(logger, LOG_LEVEL_ERROR, 1103) <<
-                "Unexpected error occurred while trying to fetch config JSON: CURL is not initialized.";
-            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
-        }
-
-        CURLcode res;
-        std::string headerString;
-
-        // Update header
-        struct curl_slist* headers = NULL;
-        headers = curl_slist_append(headers, (string(kUserAgentHeaderName) + ": " + userAgent).c_str());
-        headers = curl_slist_append(headers, (string(kPlatformHeaderName) + ": " + getPlatformName()).c_str());
-        if (!eTag.empty()) {
-            headers = curl_slist_append(headers, (string(kIfNoneMatchHeaderName) + ": " + eTag).c_str());
-        }
-
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_URL, requestUrl.c_str());
-
-        // Set the callback function to receive the response
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &headerString);
-
-        // Proxy setup
-        const std::string protocol = url.substr(0, url.find(':'));
-        if (proxies.count(protocol) > 0) {
-            curl_easy_setopt(curl, CURLOPT_PROXY, proxies[protocol].c_str());
-            if (proxyAuthentications.count(protocol) > 0) {
-                curl_easy_setopt(curl, CURLOPT_PROXYUSERNAME, proxyAuthentications[protocol].user.c_str());
-                curl_easy_setopt(curl, CURLOPT_PROXYPASSWORD, proxyAuthentications[protocol].password.c_str());
-            }
-        }
-
-        // Perform the request
-        res = curl_easy_perform(curl);
-
-        if (res != CURLE_OK) {
-            LogEntry logEntry = (res == CURLE_OPERATION_TIMEDOUT)
-                                ? LogEntry(logger, LOG_LEVEL_ERROR, 1102) <<
-                                    "Request timed out while trying to fetch config JSON. "
-                                    "Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]"
-                                : LogEntry(logger, LOG_LEVEL_ERROR, 1103) <<
-                                    "Unexpected error occurred while trying to fetch config JSON: " << curl_easy_strerror(res);
-
-            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
-        }
-
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-
-        // Parse the headers from headerString
-        responseHeaders = ParseHeader(headerString);
-    } else {
-        std::map<std::string, std::string> requestHeader = {
-            {kUserAgentHeaderName, userAgent},
-            {kPlatformHeaderName, getPlatformName()}
-        };
-        if (!eTag.empty()) {
-            requestHeader.insert({kIfNoneMatchHeaderName, eTag});
-        }
-        auto response = httpSessionAdapter->get(requestUrl, requestHeader);
-        response_code = response.status_code;
-        readBuffer = response.text;
-        responseHeaders = response.header;
+        auto error = "HttpSessionAdapter is not provided.";
+        LOG_ERROR(0) << error;
+        assert(false);
+        return FetchResponse(failure, ConfigEntry::empty, error, true);
     }
 
-    switch (response_code) {
+    string requestUrl(url + "/configuration-files/" + sdkKey + "/" + kConfigJsonName);
+    std::map<std::string, std::string> requestHeader = {
+        {kUserAgentHeaderName, userAgent},
+        {kPlatformHeaderName, getPlatformName()}
+    };
+    if (!eTag.empty()) {
+        requestHeader.insert({kIfNoneMatchHeaderName, eTag});
+    }
+
+    auto response = httpSessionAdapter->get(requestUrl, requestHeader, proxies, proxyAuthentications);
+    if (response.operationTimedOut) {
+        LogEntry logEntry = LogEntry(logger, LOG_LEVEL_ERROR, 1102);
+        logEntry << "Request timed out while trying to fetch config JSON. "
+                    "Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]";
+        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+    }
+    if (response.error.length() > 0) {
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1103);
+        logEntry << "Unexpected error occurred while trying to fetch config JSON: " << response.error;
+        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+    }
+
+    switch (response.statusCode) {
         case 200:
         case 201:
         case 202:
         case 203:
         case 204: {
-            const auto it = responseHeaders.find(kEtagHeaderName);
-            string eTag = it != responseHeaders.end() ? it->second : "";
+            const auto it = response.header.find(kEtagHeaderName);
+            string eTag = it != response.header.end() ? it->second : "";
             try {
-                auto config = Config::fromJson(readBuffer);
+                auto config = Config::fromJson(response.text);
                 LOG_DEBUG << "Fetch was successful: new config fetched.";
-                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, readBuffer, getUtcNowSecondsSinceEpoch()));
+                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, response.text, getUtcNowSecondsSinceEpoch()));
             } catch (exception& exception) {
                 LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105);
                 logEntry <<
@@ -281,13 +158,13 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1100);
             logEntry <<
                 "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey. "
-                "Received unexpected response: " << response_code;
+                "Received unexpected response: " << response.statusCode;
             return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), false);
         }
 
         default: {
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1101);
-            logEntry << "Unexpected HTTP response was received while trying to fetch config JSON: " << response_code;
+            logEntry << "Unexpected HTTP response was received while trying to fetch config JSON: " << response.statusCode;
             return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
         }
     }

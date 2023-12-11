@@ -89,7 +89,13 @@ public:
         responses.push({response, delayInSeconds});
     }
 
-    configcat::Response get(const std::string& url, const std::map<std::string, std::string>& header) override {
+    bool init(uint32_t connectTimeoutMs, uint32_t readTimeoutMs) override {
+        return true;
+    }
+
+    configcat::Response get(const std::string& url, const std::map<std::string, std::string>& header,
+                            const std::map<std::string, std::string>& proxies,
+                            const std::map<std::string, configcat::ProxyAuthentication>& proxyAuthentications) override {
         requests.push_back({url, header});
 
         if (!responses.empty()) {

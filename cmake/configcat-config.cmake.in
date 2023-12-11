@@ -1,7 +1,9 @@
 include(CMakeFindDependencyMacro)
 @PACKAGE_INIT@
 
-find_package(CURL REQUIRED)
+if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
+    find_package(CURL REQUIRED)
+endif()
 find_package(nlohmann_json REQUIRED)
 find_package(unofficial-hash-library REQUIRED)
 find_package(semver REQUIRED)
