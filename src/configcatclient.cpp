@@ -399,7 +399,7 @@ void ConfigCatClient::setOffline() {
     }
 }
 
-bool ConfigCatClient::isOffline() {
+bool ConfigCatClient::isOffline() const {
     if (configService) {
         return configService->isOffline();
     }

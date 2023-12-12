@@ -136,6 +136,8 @@ void from_json(const json& j, Config& config) {
     if (auto it = j.find(Config::kEntries); it != j.end()) it->get_to(config.entries);
 }
 
+std::shared_ptr<Config> Config::empty = std::make_shared<Config>();
+
 std::string Config::toJson() {
     return json(*this).dump();
 }
@@ -165,6 +167,8 @@ shared_ptr<Config> Config::fromFile(const string& filePath) {
     }
     return config;
 }
+
+std::shared_ptr<ConfigEntry> ConfigEntry::empty = std::make_shared<ConfigEntry>(Config::empty, "empty");
 
 shared_ptr<ConfigEntry> ConfigEntry::fromString(const string& text) {
     if (text.empty())

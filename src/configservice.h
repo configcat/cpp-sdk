@@ -35,7 +35,7 @@ public:
     RefreshResult refresh();
     void setOnline();
     void setOffline();
-    bool isOffline() { return offline; }
+    bool isOffline() const { return offline; }
 
     static std::string generateCacheKey(const std::string& sdkKey);
 
