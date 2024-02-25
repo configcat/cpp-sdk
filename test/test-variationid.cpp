@@ -11,48 +11,80 @@ using namespace std;
 class VariationIdTest : public ::testing::Test {
 public:
     static constexpr char kTestSdkKey[] = "TestSdkKey";
-    static constexpr char kTestJson[] = R"(
-                                        {"f":{
-                                            "key1":{
-                                                "v":true,
-                                                "i":"fakeId1",
-                                                "p":[
-                                                    {
-                                                        "v":true,
-                                                        "p":50,
-                                                        "i":"percentageId1"
-                                                    },
-                                                    {
-                                                        "v":false,
-                                                        "p":50,
-                                                        "i":"percentageId2"
-                                                    }
-                                                ],
-                                                "r":[
-                                                    {
-                                                        "a":"Email",
-                                                        "t":2,
-                                                        "c":"@configcat.com",
-                                                        "v":true,
-                                                        "i":"rolloutId1"
-                                                    },
-                                                    {
-                                                        "a":"Email",
-                                                        "t":2,
-                                                        "c":"@test.com",
-                                                        "v":false,
-                                                        "i":"rolloutId2"
-                                                    }
-                                                ]
-                                            },
-                                            "key2":{
-                                                "v":false,
-                                                "i":"fakeId2",
-                                                "p":[],
-                                                "r":[]
-                                            }
-                                        }}
-                                        )";
+    static constexpr char kTestJson[] = R"({
+      "f": {
+        "key1": {
+          "t": 0,
+          "r": [
+            {
+              "c": [
+                {
+                  "u": {
+                    "a": "Email",
+                    "c": 2,
+                    "l": [
+                      "@configcat.com"
+                    ]
+                  }
+                }
+              ],
+              "s": {
+                "v": {
+                  "b": true
+                },
+                "i": "rolloutId1"
+              }
+            },
+            {
+              "c": [
+                {
+                  "u": {
+                    "a": "Email",
+                    "c": 2,
+                    "l": [
+                      "@test.com"
+                    ]
+                  }
+                }
+              ],
+              "s": {
+                "v": {
+                  "b": false
+                },
+                "i": "rolloutId2"
+              }
+            }
+          ],
+          "p": [
+            {
+              "p": 50,
+              "v": {
+                "b": true
+              },
+              "i": "percentageId1"
+            },
+            {
+              "p": 50,
+              "v": {
+                "b": false
+              },
+              "i": "percentageId2"
+            }
+          ],
+          "v": {
+            "b": true
+          },
+          "i": "fakeId1"
+        },
+        "key2": {
+          "t": 0,
+          "v": {
+            "b": false
+          },
+          "i": "fakeId2"
+        }
+      }
+    })";
 
     ConfigCatClient* client = nullptr;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();

@@ -18,7 +18,6 @@ struct ConfigCatOptions;
 class ConfigCatLogger;
 class ConfigFetcher;
 class ConfigCache;
-struct ConfigEntry;
 class PollingMode;
 class Hooks;
 
@@ -41,10 +40,10 @@ public:
 
 private:
     // Returns the ConfigEntry object and error message in case of any error.
-    std::tuple<std::shared_ptr<ConfigEntry>, std::string> fetchIfOlder(double time, bool preferCache = false);
+    std::tuple<std::shared_ptr<const ConfigEntry>, std::string> fetchIfOlder(double time, bool preferCache = false);
     void setInitialized();
-    std::shared_ptr<ConfigEntry> readCache();
-    void writeCache(const std::shared_ptr<ConfigEntry>& configEntry);
+    std::shared_ptr<const ConfigEntry> readCache();
+    void writeCache(const std::shared_ptr<const ConfigEntry>& configEntry);
     void startPoll();
     void run();
 

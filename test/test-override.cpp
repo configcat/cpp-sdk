@@ -44,7 +44,7 @@ public:
     string directoryPath = RemoveFileName(__FILE__);
     vector<string> tempFiles;
     static constexpr char kTestSdkKey[] = "TestSdkKey";
-    static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
+    static constexpr char kTestJsonFormat[] = R"({"f":{"fakeKey":{"t":%d,"v":%s}}})";
     ConfigCatClient* client = nullptr;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
     shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
@@ -74,7 +74,7 @@ TEST_F(OverrideTest, Map) {
 }
 
 TEST_F(OverrideTest, LocalOverRemote) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, "false")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::Boolean, R"({"b":false})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     const std::unordered_map<std::string, Value>& map = {
@@ -96,7 +96,7 @@ TEST_F(OverrideTest, LocalOverRemote) {
 }
 
 TEST_F(OverrideTest, RemoteOverLocal) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, "false")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::Boolean, R"({"b":false})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     const std::unordered_map<std::string, Value>& map = {

@@ -10,8 +10,8 @@ using namespace configcat;
 using namespace std;
 
 TEST(ConfigCacheTest, CacheKey) {
-    EXPECT_EQ("147c5b4c2b2d7c77e1605b1a4309f0ea6684a0c6", ConfigService::generateCacheKey("test1"));
-    EXPECT_EQ("c09513b1756de9e4bc48815ec7a142b2441ed4d5", ConfigService::generateCacheKey("test2"));
+    EXPECT_EQ("f83ba5d45bceb4bb704410f51b704fb6dfa19942", ConfigService::generateCacheKey("configcat-sdk-1/TEST_KEY-0123456789012/1234567890123456789012"));
+    EXPECT_EQ("da7bfd8662209c8ed3f9db96daed4f8d91ba5876", ConfigService::generateCacheKey("configcat-sdk-1/TEST_KEY2-123456789012/1234567890123456789012"));
 }
 
 TEST(ConfigCacheTest, CachePayload) {
@@ -22,11 +22,11 @@ TEST(ConfigCacheTest, CachePayload) {
 }
 
 TEST(ConfigCatTest, InvalidCacheContent) {
-    static constexpr char kTestJsonFormat[] = R"({ "f": { "testKey": { "v": %s, "p": [], "r": [] } } })";
+    static constexpr char kTestJsonFormat[] = R"({"f":{"testKey":{"t":%d,"v":%s}}})";
     HookCallbacks hookCallbacks;
     auto hooks = make_shared<Hooks>();
     hooks->addOnError([&](const string& error) { hookCallbacks.onError(error); });
-    auto configJsonString = string_format(kTestJsonFormat, R"("test")");
+    auto configJsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})");
     auto configCache = make_shared<SingleValueCache>(ConfigEntry(
         Config::fromJson(configJsonString),
         "test-etag",
@@ -44,12 +44,12 @@ TEST(ConfigCatTest, InvalidCacheContent) {
     EXPECT_EQ(0, hookCallbacks.errorCallCount);
 
     // Invalid fetch time in cache
-    configCache->value = "text\n"s + "test-etag\n" + string_format(kTestJsonFormat, R"("test2")");
+    configCache->value = "text\n"s + "test-etag\n" + string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})");
     EXPECT_EQ("test", client->getValue("testKey", "default"));
     EXPECT_TRUE(hookCallbacks.error.find("Error occurred while reading the cache. Invalid fetch time: text") != std::string::npos);
 
     // Number of values is fewer than expected
-    configCache->value = std::to_string(getUtcNowSecondsSinceEpoch()) + "\n" + string_format(kTestJsonFormat, R"("test2")");
+    configCache->value = std::to_string(getUtcNowSecondsSinceEpoch()) + "\n" + string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})");
     EXPECT_EQ("test", client->getValue("testKey", "default"));
     EXPECT_TRUE(hookCallbacks.error.find("Error occurred while reading the cache. Number of values is fewer than expected.") != std::string::npos);
 

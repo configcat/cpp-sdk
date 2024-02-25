@@ -152,7 +152,7 @@ std::string ConfigCatClient::getValue(const std::string& key, const std::string&
     return _getValue(key, defaultValue, user);
 }
 
-std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const ConfigCatUser* user) const {
+std::optional<Value> ConfigCatClient::getValue(const std::string& key, const ConfigCatUser* user) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
@@ -177,7 +177,7 @@ std::shared_ptr<Value> ConfigCatClient::getValue(const std::string& key, const C
     }
 
     auto details = evaluate(key, user, setting->second, fetchTime);
-    return make_shared<Value>(details.value);
+    return details.value;
 }
 
 EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
@@ -252,28 +252,28 @@ std::vector<std::string> ConfigCatClient::getAllKeys() const {
 std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& variationId) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
-    auto& fetchTime = settingResult.fetchTime;
     if (!settings) {
         LOG_ERROR(1000) << "Config JSON is not present. Returning null.";
         return nullptr;
     }
 
-    for (auto keyValue : *settings) {
+    for (auto& keyValue : *settings) {
         auto& key = keyValue.first;
-        auto setting = keyValue.second;
+        auto& setting = keyValue.second;
         if (setting.variationId == variationId) {
-            return make_shared<KeyValue>(key, setting.value);
+            return make_shared<KeyValue>(key, *static_cast<optional<Value>>(setting.value));
         }
 
-        for (auto rolloutRule : setting.rolloutRules) {
-            if (rolloutRule.variationId == variationId) {
-                return make_shared<KeyValue>(key, rolloutRule.value);
+        for (auto& targetingRule : setting.targetingRules) {
+            auto simpleValue = std::get<SettingValueContainer>(targetingRule.then);
+            if (simpleValue.variationId == variationId) {
+                return make_shared<KeyValue>(key, *static_cast<optional<Value>>(simpleValue.value));
             }
         }
 
-        for (auto percentageRule : setting.percentageItems) {
-            if (percentageRule.variationId == variationId) {
-                return make_shared<KeyValue>(key, percentageRule.value);
+        for (auto& percentageOption : setting.percentageOptions) {
+            if (percentageOption.variationId == variationId) {
+                return make_shared<KeyValue>(key, *static_cast<optional<Value>>(percentageOption.value));
             }
         }
     }
@@ -363,17 +363,18 @@ EvaluationDetails ConfigCatClient::evaluate(const std::string& key,
                                             const Setting& setting,
                                             double fetchTime) const {
     user = user != nullptr ? user : defaultUser.get();
-    auto [value, variationId, rule, percentageRule, error] = rolloutEvaluator->evaluate(key, user, setting);
+    auto& evaluateResult = rolloutEvaluator->evaluate(key, user, setting);
+    auto& error = evaluateResult.error;
 
     EvaluationDetails details(key,
-                              value,
-                              variationId,
+                              *static_cast<optional<Value>>(evaluateResult.selectedValue.value),
+                              evaluateResult.selectedValue.variationId,
                               time_point<system_clock, duration<double>>(duration<double>(fetchTime)),
                               user,
                               error.empty() ? false : true,
                               error,
-                              rule,
-                              percentageRule);
+                              evaluateResult.targetingRule,
+                              evaluateResult.percentageOption);
     hooks->invokeOnFlagEvaluated(details);
     return details;
 }

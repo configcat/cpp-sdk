@@ -8,7 +8,7 @@ MapFlagOverrides::MapFlagOverrides(const std::unordered_map<std::string, Value>&
     overrides(make_shared<Settings>()),
     behaviour(behaviour) {
     for (const auto& it : source) {
-        overrides->insert({it.first, {it.second}});
+        overrides->insert({it.first, Setting::fromValue(it.second)});
     }
 }
 

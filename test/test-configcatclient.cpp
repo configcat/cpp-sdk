@@ -12,8 +12,8 @@ using namespace std::this_thread;
 class ConfigCatClientTest : public ::testing::Test {
 public:
     static constexpr char kTestSdkKey[] = "TestSdkKey";
-    static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
-    static constexpr char kTestJsonMultiple[] = R"({ "f": { "key1": { "v": true, "i": "fakeId1", "p": [], "r": [] }, "key2": { "v": false, "i": "fakeId2", "p": [], "r": [] } } })";
+    static constexpr char kTestJsonFormat[] = R"({"f":{"fakeKey":{"t":%d,"v":%s}}})";
+    static constexpr char kTestJsonMultiple[] = R"({"f":{"key1":{"t":0,"v":{"b":true},"i":"fakeId1"},"key2":{"t":0,"v":{"b":false},"i":"fakeId2"}}})";
 
     ConfigCatClient* client = nullptr;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
@@ -60,7 +60,7 @@ TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
 TEST_F(ConfigCatClientTest, GetIntValue) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, "43")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::Int, R"({"i":43})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", 10);
@@ -71,7 +71,7 @@ TEST_F(ConfigCatClientTest, GetIntValue) {
 TEST_F(ConfigCatClientTest, GetIntValueFailed) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", 10);
@@ -93,7 +93,7 @@ TEST_F(ConfigCatClientTest, GetIntValueFailedInvalidJson) {
 TEST_F(ConfigCatClientTest, GetIntValueFailedPartialJson) {
     SetUp();
 
-    configcat::Response responseWithoutValue = {200, R"({ "f": { "fakeKey": { "p": [], "r": [] } } })"};
+    configcat::Response responseWithoutValue = {200, R"({"f":{"fakeKey":{"p":[],"r":[]}}}})"};
     mockHttpSessionAdapter->enqueueResponse(responseWithoutValue);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", 10);
@@ -104,7 +104,7 @@ TEST_F(ConfigCatClientTest, GetIntValueFailedPartialJson) {
 TEST_F(ConfigCatClientTest, GetIntValueFailedNullValueJson) {
     SetUp();
 
-    configcat::Response responseWithoutValue = {200, R"({ "f": { "fakeKey": { "v": null, "p": [], "r": [] } } })"};
+    configcat::Response responseWithoutValue = {200, R"({"f":{"fakeKey":{"p":[],"r":[],"v":null}}}})"};
     mockHttpSessionAdapter->enqueueResponse(responseWithoutValue);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", 10);
@@ -115,7 +115,7 @@ TEST_F(ConfigCatClientTest, GetIntValueFailedNullValueJson) {
 TEST_F(ConfigCatClientTest, GetStringValue) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", "default");
@@ -126,7 +126,7 @@ TEST_F(ConfigCatClientTest, GetStringValue) {
 TEST_F(ConfigCatClientTest, GetStringValueFailed) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, "33")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::Int, R"({"i":33})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", "default");
@@ -137,7 +137,7 @@ TEST_F(ConfigCatClientTest, GetStringValueFailed) {
 TEST_F(ConfigCatClientTest, GetDoubleValue) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, "43.56")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::Double, R"({"d":43.56})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", 3.14);
@@ -148,7 +148,7 @@ TEST_F(ConfigCatClientTest, GetDoubleValue) {
 TEST_F(ConfigCatClientTest, GetDoubleValueFailed) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", 3.14);
@@ -159,7 +159,7 @@ TEST_F(ConfigCatClientTest, GetDoubleValueFailed) {
 TEST_F(ConfigCatClientTest, GetBoolValue) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, "true")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::Boolean, R"({"b":true})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", false);
@@ -170,7 +170,7 @@ TEST_F(ConfigCatClientTest, GetBoolValue) {
 TEST_F(ConfigCatClientTest, GetBoolValueFailed) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto value = client->getValue("fakeKey", false);
@@ -181,7 +181,7 @@ TEST_F(ConfigCatClientTest, GetBoolValueFailed) {
 TEST_F(ConfigCatClientTest, GetLatestOnFail) {
     SetUp();
 
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"(55)")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::Int, R"({"i":55})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
     configcat::Response secondResponse = {500, ""};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
@@ -197,9 +197,9 @@ TEST_F(ConfigCatClientTest, GetLatestOnFail) {
 }
 
 TEST_F(ConfigCatClientTest, ForceRefreshLazy) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
@@ -217,9 +217,9 @@ TEST_F(ConfigCatClientTest, ForceRefreshLazy) {
 }
 
 TEST_F(ConfigCatClientTest, ForceRefreshAuto) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
@@ -251,7 +251,7 @@ TEST_F(ConfigCatClientTest, FailingAutoPoll) {
 TEST_F(ConfigCatClientTest, FromCacheOnly) {
     auto mockCache = make_shared<InMemoryConfigCache>();
     auto cacheKey = SHA1()(""s + kTestSdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
-    auto jsonString = string_format(kTestJsonFormat, R"("fake")");
+    auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})");
     auto config = Config::fromJson(jsonString);
     auto configEntry = ConfigEntry(config, "test-etag", jsonString, getUtcNowSecondsSinceEpoch());
     mockCache->write(cacheKey, configEntry.serialize());
@@ -270,7 +270,7 @@ TEST_F(ConfigCatClientTest, FromCacheOnly) {
 TEST_F(ConfigCatClientTest, FromCacheOnlyRefresh) {
     auto mockCache = make_shared<InMemoryConfigCache>();
     auto cacheKey = SHA1()(""s + kTestSdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
-    auto jsonString = string_format(kTestJsonFormat, R"("fake")");
+    auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})");
     auto config = Config::fromJson(jsonString);
     auto configEntry = ConfigEntry(config, "test-etag", jsonString, getUtcNowSecondsSinceEpoch());
     mockCache->write(cacheKey, configEntry.serialize());
@@ -406,11 +406,14 @@ TEST_F(ConfigCatClientTest, GetValueDetails) {
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);
     EXPECT_TRUE(details.error.empty());
-    EXPECT_TRUE(details.matchedEvaluationPercentageRule == std::nullopt);
-    EXPECT_EQ("fake1", get<string>(details.matchedEvaluationRule->value));
-    EXPECT_EQ(CONTAINS, details.matchedEvaluationRule->comparator);
-    EXPECT_EQ("Identifier", details.matchedEvaluationRule->comparisonAttribute);
-    EXPECT_EQ("@test1.com", details.matchedEvaluationRule->comparisonValue);
+    EXPECT_TRUE(details.matchedPercentageOption == std::nullopt);
+
+    auto& condition = get<UserCondition>(details.matchedTargetingRule->conditions[0].condition);
+    auto& simpleValue = get<SettingValueContainer>(details.matchedTargetingRule->then);
+    EXPECT_EQ("fake1", get<string>(simpleValue.value));
+    EXPECT_EQ(UserComparator::TextContainsAnyOf, condition.comparator);
+    EXPECT_EQ("Identifier", condition.comparisonAttribute);
+    EXPECT_EQ("@test1.com", get<vector<string>>(condition.comparisonValue)[0]);
     EXPECT_EQ(user.toJson(), details.user->toJson());
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
     EXPECT_GE(now, details.fetchTime);
@@ -418,7 +421,7 @@ TEST_F(ConfigCatClientTest, GetValueDetails) {
 }
 
 TEST_F(ConfigCatClientTest, AutoPollUserAgentHeader) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
@@ -433,7 +436,7 @@ TEST_F(ConfigCatClientTest, AutoPollUserAgentHeader) {
 }
 
 TEST_F(ConfigCatClientTest, LazyPollUserAgentHeader) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
@@ -448,7 +451,7 @@ TEST_F(ConfigCatClientTest, LazyPollUserAgentHeader) {
 }
 
 TEST_F(ConfigCatClientTest, ManualPollUserAgentHeader) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
@@ -463,7 +466,7 @@ TEST_F(ConfigCatClientTest, ManualPollUserAgentHeader) {
 }
 
 TEST_F(ConfigCatClientTest, Concurrency_DoNotStartNewFetchIfThereIsAnOngoingFetch) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     constexpr int responseDelay = 1;
     mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
@@ -491,9 +494,9 @@ TEST_F(ConfigCatClientTest, Concurrency_DoNotStartNewFetchIfThereIsAnOngoingFetc
 #ifndef __APPLE__
 // TODO: This test is broken on GitHub macos-latest os.
 TEST_F(ConfigCatClientTest, Concurrency_OngoingFetchDoesNotBlockGetValue) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("fake")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("fake2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake2"})")};
     constexpr int responseDelay = 3;
     mockHttpSessionAdapter->enqueueResponse(secondResponse, responseDelay);
 
@@ -557,7 +560,7 @@ TEST_F(ConfigCatClientTest, GetValueTypeTest) {
 TEST_F(ConfigCatClientTest, GetValueWithKeyNotFound) {
     SetUp();
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, "43")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::Int, R"({"i":43})")};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
 
@@ -565,8 +568,8 @@ TEST_F(ConfigCatClientTest, GetValueWithKeyNotFound) {
     EXPECT_EQ(10, value);
 
     ConfigCatUser* user = nullptr;
-    shared_ptr<Value> valuePtr = client->getValue("nonexisting", user);
-    EXPECT_EQ(nullptr, valuePtr);
+    auto settingValue = client->getValue("nonexisting", user);
+    EXPECT_FALSE(settingValue.has_value());
 }
 
 TEST_F(ConfigCatClientTest, DefaultUserGetValue) {

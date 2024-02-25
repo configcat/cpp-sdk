@@ -7,7 +7,6 @@
 namespace configcat {
 
 class ConfigCatUser;
-struct Value;
 
 enum LogLevel {
     LOG_LEVEL_ERROR,

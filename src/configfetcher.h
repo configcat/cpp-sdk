@@ -6,12 +6,12 @@
 #include <atomic>
 
 #include "configcat/proxyauthentication.h"
+#include "configentry.h"
 
 namespace configcat {
 
 struct ConfigCatOptions;
 class ConfigCatLogger;
-struct ConfigEntry;
 class HttpSessionAdapter;
 
 enum Status {
@@ -22,11 +22,11 @@ enum Status {
 
 struct FetchResponse {
     Status status;
-    std::shared_ptr<ConfigEntry> entry;
+    std::shared_ptr<const ConfigEntry> entry;
     std::string error;
     bool isTransientError = false;
 
-    FetchResponse(Status status, std::shared_ptr<ConfigEntry> entry, const std::string& error = "", bool isTransientError = false):
+    FetchResponse(Status status, std::shared_ptr<const ConfigEntry> entry, const std::string& error = "", bool isTransientError = false):
         status(status),
         entry(entry),
         error(error),
@@ -48,7 +48,7 @@ struct FetchResponse {
 
 class ConfigFetcher {
 public:
-    static constexpr char kConfigJsonName[] = "config_v5.json";
+    static constexpr char kConfigJsonName[] = "config_v6.json";
     static constexpr char kGlobalBaseUrl[] = "https://cdn-global.configcat.com";
     static constexpr char kEuOnlyBaseUrl[] = "https://cdn-eu.configcat.com";
     static constexpr char kUserAgentHeaderName[] = "X-ConfigCat-UserAgent";

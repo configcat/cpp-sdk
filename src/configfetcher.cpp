@@ -57,34 +57,35 @@ FetchResponse ConfigFetcher::fetchConfiguration(const std::string& eTag) {
 
 FetchResponse ConfigFetcher::executeFetch(const std::string& eTag, int executeCount) {
     auto response = fetch(eTag);
-    auto preferences = response.entry && response.entry->config ? response.entry->config->preferences : nullptr;
+    auto& preferences = response.entry && response.entry->config ? response.entry->config->preferences : nullopt;
 
     // If there wasn't a config change or there were no preferences in the config, we return the response
-    if (!response.isFetched() || preferences == nullptr) {
+    if (!response.isFetched() || !preferences) {
         return response;
     }
 
+    const auto& baseUrl = preferences->baseUrl.value_or("");
     // If the preferences url is the same as the last called one, just return the response.
-    if (!preferences->url.empty() && url == preferences->url) {
+    if (!baseUrl.empty() && url == baseUrl) {
         return response;
     }
 
     // If the url is overridden, and the redirect parameter is not ForceRedirect,
     // the SDK should not redirect the calls, and it just has to return the response.
-    if (urlIsCustom && preferences->redirect != ForceRedirect) {
+    if (urlIsCustom && preferences->redirectMode != RedirectMode::Force) {
         return response;
     }
 
     // The next call should use the preferences url provided in the config json
-    url = preferences->url;
+    url = baseUrl;
 
-    if (preferences->redirect == NoRedirect) {
+    if (preferences->redirectMode == RedirectMode::No) {
         return response;
     }
 
     // Try to download again with the new url
 
-    if (preferences->redirect == ShouldRedirect) {
+    if (preferences->redirectMode == RedirectMode::Should) {
         LOG_WARN(3002) <<
             "The `dataGovernance` parameter specified at the client initialization is not in sync with the preferences on the ConfigCat Dashboard. "
             "Read more: https://configcat.com/docs/advanced/data-governance/";

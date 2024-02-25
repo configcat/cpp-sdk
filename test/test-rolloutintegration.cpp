@@ -81,17 +81,34 @@ public:
 
             int j = 0;
             for (auto& settingKey : settingKeys) {
-                string expected = str_tolower(testObjects[j + 4]);
+                string expected = testObjects[j + 4];
                 if (isValueKind) {
                     auto value = client->getValue(settingKey, user.get());
-                    if (!value || str_tolower(valueToString(*value)) != expected) {
+                    
+                    auto success = value.has_value();
+                    if (success) {
+                        if (holds_alternative<bool>(*value)) {
+                            success = get<bool>(*value) ? expected == "True" : expected == "False";
+                        }
+                        else if (holds_alternative<string>(*value)) {
+                            success = get<string>(*value) == expected;
+                        }
+                        else if (holds_alternative<int>(*value)) {
+                            success = get<int>(*value) == stoi(expected);
+                        }
+                        else {
+                            success = get<double>(*value) == stod(expected);
+                        }
+                    }
+
+                    if (!success) {
                         errors.push_back(string_format("Index: [%d:%d] Identifier: %s, Key: %s. UV: %s Expected: %s, Result: %s",
                                          i, j,
                                          testObjects[0].c_str(),
                                          settingKey.c_str(),
                                          testObjects[3].c_str(),
                                          expected.c_str(),
-                                         value ? valueToString(*value).c_str() : "##null##"));
+                                         !value ? value->toString().c_str() : "##null##"));
                     }
                 } else {
                     auto details = client->getValueDetails(settingKey, "", user.get());
@@ -103,7 +120,7 @@ public:
                                               testObjects[0].c_str(),
                                               settingKey.c_str(),
                                               expected.c_str(),
-                                              variationId.c_str()));
+                                              variationId.value_or("").c_str()));
                     }
                 }
                 ++j;

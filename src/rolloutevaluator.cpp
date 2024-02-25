@@ -4,22 +4,66 @@
 #include "utils.h"
 #include <algorithm>
 #include <sstream>
+#include <array>
+#include <variant>
 #include <hash-library/sha1.h>
+#include <hash-library/sha256.h>
 #include <semver/semver.hpp>
+#include <nlohmann/json.hpp>
 
 using namespace std;
 
 namespace configcat {
 
+static constexpr std::array kComparatorTexts{
+    "IS ONE OF",
+    "IS NOT ONE OF",
+    "CONTAINS",
+    "DOES NOT CONTAIN",
+    "IS ONE OF (SemVer)",
+    "IS NOT ONE OF (SemVer)",
+    "< (SemVer)",
+    "<= (SemVer)",
+    "> (SemVer)",
+    ">= (SemVer)",
+    "= (Number)",
+    "<> (Number)",
+    "< (Number)",
+    "<= (Number)",
+    "> (Number)",
+    ">= (Number)",
+    "IS ONE OF (Sensitive)",
+    "IS NOT ONE OF (Sensitive)"
+};
+
+static const char* comparatorToString(UserComparator comparator) {
+    return kComparatorTexts.at((int)comparator);
+}
+
+static string comparisonValueToString(const UserConditionComparisonValue& comparisonValue) {
+    return visit([](auto&& alt) {
+        using T = std::decay_t<decltype(alt)>;
+        nlohmann::json j;
+        if constexpr (std::is_same_v<T, string> || std::is_same_v<T, double> || std::is_same_v<T, vector<string>>) {
+            j = alt;
+        }
+        else {
+            j = "<invalid value>";
+        }
+        return j.dump();
+    }, comparisonValue);
+}
+
 RolloutEvaluator::RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger):
     logger(logger),
-    sha1(make_unique<SHA1>()) {
+    sha1(make_unique<SHA1>()),
+    sha256(make_unique<SHA256>()) {
 }
 
 RolloutEvaluator::~RolloutEvaluator() {
 }
 
-tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> RolloutEvaluator::evaluate(
+const EvaluateResult RolloutEvaluator::evaluate(
     const string& key,
     const ConfigCatUser* user,
     const Setting& setting) {
@@ -27,7 +71,7 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
     logEntry << "Evaluating getValue(" << key << ")";
 
     if (!user) {
-        if (!setting.rolloutRules.empty() || !setting.percentageItems.empty()) {
+        if (!setting.targetingRules.empty() || !setting.percentageOptions.empty()) {
             LOG_WARN(3001) <<
                 "Cannot evaluate targeting rules and % options for setting '" << key << "' (User Object is missing). "
                 "You should pass a User Object to the evaluation methods like `getValue()` in order to make targeting work properly. "
@@ -35,19 +79,21 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
         }
 
         logEntry << "\n" << "Returning " << setting.value;
-        return {setting.value, setting.variationId, {}, {}, logEntry.getMessage()};
+        return { setting, nullptr, nullptr, logEntry.getMessage() };
     }
 
     logEntry << "\n" << "User object: " << user;
 
-    for (const auto& rule : setting.rolloutRules) {
-        const auto& comparisonAttribute = rule.comparisonAttribute;
-        const auto& comparisonValue = rule.comparisonValue;
-        const auto& comparator = rule.comparator;
-        const auto* userValuePtr = user->getAttribute(comparisonAttribute);
-        const auto& returnValue = rule.value;
+    for (const auto& rule : setting.targetingRules) {
+        const auto& condition = get<UserCondition>(rule.conditions[0].condition);
 
-        if (userValuePtr == nullptr || comparisonValue.empty() || userValuePtr->empty()) {
+        const auto& comparisonAttribute = condition.comparisonAttribute;
+        const auto& comparisonValue = condition.comparisonValue;
+        const auto& comparator = condition.comparator;
+        const auto* userValuePtr = user->getAttribute(comparisonAttribute);
+        const auto& returnValue = get<SettingValueContainer>(rule.then);
+
+        if (userValuePtr == nullptr || userValuePtr->empty()) {
             logEntry << "\n" << formatNoMatchRule(comparisonAttribute, userValuePtr ? *userValuePtr : "null", comparator, comparisonValue);
             continue;
         }
@@ -55,73 +101,71 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
         const string& userValue = *userValuePtr;
 
         switch (comparator) {
-            case ONE_OF: {
-                stringstream stream(comparisonValue);
-                string token;
-                while (getline(stream, token, ',')) {
-                    trim(token);
-                    if (token == userValue) {
+            case UserComparator::TextIsOneOf: {
+                auto& texts = get<vector<string>>(comparisonValue);
+                for (auto& text : texts) {
+                    if (text == userValue) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                        return {rule.value, rule.variationId, &rule, {}, {}};
+                        return { returnValue, &rule, nullptr, logEntry.getMessage() };
                     }
                 }
                 break;
             }
-            case NOT_ONE_OF: {
-                stringstream stream(comparisonValue);
-                string token;
+            case UserComparator::TextIsNotOneOf: {
+                auto& texts = get<vector<string>>(comparisonValue);
                 bool found = false;
-                while (getline(stream, token, ',')) {
-                    trim(token);
-                    if (token == userValue) {
+                for (auto& text : texts) {
+                    if (text == userValue) {
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId, &rule, {}, {}};
+                    return { returnValue, &rule, nullptr, logEntry.getMessage() };
                 }
                 break;
             }
-            case CONTAINS: {
-                if (userValue.find(comparisonValue) != std::string::npos) {
+            case UserComparator::TextContainsAnyOf: {
+                auto& text = get<vector<string>>(comparisonValue)[0];
+                if (userValue.find(text) != std::string::npos) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId, &rule, {}, {}};
+                    return { returnValue, &rule, nullptr, logEntry.getMessage() };
                 }
                 break;
             }
-            case NOT_CONTAINS: {
-                if (userValue.find(comparisonValue) == std::string::npos) {
+            case UserComparator::TextNotContainsAnyOf: {
+                auto& text = get<vector<string>>(comparisonValue)[0];
+                if (userValue.find(text) == std::string::npos) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId, &rule, {}, {}};
+                    return { returnValue, &rule, nullptr, logEntry.getMessage() };
                 }
                 break;
             }
-            case ONE_OF_SEMVER:
-            case NOT_ONE_OF_SEMVER: {
+            case UserComparator::SemVerIsOneOf:
+            case UserComparator::SemVerIsNotOneOf: {
+                auto& texts = get<vector<string>>(comparisonValue);
                 // The rule will be ignored if we found an invalid semantic version
                 try {
                     semver::version userValueVersion = semver::version::parse(userValue);
-                    stringstream stream(comparisonValue);
-                    string token;
                     bool matched = false;
-                    while (getline(stream, token, ',')) {
-                        trim(token);
+                    for (auto& text : texts) {
+                        string version = text;
+                        trim(version);
 
                         // Filter empty versions
-                        if (token.empty())
+                        if (version.empty())
                             continue;
 
-                        semver::version tokenVersion = semver::version::parse(token);
+                        semver::version tokenVersion = semver::version::parse(version);
                         matched = tokenVersion == userValueVersion || matched;
                     }
 
-                    if ((matched && comparator == ONE_OF_SEMVER) ||
-                        (!matched && comparator == NOT_ONE_OF_SEMVER)) {
+                    if ((matched && comparator == UserComparator::SemVerIsOneOf) ||
+                        (!matched && comparator == UserComparator::SemVerIsNotOneOf)) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue,
                                                             returnValue);
-                        return {rule.value, rule.variationId, &rule, {}, {}};
+                        return { returnValue, &rule, nullptr, logEntry.getMessage() };
                     }
                 } catch (semver::semver_exception& exception) {
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
@@ -131,25 +175,27 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
                 }
                 break;
             }
-            case LT_SEMVER:
-            case LTE_SEMVER:
-            case GT_SEMVER:
-            case GTE_SEMVER: {
+            case UserComparator::SemVerLess:
+            case UserComparator::SemVerLessOrEquals:
+            case UserComparator::SemVerGreater:
+            case UserComparator::SemVerGreaterOrEquals: {
+                auto& text = get<string>(comparisonValue);
+
                 // The rule will be ignored if we found an invalid semantic version
                 try {
                     string userValueCopy = userValue;
                     semver::version userValueVersion = semver::version::parse(userValueCopy);
 
-                    string comparisonValueCopy = comparisonValue;
+                    string comparisonValueCopy = text;
                     semver::version comparisonValueVersion = semver::version::parse(trim(comparisonValueCopy));
 
-                    if ((comparator == LT_SEMVER && userValueVersion < comparisonValueVersion) ||
-                        (comparator == LTE_SEMVER && userValueVersion <= comparisonValueVersion) ||
-                        (comparator == GT_SEMVER && userValueVersion > comparisonValueVersion) ||
-                        (comparator == GTE_SEMVER && userValueVersion >= comparisonValueVersion)) {
+                    if ((comparator == UserComparator::SemVerLess && userValueVersion < comparisonValueVersion) ||
+                        (comparator == UserComparator::SemVerLessOrEquals && userValueVersion <= comparisonValueVersion) ||
+                        (comparator == UserComparator::SemVerGreater && userValueVersion > comparisonValueVersion) ||
+                        (comparator == UserComparator::SemVerGreaterOrEquals && userValueVersion >= comparisonValueVersion)) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue,
                                                             returnValue);
-                        return {rule.value, rule.variationId, &rule, {}, {}};
+                        return { returnValue, &rule, nullptr, logEntry.getMessage() };
                     }
                 } catch (semver::semver_exception& exception) {
                     auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator,
@@ -159,12 +205,14 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
                 }
                 break;
             }
-            case EQ_NUM:
-            case NOT_EQ_NUM:
-            case LT_NUM:
-            case LTE_NUM:
-            case GT_NUM:
-            case GTE_NUM: {
+            case UserComparator::NumberEquals:
+            case UserComparator::NumberNotEquals:
+            case UserComparator::NumberLess:
+            case UserComparator::NumberLessOrEquals:
+            case UserComparator::NumberGreater:
+            case UserComparator::NumberGreaterOrEquals: {
+                auto& number= get<double>(comparisonValue);
+
                 bool error = false;
                 double userValueDouble = str_to_double(userValue, error);
                 if (error) {
@@ -175,54 +223,43 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
                     break;
                 }
 
-                double comparisonValueDouble = str_to_double(comparisonValue, error);
-                if (error) {
-                    string reason = string_format("Cannot convert string \"%s\" to double.", comparisonValue.c_str());
-                    auto message = formatValidationErrorRule(comparisonAttribute, userValue, comparator, comparisonValue, reason);
-                    logEntry << "\n" << message;
-                    LOG_WARN(0) << message;
-                    break;
-                }
-
-                if (comparator == EQ_NUM     && userValueDouble == comparisonValueDouble ||
-                    comparator == NOT_EQ_NUM && userValueDouble != comparisonValueDouble ||
-                    comparator == LT_NUM     && userValueDouble <  comparisonValueDouble ||
-                    comparator == LTE_NUM    && userValueDouble <= comparisonValueDouble ||
-                    comparator == GT_NUM     && userValueDouble >  comparisonValueDouble ||
-                    comparator == GTE_NUM    && userValueDouble >= comparisonValueDouble) {
+                if (comparator == UserComparator::NumberEquals && userValueDouble == number ||
+                    comparator == UserComparator::NumberNotEquals && userValueDouble != number ||
+                    comparator == UserComparator::NumberLess && userValueDouble <  number ||
+                    comparator == UserComparator::NumberLessOrEquals && userValueDouble <= number ||
+                    comparator == UserComparator::NumberGreater && userValueDouble >  number ||
+                    comparator == UserComparator::NumberGreaterOrEquals && userValueDouble >= number) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId, &rule, {}, {}};
+                    return { returnValue, &rule, nullptr, logEntry.getMessage() };
                 }
                 break;
             }
-            case ONE_OF_SENS: {
-                stringstream stream(comparisonValue);
-                string token;
-                auto userValueHash = (*sha1)(userValue);
-                while (getline(stream, token, ',')) {
-                    trim(token);
-                    if (token == userValueHash) {
+            case UserComparator::SensitiveTextIsOneOf: {
+                auto configJsonSalt = setting.configJsonSalt ? *setting.configJsonSalt : "";
+                auto userValueHash = (*sha256)(userValue + configJsonSalt + key);
+                auto& texts = get<vector<string>>(comparisonValue);
+                for (auto& text : texts) {
+                    if (text == userValueHash) {
                         logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                        return {rule.value, rule.variationId, &rule, {}, {}};
+                        return { returnValue, &rule, nullptr, logEntry.getMessage() };
                     }
                 }
                 break;
             }
-            case NOT_ONE_OF_SENS: {
-                stringstream stream(comparisonValue);
-                string token;
-                auto userValueHash = (*sha1)(userValue);
+            case UserComparator::SensitiveTextIsNotOneOf: {
+                auto configJsonSalt = setting.configJsonSalt ? *setting.configJsonSalt : "";
+                auto userValueHash = (*sha256)(userValue + configJsonSalt + key);
+                auto& texts = get<vector<string>>(comparisonValue);
                 bool found = false;
-                while (getline(stream, token, ',')) {
-                    trim(token);
-                    if (token == userValueHash) {
+                for (auto& text : texts) {
+                    if (text == userValueHash) {
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
                     logEntry << "\n" << formatMatchRule(comparisonAttribute, userValue, comparator, comparisonValue, returnValue);
-                    return {rule.value, rule.variationId, &rule, {}, {}};
+                    return { returnValue, &rule, nullptr, logEntry.getMessage() };
                 }
                 break;
             }
@@ -233,60 +270,62 @@ tuple<Value, string, const RolloutRule*, const RolloutPercentageItem*, string> R
         logEntry << "\n" << formatNoMatchRule(comparisonAttribute, userValue, comparator, comparisonValue);
     }
 
-    if (!setting.percentageItems.empty()) {
+    if (!setting.percentageOptions.empty()) {
         auto hashCandidate = key + user->identifier;
         string hash = (*sha1)(hashCandidate).substr(0, 7);
         auto num = std::stoul(hash, nullptr, 16);
         auto scaled = num % 100;
         double bucket = 0;
-        for (const auto& rolloutPercentageItem : setting.percentageItems) {
+        for (const auto& rolloutPercentageItem : setting.percentageOptions) {
             bucket += rolloutPercentageItem.percentage;
             if (scaled < bucket) {
                 logEntry << "\n" << "Evaluating %% options. Returning " << rolloutPercentageItem.value;
-                return {rolloutPercentageItem.value, rolloutPercentageItem.variationId, {}, &rolloutPercentageItem, {}};
+                return { rolloutPercentageItem, nullptr, &rolloutPercentageItem, logEntry.getMessage() };
             }
         }
     }
 
     logEntry << "\n" << "Returning " << setting.value;
-    return {setting.value, setting.variationId, {}, {}, {}};
+    return { setting, nullptr, nullptr, logEntry.getMessage() };
 }
 
 std::string RolloutEvaluator::formatNoMatchRule(const std::string& comparisonAttribute,
-                                                const std::string& userValue,
-                                                Comparator comparator,
-                                                const std::string& comparisonValue) {
+    const std::string& userValue,
+    UserComparator comparator,
+    const UserConditionComparisonValue& comparisonValue) {
     return string_format("Evaluating rule: [%s:%s] [%s] [%s] => no match",
-                         comparisonAttribute.c_str(),
-                         userValue.c_str(),
-                         comparatorToString(comparator),
-                         comparisonValue.c_str());
+        comparisonAttribute.c_str(),
+        userValue.c_str(),
+        comparatorToString(comparator),
+        comparisonValueToString(comparisonValue).c_str());
 }
 
 std::string RolloutEvaluator::formatMatchRule(const std::string& comparisonAttribute,
-                                              const std::string& userValue,
-                                              Comparator comparator,
-                                              const std::string& comparisonValue,
-                                              const Value& returnValue) {
+    const std::string& userValue,
+    UserComparator comparator,
+    const UserConditionComparisonValue& comparisonValue,
+    const SettingValueContainer& returnValue) {
+
+    optional<Value> v = returnValue.value;
     return string_format("Evaluating rule: [%s:%s] [%s] [%s] => match, returning: %s",
-                         comparisonAttribute.c_str(),
-                         userValue.c_str(),
-                         comparatorToString(comparator),
-                         comparisonValue.c_str(),
-                         valueToString(returnValue).c_str());
+        comparisonAttribute.c_str(),
+        userValue.c_str(),
+        comparatorToString(comparator),
+        comparisonValueToString(comparisonValue).c_str(),
+        (v ? v->toString() : "<invalid value>").c_str());
 }
 
 std::string RolloutEvaluator::formatValidationErrorRule(const std::string& comparisonAttribute,
-                                                        const std::string& userValue,
-                                                        Comparator comparator,
-                                                        const std::string& comparisonValue,
-                                                        const std::string& error) {
+    const std::string& userValue,
+    UserComparator comparator,
+    const UserConditionComparisonValue& comparisonValue,
+    const std::string& error) {
     return string_format("Evaluating rule: [%s:%s] [%s] [%s] => Skip rule, Validation error: %s",
-                         comparisonAttribute.c_str(),
-                         userValue.c_str(),
-                         comparatorToString(comparator),
-                         comparisonValue.c_str(),
-                         error.c_str());
+        comparisonAttribute.c_str(),
+        userValue.c_str(),
+        comparatorToString(comparator),
+        comparisonValueToString(comparisonValue).c_str(),
+        error.c_str());
 }
 
 } // namespace configcat

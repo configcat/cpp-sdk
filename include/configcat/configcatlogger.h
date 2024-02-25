@@ -64,20 +64,28 @@ public:
         return *this;
     }
 
+    // TODO: remove?
     LogEntry& operator<<(const ConfigCatUser* user) {
         return operator<<(*user);
     }
 
+    // TODO: remove?
     LogEntry& operator<<(const ConfigCatUser& user) {
         if (logger && level <= logger->getLogLevel())
             message += user.toJson();
         return *this;
     }
 
-    LogEntry& operator<<(const Value& v) {
+    // TODO: remove?
+    LogEntry& operator<<(const std::optional<Value>& v) {
         if (logger && level <= logger->getLogLevel())
-            message += valueToString(v);
+            message += v ? v->toString() : "<invalid value>";
         return *this;
+    }
+
+    // TODO: remove?
+    LogEntry& operator<<(const SettingValue& v) {
+        return *this << static_cast<std::optional<Value>>(v);
     }
 
     template<typename Type>

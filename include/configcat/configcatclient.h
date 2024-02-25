@@ -51,9 +51,9 @@ public:
 
     /**
      * Gets the value of a feature flag or setting as std::shared_ptr<Value> identified by the given [key].
-     * In case of any failure, nullptr will be returned. The [user] param identifies the caller.
+     * In case of any failure, std::nullopt will be returned. The [user] param identifies the caller.
      */
-    std::shared_ptr<Value> getValue(const std::string& key, const ConfigCatUser* user = nullptr) const;
+    std::optional<Value> getValue(const std::string& key, const ConfigCatUser* user = nullptr) const;
 
     /**
      * Gets the value and evaluation details of a feature flag or setting identified by the given `key`.

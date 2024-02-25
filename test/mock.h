@@ -130,36 +130,89 @@ private:
 };
 
 static constexpr char kTestJsonString[] = R"({
-    "p": {
-        "u": "https://cdn-global.configcat.com",
-        "r": 0
+  "p": {
+    "u": "https://cdn-global.configcat.com",
+    "r": 0
+  },
+  "f": {
+    "key1": {
+      "t": 0,
+      "v": {
+        "b": true
+      },
+      "i": "fakeId1"
     },
-    "f": {
-        "testBoolKey": {
-            "v": true, "t": 0, "p": [], "r": []
+    "key2": {
+      "t": 0,
+      "v": {
+        "b": false
+      },
+      "i": "fakeId2"
+    },
+    "testBoolKey": {
+      "t": 0,
+      "v": {
+        "b": true
+      }
+    },
+    "testDoubleKey": {
+      "t": 3,
+      "v": {
+        "d": 1.1
+      }
+    },
+    "testIntKey": {
+      "t": 2,
+      "v": {
+        "i": 1
+      }
+    },
+    "testStringKey": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 2,
+                "l": [
+                  "@test1.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "fake1"
+            },
+            "i": "id1"
+          }
         },
-        "testStringKey": {
-            "v": "testValue", "i": "id", "t": 1, "p": [],
-            "r": [
-                {
-                    "i": "id1", "v": "fake1", "a": "Identifier", "t": 2, "c": "@test1.com"
-                },
-                {
-                    "i": "id2", "v": "fake2", "a": "Identifier", "t": 2, "c": "@test2.com"
-                }
-            ]
-        },
-        "testIntKey": {
-            "v": 1, "t": 2, "p": [], "r": []
-        },
-        "testDoubleKey": {
-            "v": 1.1, "t": 3, "p": [], "r": []
-        },
-        "key1": {
-            "v": true, "i": "fakeId1", "p": [], "r": []
-        },
-        "key2": {
-            "v": false, "i": "fakeId2", "p": [], "r": []
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 2,
+                "l": [
+                  "@test2.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "fake2"
+            },
+            "i": "id2"
+          }
         }
+      ],
+      "v": {
+        "s": "testValue"
+      },
+      "i": "id"
     }
+  }
 })";

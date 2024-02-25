@@ -19,7 +19,7 @@ ConfigService::ConfigService(const string& sdkKey,
     logger(logger),
     hooks(hooks),
     pollingMode(options.pollingMode ? options.pollingMode : PollingMode::autoPoll()),
-    cachedEntry(ConfigEntry::empty),
+    cachedEntry(const_pointer_cast<ConfigEntry>(ConfigEntry::empty)),
     configCache(configCache) {
     cacheKey = generateCacheKey(sdkKey);
     configFetcher = make_unique<ConfigFetcher>(sdkKey, logger, pollingMode->getPollingIdentifier(), options);
@@ -50,7 +50,7 @@ SettingResult ConfigService::getSettings() {
         auto now = chrono::steady_clock::now();
         auto [ entry, _ ] = fetchIfOlder(getUtcNowSecondsSinceEpoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
         auto config = cachedEntry->config;
-        return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
+        return { (cachedEntry != ConfigEntry::empty && config) ? config->ensureSettings() : nullptr, entry->fetchTime};
     } else if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !initialized) {
         auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
         auto elapsedTime = chrono::duration<double>(chrono::steady_clock::now() - startTime).count();
@@ -63,14 +63,14 @@ SettingResult ConfigService::getSettings() {
             if (!initialized) {
                 setInitialized();
                 auto config = cachedEntry->config;
-                return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, cachedEntry->fetchTime };
+                return { (cachedEntry != ConfigEntry::empty && config) ? config->ensureSettings() : nullptr, cachedEntry->fetchTime };
             }
         }
     }
 
     auto [ entry, _ ] = fetchIfOlder(kDistantPast, true);
     auto config = entry->config;
-    return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
+    return { (cachedEntry != ConfigEntry::empty && config) ? config->ensureSettings() : nullptr, entry->fetchTime };
 }
 
 RefreshResult ConfigService::refresh() {
@@ -113,7 +113,7 @@ void ConfigService::setOffline() {
 string ConfigService::generateCacheKey(const string& sdkKey) {
     return SHA1()(sdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
 }
-tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, bool preferCache) {
+tuple<shared_ptr<const ConfigEntry>, string> ConfigService::fetchIfOlder(double time, bool preferCache) {
     {
         lock_guard<mutex> lock(fetchMutex);
 
@@ -121,8 +121,8 @@ tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, 
         if (cachedEntry == ConfigEntry::empty || cachedEntry->fetchTime > time) {
             auto entry = readCache();
             if (entry != ConfigEntry::empty && entry->eTag != cachedEntry->eTag) {
-                cachedEntry = entry;
-                hooks->invokeOnConfigChanged(entry->config->entries);
+                cachedEntry = const_pointer_cast<ConfigEntry>(entry);
+                hooks->invokeOnConfigChanged(entry->config->ensureSettings());
             }
 
             // Cache isn't expired
@@ -164,9 +164,9 @@ tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, 
     lock_guard<mutex> lock(fetchMutex);
 
     if (response.isFetched()) {
-        cachedEntry = response.entry;
+        cachedEntry = const_pointer_cast<ConfigEntry>(response.entry);
         writeCache(cachedEntry);
-        hooks->invokeOnConfigChanged(cachedEntry->config->entries);
+        hooks->invokeOnConfigChanged(cachedEntry->config->ensureSettings());
     } else if ((response.notModified() || !response.isTransientError) && cachedEntry != ConfigEntry::empty) {
         cachedEntry->fetchTime = getUtcNowSecondsSinceEpoch();
         writeCache(cachedEntry);
@@ -184,7 +184,7 @@ void ConfigService::setInitialized() {
     }
 }
 
-shared_ptr<ConfigEntry> ConfigService::readCache() {
+shared_ptr<const ConfigEntry> ConfigService::readCache() {
     try {
         auto jsonString = configCache->read(cacheKey);
         if (jsonString.empty() || jsonString == cachedEntryString) {
@@ -199,7 +199,7 @@ shared_ptr<ConfigEntry> ConfigService::readCache() {
     }
 }
 
-void ConfigService::writeCache(const std::shared_ptr<ConfigEntry>& configEntry) {
+void ConfigService::writeCache(const std::shared_ptr<const ConfigEntry>& configEntry) {
     try {
         configCache->write(cacheKey, configEntry->serialize());
     } catch (exception& exception) {
