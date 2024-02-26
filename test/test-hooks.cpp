@@ -23,7 +23,7 @@ TEST_F(HooksTest, Init) {
     auto hooks = make_shared<Hooks>(
         [&]() { hookCallbacks.onClientReady(); },
         [&](std::shared_ptr<configcat::Settings> config) { hookCallbacks.onConfigChanged(config); },
-        [&](const EvaluationDetails& details) { hookCallbacks.onFlagEvaluated(details); },
+        [&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); },
         [&](const string& error) { hookCallbacks.onError(error); }
     );
 
@@ -52,7 +52,7 @@ TEST_F(HooksTest, Init) {
     EXPECT_EQ(1, hookCallbacks.changedConfigCallCount);
 
     EXPECT_EQ("testStringKey", hookCallbacks.evaluationDetails.key);
-    EXPECT_EQ("testValue", get<string>(hookCallbacks.evaluationDetails.value));
+    EXPECT_EQ("testValue", get<string>(*hookCallbacks.evaluationDetails.value));
     EXPECT_EQ("id", hookCallbacks.evaluationDetails.variationId);
     EXPECT_TRUE(hookCallbacks.evaluationDetails.user == nullptr);
     EXPECT_FALSE(hookCallbacks.evaluationDetails.isDefaultValue);
@@ -70,7 +70,7 @@ TEST_F(HooksTest, Subscribe) {
     auto hooks = make_shared<Hooks>();
     hooks->addOnClientReady([&]() { hookCallbacks.onClientReady(); });
     hooks->addOnConfigChanged([&](std::shared_ptr<configcat::Settings> config) { hookCallbacks.onConfigChanged(config); });
-    hooks->addOnFlagEvaluated([&](const EvaluationDetails& details) { hookCallbacks.onFlagEvaluated(details); });
+    hooks->addOnFlagEvaluated([&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); });
     hooks->addOnError([&](const string& error) { hookCallbacks.onError(error); });
 
     ConfigCatOptions options;
@@ -98,7 +98,7 @@ TEST_F(HooksTest, Subscribe) {
     EXPECT_EQ(1, hookCallbacks.changedConfigCallCount);
 
     EXPECT_EQ("testStringKey", hookCallbacks.evaluationDetails.key);
-    EXPECT_EQ("testValue", get<string>(hookCallbacks.evaluationDetails.value));
+    EXPECT_EQ("testValue", get<string>(*hookCallbacks.evaluationDetails.value));
     EXPECT_EQ("id", hookCallbacks.evaluationDetails.variationId);
     EXPECT_TRUE(hookCallbacks.evaluationDetails.user == nullptr);
     EXPECT_FALSE(hookCallbacks.evaluationDetails.isDefaultValue);
@@ -121,7 +121,7 @@ TEST_F(HooksTest, Evaluation) {
     options.httpSessionAdapter = mockHttpSessionAdapter;
     auto client = ConfigCatClient::get("test", &options);
 
-    client->getHooks()->addOnFlagEvaluated([&](const EvaluationDetails& details) { hookCallbacks.onFlagEvaluated(details); });
+    client->getHooks()->addOnFlagEvaluated([&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); });
 
     client->forceRefresh();
 
@@ -130,7 +130,7 @@ TEST_F(HooksTest, Evaluation) {
     EXPECT_EQ("fake1", value);
 
     auto& details = hookCallbacks.evaluationDetails;
-    EXPECT_EQ("fake1", get<string>(details.value));
+    EXPECT_EQ("fake1", get<string>(*details.value));
     EXPECT_EQ("testStringKey", details.key);
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);

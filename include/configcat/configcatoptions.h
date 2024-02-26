@@ -22,7 +22,7 @@ class Hooks {
 public:
     explicit Hooks(const std::function<void()>& onClientReady = nullptr,
           const std::function<void(std::shared_ptr<Settings>)>& onConfigChanged = nullptr,
-          const std::function<void(const EvaluationDetails&)>& onFlagEvaluated = nullptr,
+          const std::function<void(const EvaluationDetailsBase&)>& onFlagEvaluated = nullptr,
           const std::function<void(const std::string&)>& onError = nullptr) {
         if (onClientReady) {
             onClientReadyCallbacks.push_back(onClientReady);
@@ -48,7 +48,7 @@ public:
         onConfigChangedCallbacks.push_back(callback);
     }
 
-    void addOnFlagEvaluated(const std::function<void(const EvaluationDetails&)>& callback) {
+    void addOnFlagEvaluated(const std::function<void(const EvaluationDetailsBase&)>& callback) {
         std::lock_guard<std::mutex> lock(mutex);
         onFlagEvaluatedCallbacks.push_back(callback);
     }
@@ -72,7 +72,7 @@ public:
         }
     }
 
-    void invokeOnFlagEvaluated(const EvaluationDetails& details) {
+    void invokeOnFlagEvaluated(const EvaluationDetailsBase& details) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onFlagEvaluatedCallbacks) {
             callback(details);
@@ -98,7 +98,7 @@ private:
     std::mutex mutex;
     std::vector<std::function<void()>> onClientReadyCallbacks;
     std::vector<std::function<void(std::shared_ptr<Settings>)>> onConfigChangedCallbacks;
-    std::vector<std::function<void(const EvaluationDetails&)>> onFlagEvaluatedCallbacks;
+    std::vector<std::function<void(const EvaluationDetailsBase&)>> onFlagEvaluatedCallbacks;
     std::vector<std::function<void(const std::string&)>> onErrorCallbacks;
 };
 

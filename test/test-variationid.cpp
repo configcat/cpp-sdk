@@ -135,9 +135,9 @@ TEST_F(VariationIdTest, GetAllVariationIds) {
     auto allDetails = client->getAllValueDetails();
 
     EXPECT_EQ(2, allDetails.size());
-    EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails& details) {
+    EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails<Value>& details) {
         return details.variationId == "fakeId1"; }) != allDetails.end());
-    EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails& details) {
+    EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails<Value>& details) {
         return details.variationId == "fakeId2"; }) != allDetails.end());
 }
 

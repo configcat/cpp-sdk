@@ -153,61 +153,47 @@ std::string ConfigCatClient::getValue(const std::string& key, const std::string&
 }
 
 std::optional<Value> ConfigCatClient::getValue(const std::string& key, const ConfigCatUser* user) const {
-    auto settingResult = getSettings();
-    auto& settings = settingResult.settings;
-    auto& fetchTime = settingResult.fetchTime;
-    if (!settings) {
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
-        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning nullptr.";
-        hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, {}, logEntry.getMessage()));
-        return {};
-    }
-
-    auto setting = settings->find(key);
-    if (setting == settings->end()) {
-        vector<string> keys;
-        keys.reserve(settings->size());
-        for (auto keyValue : *settings) {
-            keys.emplace_back("'" + keyValue.first + "'");
-        }
-        LOG_ERROR(1001) <<
-            "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
-            "Returning nullptr. Available keys: " << keys << ".";
-        return {};
-    }
-
-    auto details = evaluate(key, user, setting->second, fetchTime);
-    return details.value;
+    return _getValue<optional<Value>>(key, nullopt, user);
 }
 
-EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<bool> ConfigCatClient::getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
     return _getValueDetails(key, defaultValue, user);
 }
 
-EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, int32_t defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<int32_t> ConfigCatClient::getValueDetails(const std::string& key, int32_t defaultValue, const ConfigCatUser* user) const {
     return _getValueDetails(key, defaultValue, user);
 }
 
-EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<double> ConfigCatClient::getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user) const {
     return _getValueDetails(key, defaultValue, user);
 }
-EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<std::string> ConfigCatClient::getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user) const {
     return _getValueDetails(key, defaultValue, user);
 }
 
-EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
-    return _getValueDetails(key, defaultValue, user);
+EvaluationDetails<std::string> ConfigCatClient::getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
+    return _getValueDetails<string>(key, defaultValue, user);
+}
+
+
+EvaluationDetails<> ConfigCatClient::getValueDetails(const std::string& key, const ConfigCatUser* user) const {
+    return _getValueDetails<optional<Value>>(key, nullopt, user);
 }
 
 template<typename ValueType>
-EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, ValueType defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string& key, ValueType defaultValue, const ConfigCatUser* user) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
     if (!settings) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
-        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
-        auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
+        if constexpr (is_same_v<ValueType, optional<Value>>) {
+            logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning std::nullopt.";
+        }
+        else {
+            logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
+        }
+        auto details = EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage());
         hooks->invokeOnFlagEvaluated(details);
         return details;
     }
@@ -220,16 +206,23 @@ EvaluationDetails ConfigCatClient::_getValueDetails(const std::string& key, Valu
             keys.emplace_back("'" + keyValue.first + "'");
         }
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
-        logEntry <<
-            "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
-            "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
-            "Available keys: " << keys << ".";
-        auto details = EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage());
+        if constexpr (is_same_v<ValueType, optional<Value>>) {
+            logEntry <<
+                "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
+                "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
+                "Available keys: " << keys << ".";
+        }
+        else {
+            logEntry <<
+                "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
+                "Returning std::nullopt. Available keys: " << keys << ".";
+        }
+        auto details = EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage());
         hooks->invokeOnFlagEvaluated(details);
         return details;
     }
 
-    return evaluate(key, user, setting->second, fetchTime);
+    return evaluate<ValueType>(key, defaultValue, user, setting->second, fetchTime);
 }
 
 std::vector<std::string> ConfigCatClient::getAllKeys() const {
@@ -294,14 +287,14 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
     std::unordered_map<std::string, Value> result;
     for (auto keyValue : *settings) {
         auto& key = keyValue.first;
-        auto details = evaluate(key, user, keyValue.second, fetchTime);
+        auto details = evaluate<Value>(key, {}, user, keyValue.second, fetchTime);
         result.insert({key, details.value});
     }
 
     return result;
 }
 
-std::vector<EvaluationDetails> ConfigCatClient::getAllValueDetails(const ConfigCatUser* user) const {
+std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const ConfigCatUser* user) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
@@ -310,10 +303,10 @@ std::vector<EvaluationDetails> ConfigCatClient::getAllValueDetails(const ConfigC
         return {};
     }
 
-    std::vector<EvaluationDetails> result;
+    std::vector<EvaluationDetails<Value>> result;
     for (auto keyValue : *settings) {
         auto& key = keyValue.first;
-        result.push_back(evaluate(key, user, keyValue.second, fetchTime));
+        result.push_back(evaluate<Value>(key, {}, user, keyValue.second, fetchTime));
     }
 
     return result;
@@ -326,8 +319,13 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
     auto& fetchTime = settingResult.fetchTime;
     if (!settings) {
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
-        logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
-        hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
+        if constexpr (is_same_v<ValueType, optional<Value>>) {
+            logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning std::nullopt.";
+        }
+        else {
+            logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
+        }
+        hooks->invokeOnFlagEvaluated(EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
 
@@ -339,42 +337,65 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
             keys.emplace_back("'" + keyValue.first + "'");
         }
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
-        logEntry <<
-            "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
-            "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
-            "Available keys: " << keys << ".";
-        hooks->invokeOnFlagEvaluated(EvaluationDetails::fromError(key, defaultValue, logEntry.getMessage()));
+        if constexpr (is_same_v<ValueType, optional<Value>>) {
+            logEntry <<
+                "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
+                "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
+                "Available keys: " << keys << ".";
+        }
+        else {
+            logEntry <<
+                "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
+                "Returning std::nullopt. Available keys: " << keys << ".";
+        }
+        hooks->invokeOnFlagEvaluated(EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage()));
         return defaultValue;
     }
 
-    auto details = evaluate(key, user, setting->second, fetchTime);
-    const ValueType* valuePtr = get_if<ValueType>(&details.value);
-    if (valuePtr)
-        return *valuePtr;
+    EvaluationDetails<ValueType> details = evaluate<ValueType>(key, defaultValue, user, setting->second, fetchTime);
+    if (details.isDefaultValue) {
+        LOG_ERROR(1002) <<
+            "Error occurred in the `getValue` method while evaluating setting '" << key << "'. "
+            "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
+    }
 
-    LOG_ERROR(1002) <<
-        "Error occurred in the `getValue` method while evaluating setting '" << key << "'. "
-        "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
-    return defaultValue;
+    return details.value;
 }
 
-EvaluationDetails ConfigCatClient::evaluate(const std::string& key,
-                                            const ConfigCatUser* user,
-                                            const Setting& setting,
-                                            double fetchTime) const {
+template<typename ValueType>
+EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
+                                                       const ValueType& defaultValue,
+                                                       const ConfigCatUser* user,
+                                                       const Setting& setting,
+                                                       double fetchTime) const {
     user = user != nullptr ? user : defaultUser.get();
     auto& evaluateResult = rolloutEvaluator->evaluate(key, user, setting);
     auto& error = evaluateResult.error;
 
-    EvaluationDetails details(key,
-                              *static_cast<optional<Value>>(evaluateResult.selectedValue.value),
-                              evaluateResult.selectedValue.variationId,
-                              time_point<system_clock, duration<double>>(duration<double>(fetchTime)),
-                              user,
-                              error.empty() ? false : true,
-                              error,
-                              evaluateResult.targetingRule,
-                              evaluateResult.percentageOption);
+    auto& value = const_cast<ValueType&>(defaultValue);
+    if constexpr (is_same_v<ValueType, optional<Value>>) {
+        // This implicit conversion works because we defined it (see `Value::operator SettingValue()`).
+        value = evaluateResult.selectedValue.value;
+    }
+    else if constexpr (is_same_v<ValueType, Value>) {
+        value = *static_cast<optional<Value>>(evaluateResult.selectedValue.value);
+    }
+    else {
+        // TODO: RolloutEvaluator will enforce this
+        if (holds_alternative<ValueType>(evaluateResult.selectedValue.value)) {
+            value = std::get<ValueType>(evaluateResult.selectedValue.value);
+        }
+    }
+
+    EvaluationDetails<ValueType> details(key,
+                                         value,
+                                         evaluateResult.selectedValue.variationId,
+                                         time_point<system_clock, duration<double>>(duration<double>(fetchTime)),
+                                         user,
+                                         error.empty() ? false : true,
+                                         error,
+                                         evaluateResult.targetingRule,
+                                         evaluateResult.percentageOption);
     hooks->invokeOnFlagEvaluated(details);
     return details;
 }

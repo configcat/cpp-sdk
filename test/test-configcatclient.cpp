@@ -347,7 +347,7 @@ TEST_F(ConfigCatClientTest, GetAllValueDetails) {
     client->forceRefresh();
     auto allDetails = client->getAllValueDetails();
 
-    auto details_by_key = [&](const std::vector<EvaluationDetails>& all_details, const std::string& key) -> const EvaluationDetails* {
+    auto details_by_key = [&](const std::vector<EvaluationDetails<Value>>& all_details, const std::string& key) -> const EvaluationDetails<Value>* {
         for (const auto& details : all_details) {
             if (details.key == key) {
                 return &details;
@@ -401,7 +401,7 @@ TEST_F(ConfigCatClientTest, GetValueDetails) {
     ConfigCatUser user("test@test1.com");
     auto details = client->getValueDetails("testStringKey", "", &user);
 
-    EXPECT_EQ("fake1", get<string>(details.value));
+    EXPECT_EQ("fake1", details.value);
     EXPECT_EQ("testStringKey", details.key);
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);

@@ -50,7 +50,7 @@ public:
     std::string getValue(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user = nullptr) const;
 
     /**
-     * Gets the value of a feature flag or setting as std::shared_ptr<Value> identified by the given [key].
+     * Gets the value of a feature flag or setting as std::optional<Value> identified by the given [key].
      * In case of any failure, std::nullopt will be returned. The [user] param identifies the caller.
      */
     std::optional<Value> getValue(const std::string& key, const ConfigCatUser* user = nullptr) const;
@@ -62,11 +62,17 @@ public:
      * Parameter [defaultValue]: in case of any failure, this value will be returned.
      * Parameter [user]: the user object to identify the caller.
      */
-    EvaluationDetails getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user = nullptr) const;
-    EvaluationDetails getValueDetails(const std::string& key, int32_t defaultValue, const ConfigCatUser* user = nullptr) const;
-    EvaluationDetails getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user = nullptr) const;
-    EvaluationDetails getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user = nullptr) const;
-    EvaluationDetails getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails<bool> getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails<int32_t> getValueDetails(const std::string& key, int32_t defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails<double> getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails<std::string> getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails<std::string> getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
+
+    /**
+     * Gets the value and evaluation details of a feature flag or setting identified by the given [key].
+     * In case of any failure, the [value] field of the returned returned EvaluationDetails struct will be set to std::nullopt. The [user] param identifies the caller.
+     */
+    EvaluationDetails<> getValueDetails(const std::string& key, const ConfigCatUser* user = nullptr) const;
 
     // Gets all the setting keys.
     std::vector<std::string> getAllKeys() const;
@@ -78,7 +84,7 @@ public:
     std::unordered_map<std::string, Value> getAllValues(const ConfigCatUser* user = nullptr) const;
 
     // Gets the values along with evaluation details of all feature flags and settings.
-    std::vector<EvaluationDetails> getAllValueDetails(const ConfigCatUser* user = nullptr) const;
+    std::vector<EvaluationDetails<Value>> getAllValueDetails(const ConfigCatUser* user = nullptr) const;
 
     // Initiates a force refresh synchronously on the cached configuration.
     void forceRefresh();
@@ -112,14 +118,16 @@ private:
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user = nullptr) const;
 
     template<typename ValueType>
-    EvaluationDetails _getValueDetails(const std::string& key, ValueType defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails<ValueType> _getValueDetails(const std::string& key, ValueType defaultValue, const ConfigCatUser* user = nullptr) const;
 
     SettingResult getSettings() const;
 
-    EvaluationDetails evaluate(const std::string& key,
-                               const ConfigCatUser* user,
-                               const Setting& setting,
-                               double fetchTime) const;
+    template<typename ValueType>
+    EvaluationDetails<ValueType> evaluate(const std::string& key,
+                                          const ValueType& defaultValue,
+                                          const ConfigCatUser* user,
+                                          const Setting& setting,
+                                          double fetchTime) const;
 
     std::shared_ptr<Hooks> hooks;
     std::shared_ptr<ConfigCatLogger> logger;

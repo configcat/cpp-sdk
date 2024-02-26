@@ -47,7 +47,7 @@ public:
     int isReadyCallCount = 0;
     std::shared_ptr<configcat::Settings> changedConfig;
     int changedConfigCallCount = 0;
-    configcat::EvaluationDetails evaluationDetails;
+    configcat::EvaluationDetails<> evaluationDetails;
     int evaluationDetailsCallCount = 0;
     std::string error;
     int errorCallCount = 0;
@@ -62,8 +62,8 @@ public:
         changedConfigCallCount += 1;
     }
 
-    void onFlagEvaluated(const configcat::EvaluationDetails& details) {
-        evaluationDetails = details;
+    void onFlagEvaluated(const configcat::EvaluationDetailsBase& details) {
+        evaluationDetails = to_concrete(details);
         evaluationDetailsCallCount += 1;
     }
 
