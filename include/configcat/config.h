@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -11,9 +12,9 @@ namespace configcat {
 
     struct SettingValue;
 
-    struct Value : public std::variant<bool, std::string, int, double> {
+    struct Value : public std::variant<bool, std::string, int32_t, double> {
     private:
-        using _Base = std::variant<bool, std::string, int, double>;
+        using _Base = std::variant<bool, std::string, int32_t, double>;
     public:
         Value(const char* v) : _Base(std::string(v)) {}
 
@@ -152,11 +153,11 @@ namespace configcat {
 
     struct SettingValuePrivate;
 
-    struct SettingValue : public one_of<bool, std::string, int, double> {
+    struct SettingValue : public one_of<bool, std::string, int32_t, double> {
         // Not for maintainers: the indices of variant alternatives must correspond to
         // the SettingType enum's member values because we rely on this! (See e.g. Setting::fromValue)
     private:
-        using _Base = one_of<bool, std::string, int, double>;
+        using _Base = one_of<bool, std::string, int32_t, double>;
     protected:
         friend struct SettingValuePrivate;
 
@@ -231,7 +232,7 @@ namespace configcat {
         static constexpr char kSegmentIndex[] = "s";
         static constexpr char kComparator[] = "c";
 
-        int segmentIndex;
+        int32_t segmentIndex;
         SegmentComparator comparator;
     };
 

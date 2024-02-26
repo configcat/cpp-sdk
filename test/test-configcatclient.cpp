@@ -371,7 +371,7 @@ TEST_F(ConfigCatClientTest, GetAllValueDetails) {
     details = details_by_key(allDetails, "testIntKey");
     EXPECT_NE(nullptr, details);
     EXPECT_EQ("testIntKey", details->key);
-    EXPECT_EQ(1, get<int>(details->value));
+    EXPECT_EQ(1, get<int32_t>(details->value));
 
     details = details_by_key(allDetails, "testDoubleKey");
     EXPECT_NE(nullptr, details);
@@ -550,7 +550,7 @@ TEST_F(ConfigCatClientTest, GetValueTypeTest) {
     stringValue = client->getValue("", string("str"));
     EXPECT_EQ(stringValue, "str");
 
-    int intValue = client->getValue("", 42);
+    int32_t intValue = client->getValue("", 42);
     EXPECT_EQ(intValue, 42);
 
     double doubleValue = client->getValue("", 42.0);
@@ -605,7 +605,7 @@ TEST_F(ConfigCatClientTest, DefaultUserGetAllValues) {
     EXPECT_EQ(6, allValues.size());
     EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
     EXPECT_EQ("fake1", get<string>(allValues["testStringKey"]));
-    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1, get<int32_t>(allValues["testIntKey"]));
     EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
     EXPECT_TRUE(get<bool>(allValues["key1"]));
     EXPECT_FALSE(get<bool>(allValues["key2"]));
@@ -614,7 +614,7 @@ TEST_F(ConfigCatClientTest, DefaultUserGetAllValues) {
     EXPECT_EQ(6, allValues.size());
     EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
     EXPECT_EQ("fake2", get<string>(allValues["testStringKey"]));
-    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1, get<int32_t>(allValues["testIntKey"]));
     EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
     EXPECT_TRUE(get<bool>(allValues["key1"]));
     EXPECT_FALSE(get<bool>(allValues["key2"]));
@@ -624,7 +624,7 @@ TEST_F(ConfigCatClientTest, DefaultUserGetAllValues) {
     EXPECT_EQ(6, allValues.size());
     EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
     EXPECT_EQ("testValue", get<string>(allValues["testStringKey"]));
-    EXPECT_EQ(1, get<int>(allValues["testIntKey"]));
+    EXPECT_EQ(1, get<int32_t>(allValues["testIntKey"]));
     EXPECT_EQ(1.1, get<double>(allValues["testDoubleKey"]));
     EXPECT_TRUE(get<bool>(allValues["key1"]));
     EXPECT_FALSE(get<bool>(allValues["key2"]));

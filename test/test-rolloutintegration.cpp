@@ -93,8 +93,8 @@ public:
                         else if (holds_alternative<string>(*value)) {
                             success = get<string>(*value) == expected;
                         }
-                        else if (holds_alternative<int>(*value)) {
-                            success = get<int>(*value) == stoi(expected);
+                        else if (holds_alternative<int32_t>(*value)) {
+                            success = get<int32_t>(*value) == stoi(expected);
                         }
                         else {
                             success = get<double>(*value) == stod(expected);

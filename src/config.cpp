@@ -50,7 +50,7 @@ namespace configcat {
             else if constexpr (is_same_v<T, string>) {
                 return alt;
             }
-            else if constexpr (is_same_v<T, int>) {
+            else if constexpr (is_same_v<T, int32_t>) {
                 return to_string(alt);
             }
             else /*if constexpr (is_same_v<T, double>) */ {
@@ -87,8 +87,8 @@ namespace configcat {
         else if (holds_alternative<string>(value)) {
             j[SettingValue::kString] = get<string>(value);
         }
-        else if (holds_alternative<int>(value)) {
-            j[SettingValue::kInt] = get<int>(value);
+        else if (holds_alternative<int32_t>(value)) {
+            j[SettingValue::kInt] = get<int32_t>(value);
         }
         else if (holds_alternative<double>(value)) {
             j[SettingValue::kDouble] = get<double>(value);
@@ -103,7 +103,7 @@ namespace configcat {
             value = it->get<string>();
         }
         else if (auto it = j.find(SettingValue::kInt); it != j.end()) {
-            value = it->get<int>();
+            value = it->get<int32_t>();
         }
         else if (auto it = j.find(SettingValue::kDouble); it != j.end()) {
             value = it->get<double>();
@@ -133,8 +133,8 @@ namespace configcat {
         else if (holds_alternative<string>(*this)) {
             if (type == SettingType::String) return get<string>(*this);
         }
-        else if (holds_alternative<int>(*this)) {
-            if (type == SettingType::Int) return get<int>(*this);
+        else if (holds_alternative<int32_t>(*this)) {
+            if (type == SettingType::Int) return get<int32_t>(*this);
         }
         else if (holds_alternative<double>(*this)) {
             if (type == SettingType::Double) return get<double>(*this);
@@ -420,7 +420,7 @@ namespace configcat {
                     settingValue = value.get<string>();
                 }
                 else if (value.is_number_integer()) {
-                    settingValue = value.get<int>();
+                    settingValue = value.get<int32_t>();
                 }
                 else if (value.is_number()) {
                     settingValue = value.get<double>();

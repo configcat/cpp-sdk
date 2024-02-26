@@ -44,7 +44,7 @@ public:
      * Parameter [user]: the user object to identify the caller.
      */
     bool getValue(const std::string& key, bool defaultValue, const ConfigCatUser* user = nullptr) const;
-    int getValue(const std::string& key, int defaultValue, const ConfigCatUser* user = nullptr) const;
+    int32_t getValue(const std::string& key, int32_t defaultValue, const ConfigCatUser* user = nullptr) const;
     double getValue(const std::string& key, double defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;
     std::string getValue(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user = nullptr) const;
@@ -63,7 +63,7 @@ public:
      * Parameter [user]: the user object to identify the caller.
      */
     EvaluationDetails getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user = nullptr) const;
-    EvaluationDetails getValueDetails(const std::string& key, int defaultValue, const ConfigCatUser* user = nullptr) const;
+    EvaluationDetails getValueDetails(const std::string& key, int32_t defaultValue, const ConfigCatUser* user = nullptr) const;
     EvaluationDetails getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user = nullptr) const;
     EvaluationDetails getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user = nullptr) const;
     EvaluationDetails getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user = nullptr) const;

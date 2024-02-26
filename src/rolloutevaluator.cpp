@@ -37,7 +37,7 @@ static constexpr std::array kComparatorTexts{
 };
 
 static const char* comparatorToString(UserComparator comparator) {
-    return kComparatorTexts.at((int)comparator);
+    return kComparatorTexts.at(static_cast<size_t>(comparator));
 }
 
 static string comparisonValueToString(const UserConditionComparisonValue& comparisonValue) {

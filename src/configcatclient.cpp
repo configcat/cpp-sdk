@@ -136,7 +136,7 @@ bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const 
     return _getValue(key, defaultValue, user);
 }
 
-int ConfigCatClient::getValue(const std::string& key, int defaultValue, const ConfigCatUser* user) const {
+int32_t ConfigCatClient::getValue(const std::string& key, int32_t defaultValue, const ConfigCatUser* user) const {
     return _getValue(key, defaultValue, user);
 }
 
@@ -184,7 +184,7 @@ EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, bool 
     return _getValueDetails(key, defaultValue, user);
 }
 
-EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, int defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails ConfigCatClient::getValueDetails(const std::string& key, int32_t defaultValue, const ConfigCatUser* user) const {
     return _getValueDetails(key, defaultValue, user);
 }
 
