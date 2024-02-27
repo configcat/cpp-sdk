@@ -132,56 +132,56 @@ SettingResult ConfigCatClient::getSettings() const {
     return configService->getSettings();
 }
 
-bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
+bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValue(key, defaultValue, user);
 }
 
-int32_t ConfigCatClient::getValue(const std::string& key, int32_t defaultValue, const ConfigCatUser* user) const {
+int32_t ConfigCatClient::getValue(const std::string& key, int32_t defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValue(key, defaultValue, user);
 }
 
-double ConfigCatClient::getValue(const std::string& key, double defaultValue, const ConfigCatUser* user) const {
+double ConfigCatClient::getValue(const std::string& key, double defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValue(key, defaultValue, user);
 }
 
-std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
+std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValue(key, string(defaultValue), user);
 }
 
-std::string ConfigCatClient::getValue(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user) const {
+std::string ConfigCatClient::getValue(const std::string& key, const std::string& defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValue(key, defaultValue, user);
 }
 
-std::optional<Value> ConfigCatClient::getValue(const std::string& key, const ConfigCatUser* user) const {
+std::optional<Value> ConfigCatClient::getValue(const std::string& key, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValue<optional<Value>>(key, nullopt, user);
 }
 
-EvaluationDetails<bool> ConfigCatClient::getValueDetails(const std::string& key, bool defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<bool> ConfigCatClient::getValueDetails(const std::string& key, bool defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValueDetails(key, defaultValue, user);
 }
 
-EvaluationDetails<int32_t> ConfigCatClient::getValueDetails(const std::string& key, int32_t defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<int32_t> ConfigCatClient::getValueDetails(const std::string& key, int32_t defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValueDetails(key, defaultValue, user);
 }
 
-EvaluationDetails<double> ConfigCatClient::getValueDetails(const std::string& key, double defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<double> ConfigCatClient::getValueDetails(const std::string& key, double defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValueDetails(key, defaultValue, user);
 }
-EvaluationDetails<std::string> ConfigCatClient::getValueDetails(const std::string& key, const std::string& defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<std::string> ConfigCatClient::getValueDetails(const std::string& key, const std::string& defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValueDetails(key, defaultValue, user);
 }
 
-EvaluationDetails<std::string> ConfigCatClient::getValueDetails(const std::string& key, const char* defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<std::string> ConfigCatClient::getValueDetails(const std::string& key, const char* defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValueDetails<string>(key, defaultValue, user);
 }
 
 
-EvaluationDetails<> ConfigCatClient::getValueDetails(const std::string& key, const ConfigCatUser* user) const {
+EvaluationDetails<std::optional<Value>> ConfigCatClient::getValueDetails(const std::string& key, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValueDetails<optional<Value>>(key, nullopt, user);
 }
 
 template<typename ValueType>
-EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string& key, ValueType defaultValue, const ConfigCatUser* user) const {
+EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string& key, ValueType defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
@@ -275,7 +275,7 @@ std::shared_ptr<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& var
     return nullptr;
 }
 
-std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const ConfigCatUser* user) const {
+std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const std::shared_ptr<ConfigCatUser>& user) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
@@ -294,7 +294,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const Confi
     return result;
 }
 
-std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const ConfigCatUser* user) const {
+std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const std::shared_ptr<ConfigCatUser>& user) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
@@ -313,7 +313,7 @@ std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const 
 }
 
 template<typename ValueType>
-ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& defaultValue, const ConfigCatUser* user) const {
+ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     auto settingResult = getSettings();
     auto& settings = settingResult.settings;
     auto& fetchTime = settingResult.fetchTime;
@@ -365,11 +365,12 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
 template<typename ValueType>
 EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
                                                        const ValueType& defaultValue,
-                                                       const ConfigCatUser* user,
+                                                       const std::shared_ptr<ConfigCatUser>& user,
                                                        const Setting& setting,
                                                        double fetchTime) const {
-    user = user != nullptr ? user : defaultUser.get();
-    auto& evaluateResult = rolloutEvaluator->evaluate(key, user, setting);
+    
+    const std::shared_ptr<ConfigCatUser>& effectiveUser = user ? user : this->defaultUser;
+    auto& evaluateResult = rolloutEvaluator->evaluate(key, effectiveUser, setting);
     auto& error = evaluateResult.error;
 
     auto& value = const_cast<ValueType&>(defaultValue);
@@ -391,7 +392,7 @@ EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
                                          value,
                                          evaluateResult.selectedValue.variationId,
                                          time_point<system_clock, duration<double>>(duration<double>(fetchTime)),
-                                         user,
+                                         effectiveUser,
                                          error.empty() ? false : true,
                                          error,
                                          evaluateResult.targetingRule,

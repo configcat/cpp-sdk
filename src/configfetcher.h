@@ -26,7 +26,7 @@ struct FetchResponse {
     std::string error;
     bool isTransientError = false;
 
-    FetchResponse(Status status, std::shared_ptr<const ConfigEntry> entry, const std::string& error = "", bool isTransientError = false):
+    FetchResponse(Status status, const std::shared_ptr<const ConfigEntry>& entry, const std::string& error = "", bool isTransientError = false):
         status(status),
         entry(entry),
         error(error),
@@ -56,7 +56,7 @@ public:
     static constexpr char kIfNoneMatchHeaderName[] = "If-None-Match";
     static constexpr char kEtagHeaderName[] = "ETag";
 
-    ConfigFetcher(const std::string& sdkKey, std::shared_ptr<ConfigCatLogger> logger, const std::string& mode, const ConfigCatOptions& options);
+    ConfigFetcher(const std::string& sdkKey, const std::shared_ptr<ConfigCatLogger>& logger, const std::string& mode, const ConfigCatOptions& options);
     ~ConfigFetcher();
 
     void close();

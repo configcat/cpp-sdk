@@ -19,7 +19,7 @@ namespace configcat {
 
         static const std::shared_ptr<const ConfigEntry> empty;
 
-        ConfigEntry(const std::shared_ptr<const Config> config = Config::empty,
+        ConfigEntry(const std::shared_ptr<const Config>& config = Config::empty,
                     const std::string& eTag = "",
                     const std::string& configJsonString = "{}",
                     double fetchTime = kDistantPast):

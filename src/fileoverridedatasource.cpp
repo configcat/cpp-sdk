@@ -10,11 +10,11 @@ FileFlagOverrides::FileFlagOverrides(const std::string& filePath, OverrideBehavi
     behaviour(behaviour) {
 }
 
-std::shared_ptr<OverrideDataSource> FileFlagOverrides::createDataSource(std::shared_ptr<ConfigCatLogger> logger) {
+std::shared_ptr<OverrideDataSource> FileFlagOverrides::createDataSource(const std::shared_ptr<ConfigCatLogger>& logger) {
     return make_shared<FileOverrideDataSource>(filePath, behaviour, logger);
 }
 
-FileOverrideDataSource::FileOverrideDataSource(const string& filePath, OverrideBehaviour behaviour, std::shared_ptr<ConfigCatLogger> logger):
+FileOverrideDataSource::FileOverrideDataSource(const string& filePath, OverrideBehaviour behaviour, const std::shared_ptr<ConfigCatLogger>& logger):
     OverrideDataSource(behaviour),
     overrides(make_shared<unordered_map<string, Setting>>()),
     filePath(filePath),
@@ -27,7 +27,7 @@ FileOverrideDataSource::FileOverrideDataSource(const string& filePath, OverrideB
     }
 }
 
-const shared_ptr<unordered_map<string, Setting>> FileOverrideDataSource::getOverrides() {
+shared_ptr<unordered_map<string, Setting>> FileOverrideDataSource::getOverrides() {
     reloadFileContent();
     return overrides;
 }

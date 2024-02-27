@@ -9,7 +9,7 @@ namespace configcat {
 
 class ConfigCatLogger {
 public:
-    ConfigCatLogger(std::shared_ptr<ILogger> logger, std::shared_ptr<Hooks> hooks):
+    ConfigCatLogger(const std::shared_ptr<ILogger>& logger, const std::shared_ptr<Hooks>& hooks):
         logger(logger),
         hooks(hooks) {
     }
@@ -34,7 +34,7 @@ private:
 
 class LogEntry {
 public:
-    LogEntry(std::shared_ptr<ConfigCatLogger> logger, LogLevel level, int eventId) : logger(logger), level(level), eventId(eventId) {}
+    LogEntry(const std::shared_ptr<ConfigCatLogger>& logger, LogLevel level, int eventId) : logger(logger), level(level), eventId(eventId) {}
     ~LogEntry() {
         if (logger && level <= logger->getLogLevel())
             logger->log(level, eventId, message);
@@ -65,7 +65,7 @@ public:
     }
 
     // TODO: remove?
-    LogEntry& operator<<(const ConfigCatUser* user) {
+    LogEntry& operator<<(const std::shared_ptr<ConfigCatUser>& user) {
         return operator<<(*user);
     }
 

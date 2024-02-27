@@ -12,7 +12,7 @@ struct EvaluationDetailsBase {
     std::string key;
     std::optional<std::string> variationId;
     std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> fetchTime;
-    const ConfigCatUser* user;
+    std::shared_ptr<ConfigCatUser> user;
     bool isDefaultValue;
     std::string error;
     std::optional<TargetingRule> matchedTargetingRule;
@@ -24,7 +24,7 @@ protected:
     EvaluationDetailsBase(const std::string& key = "",
         const std::optional<std::string>& variationId = "",
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
-        const ConfigCatUser* user = nullptr,
+        const std::shared_ptr<ConfigCatUser>& user = nullptr,
         bool isDefaultValue = false,
         const std::string& error = "",
         const TargetingRule* matchedTargetingRule = nullptr,
@@ -51,7 +51,7 @@ struct EvaluationDetails : public EvaluationDetailsBase {
                       const ValueType& value = {},
                       const std::optional<std::string>& variationId = "",
                       const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
-                      const ConfigCatUser* user = nullptr,
+                      const std::shared_ptr<ConfigCatUser>& user = nullptr,
                       bool isDefaultValue = false,
                       const std::string& error = "",
                       const TargetingRule* matchedTargetingRule = nullptr,
@@ -67,8 +67,7 @@ struct EvaluationDetails : public EvaluationDetailsBase {
     ValueType value;
 
 protected:
-    std::optional<Value> getValue() const override
-    {
+    std::optional<Value> getValue() const override {
         if constexpr (std::is_same_v<ValueType, std::optional<Value>>) {
             return this->value;
         }
@@ -87,4 +86,3 @@ inline EvaluationDetails<> to_concrete(const EvaluationDetailsBase& details) {
 }
 
 } // namespace configcat
-

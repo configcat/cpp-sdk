@@ -125,8 +125,8 @@ TEST_F(HooksTest, Evaluation) {
 
     client->forceRefresh();
 
-    ConfigCatUser user("test@test1.com");
-    auto value = client->getValue("testStringKey", "", &user);
+    auto user = make_shared<ConfigCatUser>("test@test1.com");
+    auto value = client->getValue("testStringKey", "", user);
     EXPECT_EQ("fake1", value);
 
     auto& details = hookCallbacks.evaluationDetails;
@@ -144,7 +144,7 @@ TEST_F(HooksTest, Evaluation) {
     EXPECT_EQ(UserComparator::TextContainsAnyOf, condition.comparator);
     EXPECT_EQ("Identifier", condition.comparisonAttribute);
     EXPECT_EQ("@test1.com", get<vector<string>>(condition.comparisonValue)[0]);
-    EXPECT_TRUE(details.user == &user);
+    EXPECT_TRUE(details.user == user);
 
     auto now =  std::chrono::system_clock::now();
     EXPECT_GT(details.fetchTime, now - std::chrono::seconds(1));

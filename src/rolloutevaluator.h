@@ -22,12 +22,12 @@ struct EvaluateResult {
 
 class RolloutEvaluator {
 public:
-    RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger);
+    RolloutEvaluator(const std::shared_ptr<ConfigCatLogger>& logger);
     ~RolloutEvaluator();
 
     // Evaluate the feature flag or setting
     const EvaluateResult evaluate(const std::string& key,
-                                            const ConfigCatUser* user,
+                                            const std::shared_ptr<ConfigCatUser>& user,
                                             const Setting& setting);
 
     inline static std::string formatNoMatchRule(const std::string& comparisonAttribute,

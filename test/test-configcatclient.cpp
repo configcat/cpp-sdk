@@ -398,8 +398,8 @@ TEST_F(ConfigCatClientTest, GetValueDetails) {
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
 
-    ConfigCatUser user("test@test1.com");
-    auto details = client->getValueDetails("testStringKey", "", &user);
+    auto user = make_shared<ConfigCatUser>("test@test1.com");
+    auto details = client->getValueDetails("testStringKey", "", user);
 
     EXPECT_EQ("fake1", details.value);
     EXPECT_EQ("testStringKey", details.key);
@@ -414,7 +414,7 @@ TEST_F(ConfigCatClientTest, GetValueDetails) {
     EXPECT_EQ(UserComparator::TextContainsAnyOf, condition.comparator);
     EXPECT_EQ("Identifier", condition.comparisonAttribute);
     EXPECT_EQ("@test1.com", get<vector<string>>(condition.comparisonValue)[0]);
-    EXPECT_EQ(user.toJson(), details.user->toJson());
+    EXPECT_EQ(user->toJson(), details.user->toJson());
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
     EXPECT_GE(now, details.fetchTime);
     EXPECT_LE(now, details.fetchTime + std::chrono::seconds(1));
@@ -567,7 +567,7 @@ TEST_F(ConfigCatClientTest, GetValueWithKeyNotFound) {
     auto value = client->getValue("nonexisting", 10);
     EXPECT_EQ(10, value);
 
-    ConfigCatUser* user = nullptr;
+    std::shared_ptr<ConfigCatUser> user = nullptr;
     auto settingValue = client->getValue("nonexisting", user);
     EXPECT_FALSE(settingValue.has_value());
 }
@@ -584,7 +584,7 @@ TEST_F(ConfigCatClientTest, DefaultUserGetValue) {
 
     client->setDefaultUser(user1);
     EXPECT_EQ("fake1", client->getValue("testStringKey", ""));
-    EXPECT_EQ("fake2", client->getValue("testStringKey", "", user2.get()));
+    EXPECT_EQ("fake2", client->getValue("testStringKey", "", user2));
 
     client->clearDefaultUser();
     EXPECT_EQ("testValue", client->getValue("testStringKey", ""));
@@ -610,7 +610,7 @@ TEST_F(ConfigCatClientTest, DefaultUserGetAllValues) {
     EXPECT_TRUE(get<bool>(allValues["key1"]));
     EXPECT_FALSE(get<bool>(allValues["key2"]));
 
-    allValues = client->getAllValues(user2.get());
+    allValues = client->getAllValues(user2);
     EXPECT_EQ(6, allValues.size());
     EXPECT_EQ(true, get<bool>(allValues["testBoolKey"]));
     EXPECT_EQ("fake2", get<string>(allValues["testStringKey"]));

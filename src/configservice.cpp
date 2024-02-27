@@ -12,9 +12,9 @@ using namespace std::this_thread;
 namespace configcat {
 
 ConfigService::ConfigService(const string& sdkKey,
-                             shared_ptr<ConfigCatLogger> logger,
-                             std::shared_ptr<Hooks> hooks,
-                             std::shared_ptr<ConfigCache> configCache,
+                             const shared_ptr<ConfigCatLogger>& logger,
+                             const std::shared_ptr<Hooks>& hooks,
+                             const std::shared_ptr<ConfigCache>& configCache,
                              const ConfigCatOptions& options):
     logger(logger),
     hooks(hooks),

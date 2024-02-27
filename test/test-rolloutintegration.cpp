@@ -59,7 +59,7 @@ public:
         list<string> errors;
         for (int i = 1; i < matrixData.size(); ++i) {
             auto& testObjects = matrixData[i];
-            unique_ptr<ConfigCatUser> user;
+            shared_ptr<ConfigCatUser> user;
             if (testObjects[0] != "##null##") {
                 string email;
                 string country;
@@ -76,14 +76,14 @@ public:
                     custom[customKey] = testObjects[3];
                 }
 
-                user = make_unique<ConfigCatUser>(identifier, email, country, custom);
+                user = make_shared<ConfigCatUser>(identifier, email, country, custom);
             }
 
             int j = 0;
             for (auto& settingKey : settingKeys) {
                 string expected = testObjects[j + 4];
                 if (isValueKind) {
-                    auto value = client->getValue(settingKey, user.get());
+                    auto value = client->getValue(settingKey, user);
                     
                     auto success = value.has_value();
                     if (success) {
@@ -111,7 +111,7 @@ public:
                                          !value ? value->toString().c_str() : "##null##"));
                     }
                 } else {
-                    auto details = client->getValueDetails(settingKey, "", user.get());
+                    auto details = client->getValueDetails(settingKey, user);
                     auto variationId = details.variationId;
                     if (variationId != expected) {
                         errors.push_back(

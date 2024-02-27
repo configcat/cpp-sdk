@@ -24,9 +24,9 @@ class Hooks;
 class ConfigService {
 public:
     ConfigService(const std::string& sdkKey,
-                  std::shared_ptr<ConfigCatLogger> logger,
-                  std::shared_ptr<Hooks> hooks,
-                  std::shared_ptr<ConfigCache> configCache,
+                  const std::shared_ptr<ConfigCatLogger>& logger,
+                  const std::shared_ptr<Hooks>& hooks,
+                  const std::shared_ptr<ConfigCache>& configCache,
                   const ConfigCatOptions& options);
     ~ConfigService();
 

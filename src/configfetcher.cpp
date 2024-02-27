@@ -13,7 +13,7 @@ using namespace std;
 
 namespace configcat {
 
-ConfigFetcher::ConfigFetcher(const string& sdkKey, shared_ptr<ConfigCatLogger> logger, const string& mode, const ConfigCatOptions& options):
+ConfigFetcher::ConfigFetcher(const string& sdkKey, const shared_ptr<ConfigCatLogger>& logger, const string& mode, const ConfigCatOptions& options):
     sdkKey(sdkKey),
     logger(logger),
     mode(mode),

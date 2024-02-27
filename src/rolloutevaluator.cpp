@@ -54,7 +54,7 @@ static string comparisonValueToString(const UserConditionComparisonValue& compar
     }, comparisonValue);
 }
 
-RolloutEvaluator::RolloutEvaluator(std::shared_ptr<ConfigCatLogger> logger):
+RolloutEvaluator::RolloutEvaluator(const std::shared_ptr<ConfigCatLogger>& logger):
     logger(logger),
     sha1(make_unique<SHA1>()),
     sha256(make_unique<SHA256>()) {
@@ -65,7 +65,7 @@ RolloutEvaluator::~RolloutEvaluator() {
 
 const EvaluateResult RolloutEvaluator::evaluate(
     const string& key,
-    const ConfigCatUser* user,
+    const std::shared_ptr<ConfigCatUser>& user,
     const Setting& setting) {
     LogEntry logEntry(logger, LOG_LEVEL_INFO, 5000);
     logEntry << "Evaluating getValue(" << key << ")";

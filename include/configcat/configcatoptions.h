@@ -65,7 +65,7 @@ public:
         }
     }
 
-    void invokeOnConfigChanged(std::shared_ptr<Settings> config) {
+    void invokeOnConfigChanged(const std::shared_ptr<Settings>& config) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onConfigChangedCallbacks) {
             callback(config);

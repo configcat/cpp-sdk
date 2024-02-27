@@ -17,7 +17,7 @@ public:
     OverrideBehaviour getBehaviour() const { return behaviour; }
 
     // Gets all the overrides defined in the given source.
-    virtual const std::shared_ptr<Settings> getOverrides() = 0;
+    virtual std::shared_ptr<Settings> getOverrides() = 0;
 
 private:
     OverrideBehaviour behaviour;
