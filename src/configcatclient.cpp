@@ -8,7 +8,7 @@
 #include "configservice.h"
 #include "configcat/flagoverrides.h"
 #include "configcat/overridedatasource.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include "utils.h"
 

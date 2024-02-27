@@ -8,7 +8,6 @@
 #include "keyvalue.h"
 #include "configcatoptions.h"
 #include "refreshresult.h"
-#include "settingresult.h"
 #include "evaluationdetails.h"
 
 
@@ -20,7 +19,7 @@ class ConfigFetcher;
 class RolloutEvaluator;
 class FlagOverrides;
 class ConfigService;
-
+struct SettingResult;
 
 class ConfigCatClient {
 public:

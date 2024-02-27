@@ -3,7 +3,7 @@
 #include "configfetcher.h"
 #include "configcat/log.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "curlnetworkadapter.h"
 #include "version.h"
 #include "platform.h"

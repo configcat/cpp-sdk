@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include <nlohmann/json.hpp>
 
 using namespace configcat;
@@ -11,7 +11,7 @@ public:
     class TestLogger : public ILogger {
     public:
         TestLogger(): ILogger(LOG_LEVEL_INFO) {}
-        void log(LogLevel level, const std::string& message) override {
+        void log(LogLevel level, const std::string& message, const std::optional<std::exception>& ex = std::nullopt) override {
             text += message + "\n";
         }
         std::string text;

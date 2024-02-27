@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include "configcat/config.h"
 #include "configcat/refreshresult.h"
-#include "configcat/settingresult.h"
+#include "settingresult.h"
 #include "configfetcher.h"
 
 

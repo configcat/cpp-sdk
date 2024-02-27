@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include <thread>
 #include <chrono>

@@ -4,7 +4,7 @@
 #include "configservice.h"
 #include "configcat/configcatclient.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include <chrono>
 #include <nlohmann/json.hpp>
 

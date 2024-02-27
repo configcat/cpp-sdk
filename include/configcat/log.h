@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 #include <variant>
@@ -31,7 +32,7 @@ public:
     void setLogLevel(LogLevel logLevel) { maxLogLevel = logLevel; }
     LogLevel getLogLevel() const { return maxLogLevel; }
 
-    virtual void log(LogLevel level, const std::string& message) = 0;
+    virtual void log(LogLevel level, const std::string& message, const std::optional<std::exception>& ex = std::nullopt) = 0;
 
 protected:
     LogLevel maxLogLevel = LOG_LEVEL_WARNING;

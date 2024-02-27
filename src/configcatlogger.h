@@ -1,12 +1,11 @@
 #pragma once
 
 #include <exception>
-#include <sstream>
 
-#include "log.h"
-#include "configcatoptions.h"
-#include "configcatuser.h"
-#include "config.h"
+#include "configcat/log.h"
+#include "configcat/configcatoptions.h"
+#include "configcat/configcatuser.h"
+#include "configcat/config.h"
 
 namespace configcat {
 
@@ -23,11 +22,7 @@ public:
         }
 
         if (logger) {
-            std::ostringstream ss;
-            ss << "[" << std::to_string(eventId) << "] " << message;
-            if (ex) ss << std::endl << "Exception details: " << ex->what();
-
-            logger->log(level, ss.str());
+            logger->log(level, "[" + std::to_string(eventId) + "] " + message, ex);
         }
     }
 

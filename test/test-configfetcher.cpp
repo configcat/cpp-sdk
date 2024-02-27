@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "configfetcher.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include "mock.h"
 #include "utils.h"

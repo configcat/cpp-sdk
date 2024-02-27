@@ -1,6 +1,6 @@
 #include "rolloutevaluator.h"
 #include "configcat/configcatuser.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "utils.h"
 #include <algorithm>
 #include <sstream>

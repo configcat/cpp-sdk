@@ -1,6 +1,6 @@
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "configfetcher.h"
 #include "utils.h"
 #include <hash-library/sha1.h>

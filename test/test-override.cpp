@@ -2,7 +2,7 @@
 #include "configcat/mapoverridedatasource.h"
 #include "configcat/fileoverridedatasource.h"
 #include "configcat/configcatclient.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include "mock.h"
 #include "utils.h"
