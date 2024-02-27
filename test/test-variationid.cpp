@@ -106,9 +106,10 @@ TEST_F(VariationIdTest, GetVariationId) {
     configcat::Response response = {200, kTestJson};
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
-    auto details = client->getValueDetails("key1", "");
+    auto details = client->getValueDetails("key1", false);
 
-    EXPECT_EQ("fakeId1", details.variationId);
+    EXPECT_TRUE(details.variationId.has_value());
+    EXPECT_EQ("fakeId1", *details.variationId);
 }
 
 TEST_F(VariationIdTest, GetVariationIdNotFound) {
@@ -116,7 +117,8 @@ TEST_F(VariationIdTest, GetVariationIdNotFound) {
     mockHttpSessionAdapter->enqueueResponse(response);
     client->forceRefresh();
     auto details = client->getValueDetails("nonexisting", "default");
-    EXPECT_EQ("", details.variationId);
+
+    EXPECT_FALSE(details.variationId.has_value());
 }
 
 TEST_F(VariationIdTest, GetVarationIdInvalidJson) {
@@ -125,7 +127,7 @@ TEST_F(VariationIdTest, GetVarationIdInvalidJson) {
     client->forceRefresh();
     auto details = client->getValueDetails("key1", "");
 
-    EXPECT_EQ("", details.variationId);
+    EXPECT_FALSE(details.variationId.has_value());
 }
 
 TEST_F(VariationIdTest, GetAllVariationIds) {
@@ -136,9 +138,9 @@ TEST_F(VariationIdTest, GetAllVariationIds) {
 
     EXPECT_EQ(2, allDetails.size());
     EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails<Value>& details) {
-        return details.variationId == "fakeId1"; }) != allDetails.end());
+        return *details.variationId == "fakeId1"; }) != allDetails.end());
     EXPECT_TRUE(std::find_if(allDetails.begin(), allDetails.end(), [] (const EvaluationDetails<Value>& details) {
-        return details.variationId == "fakeId2"; }) != allDetails.end());
+        return *details.variationId == "fakeId2"; }) != allDetails.end());
 }
 
 TEST_F(VariationIdTest, GetAllValueDetailsEmpty) {
@@ -156,17 +158,17 @@ TEST_F(VariationIdTest, GetKeyAndValue) {
     client->forceRefresh();
 
     auto result = client->getKeyAndValue("fakeId2");
-    EXPECT_TRUE(result != nullptr);
+    EXPECT_TRUE(result.has_value());
     EXPECT_EQ("key2", result->key);
     EXPECT_FALSE(std::get<bool>(result->value));
 
     result = client->getKeyAndValue("percentageId2");
-    EXPECT_TRUE(result != nullptr);
+    EXPECT_TRUE(result.has_value());
     EXPECT_EQ("key1", result->key);
     EXPECT_FALSE(std::get<bool>(result->value));
 
     result = client->getKeyAndValue("rolloutId2");
-    EXPECT_TRUE(result != nullptr);
+    EXPECT_TRUE(result.has_value());
     EXPECT_EQ("key1", result->key);
     EXPECT_FALSE(std::get<bool>(result->value));
 }
@@ -177,5 +179,5 @@ TEST_F(VariationIdTest, GetKeyAndValueNotFound) {
     client->forceRefresh();
 
     auto result = client->getKeyAndValue("nonexisting");
-    EXPECT_TRUE(result == nullptr);
+    EXPECT_FALSE(result.has_value());
 }

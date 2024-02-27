@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <exception>
 
 #include "config.h"
 
@@ -14,7 +15,8 @@ struct EvaluationDetailsBase {
     std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> fetchTime;
     std::shared_ptr<ConfigCatUser> user;
     bool isDefaultValue;
-    std::string error;
+    std::optional<std::string> errorMessage;
+    std::optional<std::exception> errorException;
     std::optional<TargetingRule> matchedTargetingRule;
     std::optional<PercentageOption> matchedPercentageOption;
 
@@ -26,7 +28,8 @@ protected:
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
         const std::shared_ptr<ConfigCatUser>& user = nullptr,
         bool isDefaultValue = false,
-        const std::string& error = "",
+        const std::optional<std::string>& errorMessage = std::nullopt,
+        const std::optional<std::exception>& errorException = std::nullopt,
         const TargetingRule* matchedTargetingRule = nullptr,
         const PercentageOption* matchedPercentageOption = nullptr)
         : key(key)
@@ -34,7 +37,8 @@ protected:
         , fetchTime(fetchTime)
         , user(user)
         , isDefaultValue(isDefaultValue)
-        , error(error)
+        , errorMessage(errorMessage)
+        , errorException(errorException)
         // Unfortunately, std::optional<T&> is not possible (https://stackoverflow.com/a/26862721/8656352).
         // We could use std::optional<std::reference_wrapper<T>> as a workaround. However, that would take up more space
         // than pointers, so we'd rather resort to pointers, as this is ctor is not meant for public use.
@@ -53,15 +57,19 @@ struct EvaluationDetails : public EvaluationDetailsBase {
                       const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
                       const std::shared_ptr<ConfigCatUser>& user = nullptr,
                       bool isDefaultValue = false,
-                      const std::string& error = "",
+                      const std::optional<std::string>& errorMessage = std::nullopt,
+                      const std::optional<std::exception>& errorException = std::nullopt,
                       const TargetingRule* matchedTargetingRule = nullptr,
                       const PercentageOption* matchedPercentageOption = nullptr) :
-        EvaluationDetailsBase(key, variationId, fetchTime, user, isDefaultValue, error, matchedTargetingRule, matchedPercentageOption),
+        EvaluationDetailsBase(key, variationId, fetchTime, user, isDefaultValue, errorMessage, errorException, matchedTargetingRule, matchedPercentageOption),
         value(value) {
     }
 
-    static EvaluationDetails fromError(const std::string& key, const ValueType& value, const std::string& error, const std::string& variationId = {}) {
-        return EvaluationDetails(key, value, variationId, {}, nullptr, true, error);
+    static EvaluationDetails fromError(const std::string& key,
+                                       const ValueType& defaultValue,
+                                       const std::string& errorMessage,
+                                       const std::optional<std::exception>& errorException = std::nullopt) {
+        return EvaluationDetails<ValueType>(key, defaultValue, std::nullopt, {}, nullptr, true, errorMessage, errorException);
     }
 
     ValueType value;
@@ -80,7 +88,7 @@ protected:
 /** Helper function for creating copies of [EvaluationDetailsBase], which is not constructible, thus, not copyable. */
 inline EvaluationDetails<> to_concrete(const EvaluationDetailsBase& details) {
     return EvaluationDetails<>(details.key, details.value(), details.variationId, details.fetchTime,
-        details.user, details.isDefaultValue, details.error,
+        details.user, details.isDefaultValue, details.errorMessage, details.errorException,
         details.matchedTargetingRule ? &*details.matchedTargetingRule : nullptr,
         details.matchedPercentageOption ? &*details.matchedPercentageOption : nullptr);
 }

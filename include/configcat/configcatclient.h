@@ -78,7 +78,7 @@ public:
     std::vector<std::string> getAllKeys() const;
 
     // Gets the key of a setting and it's value identified by the given Variation ID (analytics)
-    std::shared_ptr<KeyValue> getKeyAndValue(const std::string& variationId) const;
+    std::optional<KeyValue> getKeyAndValue(const std::string& variationId) const;
 
     // Gets the values of all feature flags or settings.
     std::unordered_map<std::string, Value> getAllValues(const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
@@ -124,8 +124,7 @@ private:
 
     template<typename ValueType>
     EvaluationDetails<ValueType> evaluate(const std::string& key,
-                                          const ValueType& defaultValue,
-                                          const std::shared_ptr<ConfigCatUser>& user,
+                                          const std::shared_ptr<ConfigCatUser>& effectiveUser,
                                           const Setting& setting,
                                           double fetchTime) const;
 

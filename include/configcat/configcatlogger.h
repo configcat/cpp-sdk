@@ -1,5 +1,8 @@
 #pragma once
 
+#include <exception>
+#include <sstream>
+
 #include "log.h"
 #include "configcatoptions.h"
 #include "configcatuser.h"
@@ -14,13 +17,17 @@ public:
         hooks(hooks) {
     }
 
-    void log(LogLevel level, int eventId, const std::string& message) {
+    void log(LogLevel level, int eventId, const std::string& message, const std::optional<std::exception>& ex = std::nullopt) {
         if (hooks && level == LOG_LEVEL_ERROR) {
             hooks->invokeOnError(message);
         }
 
         if (logger) {
-            logger->log(level, "[" + std::to_string(eventId) + "] " + message);
+            std::ostringstream ss;
+            ss << "[" << std::to_string(eventId) << "] " << message;
+            if (ex) ss << std::endl << "Exception details: " << ex->what();
+
+            logger->log(level, ss.str());
         }
     }
 
@@ -34,10 +41,12 @@ private:
 
 class LogEntry {
 public:
-    LogEntry(const std::shared_ptr<ConfigCatLogger>& logger, LogLevel level, int eventId) : logger(logger), level(level), eventId(eventId) {}
+    LogEntry(const std::shared_ptr<ConfigCatLogger>& logger, LogLevel level, int eventId, const std::optional<std::exception>& ex = std::nullopt)
+        : logger(logger), level(level), eventId(eventId), ex(ex) {}
+
     ~LogEntry() {
         if (logger && level <= logger->getLogLevel())
-            logger->log(level, eventId, message);
+            logger->log(level, eventId, message, ex);
     }
 
     LogEntry& operator<<(const char* str) {
@@ -118,6 +127,7 @@ private:
     LogLevel level;
     int eventId;
     std::string message;
+    std::optional<std::exception> ex;
 };
 
 } // namespace configcat
