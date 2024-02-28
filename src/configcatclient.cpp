@@ -158,7 +158,7 @@ double ConfigCatClient::getValue(const std::string& key, double defaultValue, co
 }
 
 std::string ConfigCatClient::getValue(const std::string& key, const char* defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
-    return _getValue(key, string(defaultValue), user);
+    return _getValue<string>(key, defaultValue, user);
 }
 
 std::string ConfigCatClient::getValue(const std::string& key, const std::string& defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
@@ -193,7 +193,7 @@ EvaluationDetails<std::optional<Value>> ConfigCatClient::getValueDetails(const s
 }
 
 template<typename ValueType>
-EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string& key, ValueType defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
+EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string& key, const ValueType& defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     try {
         auto settingResult = getSettings();
         auto& settings = settingResult.settings;
@@ -215,8 +215,8 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
         if (setting == settings->end()) {
             vector<string> keys;
             keys.reserve(settings->size());
-            for (auto keyValue : *settings) {
-                keys.emplace_back("'" + keyValue.first + "'");
+            for (const auto& [key, _] : *settings) {
+                keys.emplace_back(key);
             }
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
             if constexpr (is_same_v<ValueType, optional<Value>>) {
@@ -236,7 +236,7 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
         }
 
         const auto& effectiveUser = user ? user : this->defaultUser;
-        return evaluate<ValueType>(key, effectiveUser, setting->second, fetchTime);
+        return evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, fetchTime);
     }
     catch (...) {
         const auto& ex = unwrapException(std::current_exception());
@@ -266,8 +266,8 @@ std::vector<std::string> ConfigCatClient::getAllKeys() const {
 
         vector<string> keys;
         keys.reserve(settings->size());
-        for (auto keyValue : *settings) {
-            keys.emplace_back(keyValue.first);
+        for (const auto& [key, _] : *settings) {
+            keys.emplace_back(key);
         }
         return keys;
     }
@@ -288,23 +288,36 @@ std::optional<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& varia
             return nullopt;
         }
 
-        for (auto& keyValue : *settings) {
-            auto& key = keyValue.first;
-            auto& setting = keyValue.second;
+        for (const auto& [key, setting] : *settings) {
+            const auto settingType = setting.getTypeChecked();
+
             if (setting.variationId == variationId) {
-                return KeyValue(key, *static_cast<optional<Value>>(setting.value));
+                return KeyValue(key, *setting.value.toValueChecked(settingType));
             }
 
-            for (auto& targetingRule : setting.targetingRules) {
-                auto simpleValue = std::get<SettingValueContainer>(targetingRule.then);
-                if (simpleValue.variationId == variationId) {
-                    return KeyValue(key, *static_cast<optional<Value>>(simpleValue.value));
+            for (const auto& targetingRule : setting.targetingRules) {
+                if (const auto simpleValuePtr = get_if<SettingValueContainer>(&targetingRule.then); simpleValuePtr) {
+                    if (simpleValuePtr->variationId == variationId) {
+                        return KeyValue(key, *simpleValuePtr->value.toValueChecked(settingType));
+                    }
+                }
+                else if (const auto percentageOptionsPtr = get_if<PercentageOptions>(&targetingRule.then);
+                    percentageOptionsPtr && !percentageOptionsPtr->empty()) {
+
+                    for (const auto& percentageOption : *percentageOptionsPtr) {
+                        if (percentageOption.variationId == variationId) {
+                            return KeyValue(key, *percentageOption.value.toValueChecked(settingType));
+                        }
+                    }
+                }
+                else {
+                    throw runtime_error("Targeting rule THEN part is missing or invalid.");
                 }
             }
 
-            for (auto& percentageOption : setting.percentageOptions) {
+            for (const auto& percentageOption : setting.percentageOptions) {
                 if (percentageOption.variationId == variationId) {
-                    return KeyValue(key, *static_cast<optional<Value>>(percentageOption.value));
+                    return KeyValue(key, *percentageOption.value.toValueChecked(settingType));
                 }
             }
         }
@@ -332,10 +345,9 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const std::
 
         std::unordered_map<std::string, Value> result;
         const auto& effectiveUser = user ? user : this->defaultUser;
-        for (auto keyValue : *settings) {
-            auto& key = keyValue.first;
-            auto details = evaluate<Value>(key, effectiveUser, keyValue.second, fetchTime);
-            result.insert({ key, details.value });
+        for (const auto& [key, setting] : *settings) {
+            auto details = evaluate<Value>(key, nullopt, effectiveUser, setting, fetchTime);
+            result.insert({ key, move(details.value) });
         }
 
         return result;
@@ -360,9 +372,8 @@ std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const 
 
         std::vector<EvaluationDetails<Value>> result;
         const auto& effectiveUser = user ? user : this->defaultUser;
-        for (auto keyValue : *settings) {
-            auto& key = keyValue.first;
-            result.push_back(evaluate<Value>(key, effectiveUser, keyValue.second, fetchTime));
+        for (const auto& [key, setting] : *settings) {
+            result.push_back(evaluate<Value>(key, nullopt, effectiveUser, setting, fetchTime));
         }
 
         return result;
@@ -397,8 +408,8 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         if (setting == settings->end()) {
             vector<string> keys;
             keys.reserve(settings->size());
-            for (auto keyValue : *settings) {
-                keys.emplace_back("'" + keyValue.first + "'");
+            for (const auto& [key, _] : *settings) {
+                keys.emplace_back(key);
             }
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1001);
             if constexpr (is_same_v<ValueType, optional<Value>>) {
@@ -417,9 +428,9 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         }
 
         const auto& effectiveUser = user ? user : this->defaultUser;
-        EvaluationDetails<ValueType> details = evaluate<ValueType>(key, effectiveUser, setting->second, fetchTime);
+        auto details = evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, fetchTime);
 
-        return details.value;
+        return move(details.value);
     }
     catch (...) {
         const auto& ex = unwrapException(std::current_exception());
@@ -439,41 +450,39 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
 
 template<typename ValueType>
 EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
+                                                       const std::optional<Value>& defaultValue,
                                                        const std::shared_ptr<ConfigCatUser>& effectiveUser,
                                                        const Setting& setting,
                                                        double fetchTime) const {
-    
-    auto& evaluateResult = rolloutEvaluator->evaluate(key, effectiveUser, setting);
-    auto& error = evaluateResult.error;
+    EvaluateContext evaluateContext(key, setting, effectiveUser);
+    std::optional<Value> returnValue;
+    auto evaluateResult = rolloutEvaluator->evaluate(defaultValue, evaluateContext, returnValue);
 
     ValueType value;
-    if constexpr (is_same_v<ValueType, optional<Value>>) {
-        // This implicit conversion works because we defined it (see `Value::operator SettingValue()`).
-        value = evaluateResult.selectedValue.value;
+    if constexpr (is_same_v<ValueType, bool> || is_same_v<ValueType, string> || is_same_v<ValueType, int32_t> || is_same_v<ValueType, double>) {
+        // RolloutEvaluator::evaluate makes sure that this variant access is always valid.
+        value = std::get<ValueType>(*returnValue);
     }
     else if constexpr (is_same_v<ValueType, Value>) {
-        value = *static_cast<optional<Value>>(evaluateResult.selectedValue.value);
+        value = *returnValue;
+    }
+    else if constexpr (is_same_v<ValueType, optional<Value>>) {
+        value = returnValue;
     }
     else {
-        // TODO: RolloutEvaluator will enforce this
-        if (holds_alternative<ValueType>(evaluateResult.selectedValue.value)) {
-            value = std::get<ValueType>(evaluateResult.selectedValue.value);
-        }
-        else {
-            throw runtime_error("Setting value and default value type mismatch.");
-        }
+        static_assert(always_false_v<ValueType>, "Unsupported value type.");
     }
 
     EvaluationDetails<ValueType> details(key,
-                                         value,
-                                         evaluateResult.selectedValue.variationId,
-                                         time_point<system_clock, duration<double>>(duration<double>(fetchTime)),
-                                         effectiveUser,
-                                         error.empty() ? false : true,
-                                         error,
-                                         nullopt,
-                                         evaluateResult.targetingRule,
-                                         evaluateResult.percentageOption);
+                                 value,
+                                 evaluateResult.selectedValue.variationId,
+                                 time_point<system_clock, duration<double>>(duration<double>(fetchTime)),
+                                 effectiveUser,
+                                 false,
+                                 nullopt,
+                                 nullopt,
+                                 evaluateResult.targetingRule,
+                                 evaluateResult.percentageOption);
     hooks->invokeOnFlagEvaluated(details);
     return details;
 }

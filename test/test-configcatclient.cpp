@@ -405,7 +405,7 @@ TEST_F(ConfigCatClientTest, GetValueDetails) {
     EXPECT_EQ("testStringKey", details.key);
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);
-    EXPECT_TRUE(details.errorMessage->empty());
+    EXPECT_FALSE(details.errorMessage.has_value());
     EXPECT_TRUE(details.matchedPercentageOption == std::nullopt);
 
     auto& condition = get<UserCondition>(details.matchedTargetingRule->conditions[0].condition);

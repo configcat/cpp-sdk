@@ -117,12 +117,13 @@ private:
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
 
     template<typename ValueType>
-    EvaluationDetails<ValueType> _getValueDetails(const std::string& key, ValueType defaultValue, const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
+    EvaluationDetails<ValueType> _getValueDetails(const std::string& key, const ValueType& defaultValue, const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
 
     SettingResult getSettings() const;
 
     template<typename ValueType>
     EvaluationDetails<ValueType> evaluate(const std::string& key,
+                                          const std::optional<Value>& defaultValue,
                                           const std::shared_ptr<ConfigCatUser>& effectiveUser,
                                           const Setting& setting,
                                           double fetchTime) const;

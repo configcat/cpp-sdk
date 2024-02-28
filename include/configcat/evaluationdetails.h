@@ -4,15 +4,16 @@
 #include <exception>
 
 #include "config.h"
+#include "configcatuser.h"
 
 namespace configcat {
 
-class ConfigCatUser;
+using fetch_time_t = std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>;
 
 struct EvaluationDetailsBase {
     std::string key;
     std::optional<std::string> variationId;
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> fetchTime;
+    configcat::fetch_time_t fetchTime;
     std::shared_ptr<ConfigCatUser> user;
     bool isDefaultValue;
     std::optional<std::string> errorMessage;
@@ -25,7 +26,7 @@ struct EvaluationDetailsBase {
 protected:
     EvaluationDetailsBase(const std::string& key = "",
         const std::optional<std::string>& variationId = "",
-        const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
+        const configcat::fetch_time_t& fetchTime = {},
         const std::shared_ptr<ConfigCatUser>& user = nullptr,
         bool isDefaultValue = false,
         const std::optional<std::string>& errorMessage = std::nullopt,
@@ -54,7 +55,7 @@ struct EvaluationDetails : public EvaluationDetailsBase {
     EvaluationDetails(const std::string& key = "",
                       const ValueType& value = {},
                       const std::optional<std::string>& variationId = "",
-                      const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
+                      const configcat::fetch_time_t& fetchTime = {},
                       const std::shared_ptr<ConfigCatUser>& user = nullptr,
                       bool isDefaultValue = false,
                       const std::optional<std::string>& errorMessage = std::nullopt,

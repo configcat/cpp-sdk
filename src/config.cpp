@@ -35,38 +35,31 @@ namespace configcat {
 
     Value::operator SettingValue() const
     {
-        return visit([](auto&& alt) {
-            return SettingValue(alt);
+        return visit([](auto&& alt) -> SettingValue {
+            return alt;
         }, *this);
     }
 
     string Value::toString() const
     {
-        return visit([](auto&& alt) {
+        return visit([](auto&& alt) -> string {
             using T = decay_t<decltype(alt)>;
             if constexpr (is_same_v<T, bool>) {
-                return string(alt ? "true" : "false");
+                return alt ? "true" : "false";
             }
             else if constexpr (is_same_v<T, string>) {
                 return alt;
             }
             else if constexpr (is_same_v<T, int32_t>) {
-                return to_string(alt);
+                return string_format("%d", alt);
             }
-            else /*if constexpr (is_same_v<T, double>) */ {
-                auto str = to_string(alt);
-                // Drop unnecessary '0' characters at the end of the string and keep format 0.0 for zero double
-                auto pos = str.find_last_not_of('0');
-                if (pos != string::npos && str[pos] == '.') {
-                    --pos;
-                }
-                return str.erase(pos + 1, string::npos);
+            else if constexpr (is_same_v<T, double>) {
+                return numberToString(alt);
+            }
+            else {
+                static_assert(always_false_v<T>, "Non-exhaustive visitor.");
             }
         }, *this);
-    }
-
-    ostream& operator<<(ostream& os, const Value& v) {
-        return os << v.toString();
     }
 
     // Config serialization
@@ -96,64 +89,76 @@ namespace configcat {
     }
 
     void from_json(const json& j, SettingValue& value) {
+        auto valueFound = false;
         if (auto it = j.find(SettingValue::kBoolean); it != j.end()) {
             value = it->get<bool>();
+            valueFound = true;
         }
-        else if (auto it = j.find(SettingValue::kString); it != j.end()) {
-            value = it->get<string>();
+        if (auto it = j.find(SettingValue::kString); it != j.end()) {
+            if (value = it->get<string>(); valueFound) value = nullopt;
+            else valueFound = true;
         }
-        else if (auto it = j.find(SettingValue::kInt); it != j.end()) {
-            value = it->get<int32_t>();
+        if (auto it = j.find(SettingValue::kInt); it != j.end()) {
+            if (value = it->get<int32_t>(); valueFound) value = nullopt;
+            else valueFound = true;
         }
-        else if (auto it = j.find(SettingValue::kDouble); it != j.end()) {
-            value = it->get<double>();
+        if (auto it = j.find(SettingValue::kDouble); it != j.end()) {
+            if (value = it->get<double>(); valueFound) value = nullopt;
+            else valueFound = true;
         }
-        else {
+        if (!valueFound) {
             SettingValuePrivate::setUnsupportedValue(value, j);
         }
     }
 
     SettingValue::operator optional<Value>() const {
-        return visit([](auto&& alt) {
+        return visit([](auto&& alt) -> optional<Value> {
             using T = decay_t<decltype(alt)>;
             if constexpr (is_same_v<T, nullopt_t>) {
-                return static_cast<optional<Value>>(nullopt);
+                return nullopt;
             }
             else {
-                return optional<Value>(alt);
+                return alt;
             }
         }, *this);
     }
 
     optional<Value> SettingValue::toValueChecked(SettingType type, bool throwIfInvalid) const
     {
-        if (holds_alternative<bool>(*this)) {
-            if (type == SettingType::Boolean) return get<bool>(*this);
-        }
-        else if (holds_alternative<string>(*this)) {
-            if (type == SettingType::String) return get<string>(*this);
-        }
-        else if (holds_alternative<int32_t>(*this)) {
-            if (type == SettingType::Int) return get<int32_t>(*this);
-        }
-        else if (holds_alternative<double>(*this)) {
-            if (type == SettingType::Double) return get<double>(*this);
-        }
-        else if (this->unsupportedValue) {
-            if (throwIfInvalid) {
-                auto& unsupportedValue = *this->unsupportedValue;
-                throw new runtime_error(unsupportedValue.type == "null"
-                    ? "Setting value is null."
-                    : string_format("Setting value '%s' is of an unsupported type (%s).", unsupportedValue.value.c_str(), unsupportedValue.type.c_str()));
+        return visit([&](auto&& alt) -> optional<Value> {
+            using T = decay_t<decltype(alt)>;
+
+            if constexpr (is_same_v<T, bool>) {
+                if (type == SettingType::Boolean) return alt;
             }
+            else if constexpr (is_same_v<T, string>) {
+                if (type == SettingType::String) return alt;
+            }
+            else if constexpr (is_same_v<T, int32_t>) {
+                if (type == SettingType::Int) return alt;
+            }
+            else if constexpr (is_same_v<T, double>) {
+                if (type == SettingType::Double) return alt;
+            }
+            else if constexpr (is_same_v<T, nullopt_t>) {
+                if (throwIfInvalid) {
+                    auto& unsupportedValue = *this->unsupportedValue;
+                    throw runtime_error(unsupportedValue.type == "null"
+                        ? "Setting value is null."
+                        : string_format("Setting value '%s' is of an unsupported type (%s).", unsupportedValue.value.c_str(), unsupportedValue.type.c_str()));
+                }
+                return nullopt;
+            }
+            else {
+                static_assert(always_false_v<T>, "Non-exhaustive visitor.");
+            }
+
+            if (throwIfInvalid) {
+                throw runtime_error("Setting value is missing or invalid.");
+            }
+
             return nullopt;
-        }
-
-        if (throwIfInvalid) {
-            throw new runtime_error("Setting value is missing or invalid.");
-        }
-
-        return nullopt;
+        }, *this);
     }
 
 #pragma endregion
@@ -205,14 +210,17 @@ namespace configcat {
     void from_json(const json& j, UserCondition& condition) {
         j.at(UserCondition::kComparisonAttribute).get_to(condition.comparisonAttribute);
         j.at(UserCondition::kComparator).get_to(condition.comparator);
+        auto comparisonValueFound = false;
         if (auto it = j.find(UserCondition::kStringComparisonValue); it != j.end()) {
             condition.comparisonValue = it->get<string>();
+            comparisonValueFound = true;
         }
-        else if (auto it = j.find(UserCondition::kNumberComparisonValue); it != j.end()) {
-            condition.comparisonValue = it->get<double>();
+        if (auto it = j.find(UserCondition::kNumberComparisonValue); it != j.end()) {
+            if (condition.comparisonValue = it->get<double>(); comparisonValueFound) condition.comparisonValue = nullopt;
+            else comparisonValueFound = true;
         }
-        else if (auto it = j.find(UserCondition::kStringListComparisonValue); it != j.end()) {
-            condition.comparisonValue = it->get<vector<string>>();
+        if (auto it = j.find(UserCondition::kStringListComparisonValue); it != j.end()) {
+            if (condition.comparisonValue = it->get<vector<string>>(); comparisonValueFound) condition.comparisonValue = nullopt;
         }
     }
 
@@ -263,16 +271,17 @@ namespace configcat {
     }
 
     void from_json(const json& j, ConditionContainer& container) {
+        auto conditionFound = false;
         if (auto it = j.find(ConditionContainer::kUserCondition); it != j.end()) {
-            ConditionContainer c;
-
             container.condition = it->get<UserCondition>();
+            conditionFound = true;
         }
-        else if (auto it = j.find(ConditionContainer::kPrerequisiteFlagCondition); it != j.end()) {
-            container.condition = it->get<PrerequisiteFlagCondition>();
+        if (auto it = j.find(ConditionContainer::kPrerequisiteFlagCondition); it != j.end()) {
+            if (container.condition = it->get<PrerequisiteFlagCondition>(); conditionFound) container.condition = nullopt;
+            else conditionFound = true;
         }
-        else if (auto it = j.find(ConditionContainer::kSegmentCondition); it != j.end()) {
-            container.condition = it->get<SegmentCondition>();
+        if (auto it = j.find(ConditionContainer::kSegmentCondition); it != j.end()) {
+            if (container.condition = it->get<SegmentCondition>(); conditionFound)  container.condition = nullopt;
         }
     }
 
@@ -292,11 +301,13 @@ namespace configcat {
 
     void from_json(const json& j, TargetingRule& targetingRule) {
         if (auto it = j.find(TargetingRule::kConditions); it != j.end()) it->get_to(targetingRule.conditions);
+        auto thenFound = false;
         if (auto it = j.find(TargetingRule::kSimpleValue); it != j.end()) {
             targetingRule.then = it->get<SettingValueContainer>();
+            thenFound = true;
         }
-        else if (auto it = j.find(TargetingRule::kPercentageOptions); it != j.end()) {
-            targetingRule.then = it->get<vector<PercentageOption>>();
+        if (auto it = j.find(TargetingRule::kPercentageOptions); it != j.end()) {
+            if (targetingRule.then = it->get<vector<PercentageOption>>(); thenFound) targetingRule.then = nullopt;
         }
     }
 
@@ -336,14 +347,12 @@ namespace configcat {
 
     Setting Setting::fromValue(const SettingValue& value) {
         Setting setting;
-        // For unsupported values this results in -1, which value is not present in the SettingType enum.
-        // However, we only use this value internally (will never expose it to the end user).
-        setting.type = static_cast<SettingType>(value.index() - 1);
+        setting.type = value.getSettingType();
         setting.value = value;
         return setting;
     }
 
-    SettingType Setting::getTypeChecked() {
+    SettingType Setting::getTypeChecked() const {
         if (this->type < SettingType::Boolean || SettingType::Double < this->type) {
             throw std::runtime_error("Setting type is invalid.");
         }
@@ -386,8 +395,8 @@ namespace configcat {
 
     void from_json(const json& j, Config& config) {
         if (auto it = j.find(Config::kPreferences); it != j.end()) it->get_to(config.preferences);
-        if (auto it = j.find(Config::kSegments); it != j.end()) it->get_to(*config.ensureSegments());
-        if (auto it = j.find(Config::kSettings); it != j.end()) it->get_to(*config.ensureSettings());
+        if (auto it = j.find(Config::kSegments); it != j.end()) it->get_to(*(config.segments = make_shared<Segments>()));
+        if (auto it = j.find(Config::kSettings); it != j.end()) it->get_to(*(config.settings = make_shared<Settings>()));
     }
 
     const shared_ptr<const Config> Config::empty = make_shared<Config>();
@@ -400,7 +409,7 @@ namespace configcat {
         json configObj = json::parse(jsonString, nullptr, true, tolerant);
         auto config = make_shared<Config>();
         configObj.get_to(*config);
-        config->fixup();
+        config->fixupSaltAndSegments();
         return config;
     }
 
@@ -434,19 +443,19 @@ namespace configcat {
         else {
             // Complex (full-featured) json format
             data.get_to(*config);
-            config->fixup();
+            config->fixupSaltAndSegments();
         }
         return config;
     }
 
-    void Config::fixup() {
+    void Config::fixupSaltAndSegments() {
         if (this->settings && !this->settings->empty()) {
             auto configJsonSalt = this->preferences ? (*this->preferences).salt : nullptr;
             auto segments = this->segments;
 
-            for (auto& it : *this->settings) {
-                it.second.configJsonSalt = configJsonSalt;
-                it.second.segments = segments;
+            for (auto& [_, setting] :*this->settings) {
+                setting.configJsonSalt = configJsonSalt;
+                setting.segments = segments;
             }
         }
     }

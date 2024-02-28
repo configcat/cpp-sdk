@@ -71,7 +71,7 @@ public:
                     country = testObjects[2];
                 }
 
-                unordered_map<string, string> custom;
+                unordered_map<string, ConfigCatUser::AttributeValue> custom;
                 if (!testObjects[3].empty() && testObjects[3] != "##null##") {
                     custom[customKey] = testObjects[3];
                 }

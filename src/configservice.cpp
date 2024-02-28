@@ -50,7 +50,7 @@ SettingResult ConfigService::getSettings() {
         auto now = chrono::steady_clock::now();
         auto [ entry, _ ] = fetchIfOlder(getUtcNowSecondsSinceEpoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
         auto config = cachedEntry->config;
-        return { (cachedEntry != ConfigEntry::empty && config) ? config->ensureSettings() : nullptr, entry->fetchTime};
+        return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime};
     } else if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !initialized) {
         auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
         auto elapsedTime = chrono::duration<double>(chrono::steady_clock::now() - startTime).count();
@@ -63,14 +63,14 @@ SettingResult ConfigService::getSettings() {
             if (!initialized) {
                 setInitialized();
                 auto config = cachedEntry->config;
-                return { (cachedEntry != ConfigEntry::empty && config) ? config->ensureSettings() : nullptr, cachedEntry->fetchTime };
+                return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, cachedEntry->fetchTime };
             }
         }
     }
 
     auto [ entry, _ ] = fetchIfOlder(kDistantPast, true);
     auto config = entry->config;
-    return { (cachedEntry != ConfigEntry::empty && config) ? config->ensureSettings() : nullptr, entry->fetchTime };
+    return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime };
 }
 
 RefreshResult ConfigService::refresh() {
@@ -122,7 +122,7 @@ tuple<shared_ptr<const ConfigEntry>, string> ConfigService::fetchIfOlder(double 
             auto entry = readCache();
             if (entry != ConfigEntry::empty && entry->eTag != cachedEntry->eTag) {
                 cachedEntry = const_pointer_cast<ConfigEntry>(entry);
-                hooks->invokeOnConfigChanged(entry->config->ensureSettings());
+                hooks->invokeOnConfigChanged(entry->config->getSettingsOrEmpty());
             }
 
             // Cache isn't expired
@@ -166,7 +166,7 @@ tuple<shared_ptr<const ConfigEntry>, string> ConfigService::fetchIfOlder(double 
     if (response.isFetched()) {
         cachedEntry = const_pointer_cast<ConfigEntry>(response.entry);
         writeCache(cachedEntry);
-        hooks->invokeOnConfigChanged(cachedEntry->config->ensureSettings());
+        hooks->invokeOnConfigChanged(cachedEntry->config->getSettingsOrEmpty());
     } else if ((response.notModified() || !response.isTransientError) && cachedEntry != ConfigEntry::empty) {
         cachedEntry->fetchTime = getUtcNowSecondsSinceEpoch();
         writeCache(cachedEntry);

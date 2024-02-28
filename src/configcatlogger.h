@@ -6,6 +6,7 @@
 #include "configcat/configcatoptions.h"
 #include "configcat/configcatuser.h"
 #include "configcat/config.h"
+#include "utils.h"
 
 namespace configcat {
 
@@ -21,13 +22,12 @@ public:
             hooks->invokeOnError(message);
         }
 
-        if (logger) {
+        if (isEnabled(level)) {
             logger->log(level, "[" + std::to_string(eventId) + "] " + message, ex);
         }
     }
 
-    void setLogLevel(LogLevel logLevel) { if (logger) logger->setLogLevel(logLevel); }
-    LogLevel getLogLevel() const { return logger ? logger->getLogLevel() : LOG_LEVEL_WARNING; }
+    inline bool isEnabled(LogLevel level) { return logger && level <= logger->getLogLevel(); }
 
 private:
     std::shared_ptr<ILogger> logger;
@@ -40,76 +40,51 @@ public:
         : logger(logger), level(level), eventId(eventId), ex(ex) {}
 
     ~LogEntry() {
-        if (logger && level <= logger->getLogLevel())
+        if (logger->isEnabled(level))
             logger->log(level, eventId, message, ex);
     }
 
     LogEntry& operator<<(const char* str) {
-        if (str && logger && level <= logger->getLogLevel())
+        if (str && logger->isEnabled(level))
             message += str;
         return *this;
     }
 
     LogEntry& operator<<(char* str) {
-        if (str && logger && level <= logger->getLogLevel())
+        if (str && logger->isEnabled(level))
             message += str;
         return *this;
     }
 
     LogEntry& operator<<(const std::string& str) {
-        if (logger && level <= logger->getLogLevel())
+        if (logger->isEnabled(level))
             message += str;
         return *this;
     }
 
     LogEntry& operator<<(bool arg) {
-        if (logger && level <= logger->getLogLevel())
+        if (logger->isEnabled(level))
             message += arg ? "true" : "false";
         return *this;
     }
 
-    // TODO: remove?
-    LogEntry& operator<<(const std::shared_ptr<ConfigCatUser>& user) {
-        return operator<<(*user);
-    }
-
-    // TODO: remove?
-    LogEntry& operator<<(const ConfigCatUser& user) {
-        if (logger && level <= logger->getLogLevel())
-            message += user.toJson();
-        return *this;
-    }
-
-    // TODO: remove?
     LogEntry& operator<<(const std::optional<Value>& v) {
-        if (logger && level <= logger->getLogLevel())
-            message += v ? v->toString() : "<invalid value>";
+        if (logger->isEnabled(level))
+            message += v ? v->toString() : "";
         return *this;
-    }
-
-    // TODO: remove?
-    LogEntry& operator<<(const SettingValue& v) {
-        return *this << static_cast<std::optional<Value>>(v);
     }
 
     template<typename Type>
     LogEntry& operator<<(Type arg) {
-        if (logger && level <= logger->getLogLevel())
+        if (logger->isEnabled(level))
             message += std::to_string(arg);
         return *this;
     }
 
-    template<typename Type>
-    LogEntry& operator<<(const std::vector<Type>& v) {
-        if (logger && level <= logger->getLogLevel()) {
+    LogEntry& operator<<(const std::vector<std::string>& v) {
+        if (logger->isEnabled(level)) {
             message += "[";
-            size_t last = v.size() - 1;
-            for (size_t i = 0; i < v.size(); ++i) {
-                operator<<(v[i]);
-                if (i != last) {
-                    message += ", ";
-                }
-            }
+            appendStringList(*this, v);
             message += "]";
         }
         return *this;

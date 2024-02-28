@@ -1,34 +1,52 @@
 #include "configcat/configcatuser.h"
 #include <nlohmann/json.hpp>
 
+#include "utils.h"
+
 using namespace std;
 using json = nlohmann::json;
 
 namespace configcat {
 
-ConfigCatUser::ConfigCatUser(const string& id,
-                             const string& email,
-                             const string& country,
-                             const unordered_map<string, string>& custom):
-    identifier(attributes["Identifier"]) {
-    attributes["Identifier"] = id;
-    if (!email.empty()) attributes["Email"] = email;
-    if (!country.empty()) attributes["Country"] = country;
-    attributes.insert(custom.begin(), custom.end());
-}
-
-const string* ConfigCatUser::getAttribute(const string& key) const {
-    auto it = attributes.find(key);
-    if (it != attributes.end()) {
+const ConfigCatUser::AttributeValue* ConfigCatUser::getAttribute(const string& key) const {
+    if (key == ConfigCatUser::kIdentifierAttribute) {
+        return &this->identifier;
+    }
+    if (key == ConfigCatUser::kEmailAttribute) {
+        return this->email ? &*this->email : nullptr;
+    }
+    if (key == ConfigCatUser::kCountryAttribute) {
+        return this->country ? &*this->country : nullptr;
+    }
+    if (auto it = this->custom.find(key); it != custom.end()) {
         return &it->second;
     }
-
     return nullptr;
 }
 
 string ConfigCatUser::toJson() const {
-    json user(attributes);
-    return user.dump(4);
+    json j = {
+        { kIdentifierAttribute, get<string>(this->identifier) }
+    };
+
+    if (this->email) j[kEmailAttribute] = get<string>(*this->email);
+    if (this->country) j[kCountryAttribute] = get<string>(*this->country);
+
+    for (const auto& [name, setting] : this->custom) {
+        if (name != kIdentifierAttribute && name != kEmailAttribute && name != kCountryAttribute) {
+            visit([&j, &nameRef = name] (auto&& alt) { // rebind reference to keep clang compiler happy (https://stackoverflow.com/a/74376436)
+                using T = decay_t<decltype(alt)>;
+                if constexpr (is_same_v<T, date_time_t>) {
+                    j[nameRef] = formatDateTimeISO(alt);
+                }
+                else {
+                    j[nameRef] = alt;
+                }
+            }, setting);
+        }
+    }
+
+    return j.dump();
 }
 
 } // namespace configcat

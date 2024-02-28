@@ -38,7 +38,7 @@ void FileOverrideDataSource::reloadFileContent() {
         if (fileLastWriteTime != lastWriteTime) {
             fileLastWriteTime = lastWriteTime;
             auto config = Config::fromFile(filePath);
-            overrides = config->ensureSettings();
+            overrides = config->getSettingsOrEmpty();
         }
     } catch (filesystem::filesystem_error exception) {
         LOG_ERROR(1302) << "Failed to read the local config file '" << filePath << "'. " << exception.what();

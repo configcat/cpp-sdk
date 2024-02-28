@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -29,6 +30,14 @@ namespace configcat {
 
         std::string toString() const;
     };
+
+    inline std::ostream& operator<<(std::ostream& os, const Value& v) {
+        return os << v.toString();
+    }
+
+    inline std::ostream& operator<<(std::ostream& os, const std::optional<Value>& v) {
+        return os << (v ? v->toString() : "");
+    }
 
     enum class RedirectMode : int {
         No = 0,
@@ -155,7 +164,7 @@ namespace configcat {
 
     struct SettingValue : public one_of<bool, std::string, int32_t, double> {
         // Not for maintainers: the indices of variant alternatives must correspond to
-        // the SettingType enum's member values because we rely on this! (See e.g. Setting::fromValue)
+        // the SettingType enum's member values because we rely on this! (See also getSettingType)
     private:
         using _Base = one_of<bool, std::string, int32_t, double>;
     protected:
@@ -175,15 +184,17 @@ namespace configcat {
 
         SettingValue(const char* v) : _Base(std::string(v)) {}
 
-        // https://stackoverflow.com/a/59372958/8656352
-        template<typename T>
-        SettingValue(T*) = delete;
-
         using _Base::_Base;
         using _Base::operator=;
 
         operator std::optional<Value>() const;
         std::optional<Value> toValueChecked(SettingType type, bool throwIfInvalid = true) const;
+
+        inline SettingType getSettingType() const {
+            // For unsupported values this results in -1, which value is not present in the SettingType enum.
+            // However, we only use this value internally (will never expose it to the end user).
+            return static_cast<SettingType>(this->index() - 1);
+        }
     };
 
     struct SettingValueContainer {
@@ -197,7 +208,7 @@ namespace configcat {
     struct PercentageOption : public SettingValueContainer {
         static constexpr char kPercentage[] = "p";
 
-        uint8_t percentage;
+        uint8_t percentage = 0;
     };
 
     using PercentageOptions = std::vector<PercentageOption>;
@@ -212,7 +223,7 @@ namespace configcat {
         static constexpr char kStringListComparisonValue[] = "l";
 
         std::string comparisonAttribute;
-        UserComparator comparator;
+        UserComparator comparator = static_cast<UserComparator>(-1);
         UserConditionComparisonValue comparisonValue;
     };
 
@@ -224,7 +235,7 @@ namespace configcat {
         static constexpr char kComparisonValue[] = "v";
 
         std::string prerequisiteFlagKey;
-        PrerequisiteFlagComparator comparator;
+        PrerequisiteFlagComparator comparator = static_cast<PrerequisiteFlagComparator>(-1);
         SettingValue comparisonValue;
     };
 
@@ -232,8 +243,8 @@ namespace configcat {
         static constexpr char kSegmentIndex[] = "s";
         static constexpr char kComparator[] = "c";
 
-        int32_t segmentIndex;
-        SegmentComparator comparator;
+        int32_t segmentIndex = -1;
+        SegmentComparator comparator = static_cast<SegmentComparator>(-1);
     };
 
     using Condition = one_of<UserCondition, PrerequisiteFlagCondition, SegmentCondition>;
@@ -248,7 +259,7 @@ namespace configcat {
 
     using Conditions = std::vector<ConditionContainer>;
 
-    using TargetingRuleThen = one_of<SettingValueContainer, PercentageOptions>;
+    using TargetingRuleThenPart = one_of<SettingValueContainer, PercentageOptions>;
 
     struct TargetingRule {
         static constexpr char kConditions[] = "c";
@@ -256,7 +267,7 @@ namespace configcat {
         static constexpr char kPercentageOptions[] = "p";
 
         Conditions conditions;
-        TargetingRuleThen then;
+        TargetingRuleThenPart then;
     };
 
     using TargetingRules = std::vector<TargetingRule>;
@@ -282,12 +293,12 @@ namespace configcat {
 
         static Setting fromValue(const SettingValue& value);
 
-        SettingType type;
+        SettingType type = static_cast<SettingType>(-1);
         std::optional<std::string> percentageOptionsAttribute;
         TargetingRules targetingRules;
         PercentageOptions percentageOptions;
 
-        SettingType getTypeChecked();
+        SettingType getTypeChecked() const;
 
     protected:
         friend struct Config;
@@ -359,18 +370,23 @@ namespace configcat {
         std::shared_ptr<Segments> segments;
         std::shared_ptr<Settings> settings;
 
-        std::shared_ptr<Segments> ensureSegments() const { return segments ? segments : std::make_shared<Segments>(); }
-        std::shared_ptr<Settings> ensureSettings() const { return settings ? settings : std::make_shared<Settings>(); }
+        std::shared_ptr<Segments> getSegmentsOrEmpty() const { return segments ? segments : std::make_shared<Segments>(); }
+        std::shared_ptr<Settings> getSettingsOrEmpty() const { return settings ? settings : std::make_shared<Settings>(); }
 
-        Config() : segments(std::make_shared<Segments>()), settings(std::make_shared<Settings>()) {}
+        Config() {}
         
-        Config(const Config& other) : Config() { *this = other; }
+        Config(const Config& other)
+            : preferences(other.preferences)
+            , segments(other.segments ? std::make_shared<Segments>(*other.segments) : nullptr)
+            , settings(other.settings ? std::make_shared<Settings>(*other.settings) : nullptr) {
+            this->fixupSaltAndSegments();
+        }
 
         Config& operator=(const Config& other) {
             this->preferences = other.preferences;
             this->segments = other.segments ? std::make_shared<Segments>(*other.segments) : nullptr;
             this->settings = other.settings ? std::make_shared<Settings>(*other.settings) : nullptr;
-            this->fixup();
+            this->fixupSaltAndSegments();
             return *this;
         }
 
@@ -378,7 +394,7 @@ namespace configcat {
 
         Config& operator=(Config&& other) = default;
     private:
-        void fixup();
+        void fixupSaltAndSegments();
     };
 
 } // namespace configcat

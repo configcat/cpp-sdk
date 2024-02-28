@@ -56,7 +56,7 @@ TEST_F(HooksTest, Init) {
     EXPECT_EQ("id", hookCallbacks.evaluationDetails.variationId);
     EXPECT_TRUE(hookCallbacks.evaluationDetails.user == nullptr);
     EXPECT_FALSE(hookCallbacks.evaluationDetails.isDefaultValue);
-    EXPECT_TRUE(hookCallbacks.evaluationDetails.errorMessage->empty());
+    EXPECT_FALSE(hookCallbacks.evaluationDetails.errorMessage.has_value());
     EXPECT_EQ(1, hookCallbacks.evaluationDetailsCallCount);
 
     EXPECT_TRUE(hookCallbacks.error.empty());
@@ -102,7 +102,7 @@ TEST_F(HooksTest, Subscribe) {
     EXPECT_EQ("id", hookCallbacks.evaluationDetails.variationId);
     EXPECT_TRUE(hookCallbacks.evaluationDetails.user == nullptr);
     EXPECT_FALSE(hookCallbacks.evaluationDetails.isDefaultValue);
-    EXPECT_TRUE(hookCallbacks.evaluationDetails.errorMessage->empty());
+    EXPECT_FALSE(hookCallbacks.evaluationDetails.errorMessage.has_value());
     EXPECT_EQ(1, hookCallbacks.evaluationDetailsCallCount);
 
     EXPECT_TRUE(hookCallbacks.error.empty());
@@ -134,7 +134,7 @@ TEST_F(HooksTest, Evaluation) {
     EXPECT_EQ("testStringKey", details.key);
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);
-    EXPECT_TRUE(details.errorMessage->empty());
+    EXPECT_FALSE(details.errorMessage.has_value());
     EXPECT_TRUE(details.matchedPercentageOption == std::nullopt);
 
     auto& rule = details.matchedTargetingRule;
