@@ -22,7 +22,7 @@ TEST_F(HooksTest, Init) {
     HookCallbacks hookCallbacks;
     auto hooks = make_shared<Hooks>(
         [&]() { hookCallbacks.onClientReady(); },
-        [&](std::shared_ptr<configcat::Settings> config) { hookCallbacks.onConfigChanged(config); },
+        [&](std::shared_ptr<const configcat::Settings> config) { hookCallbacks.onConfigChanged(config); },
         [&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); },
         [&](const string& error) { hookCallbacks.onError(error); }
     );
@@ -43,7 +43,7 @@ TEST_F(HooksTest, Init) {
     expectedConfig->preferences = {};
     expectedConfig->segments = {};
     Config actualConfig;
-    actualConfig.settings = hookCallbacks.changedConfig;
+    actualConfig.settings = make_shared<Settings>(*hookCallbacks.changedConfig);
 
     EXPECT_EQ("testValue", value);
     EXPECT_TRUE(hookCallbacks.isReady);
@@ -69,7 +69,7 @@ TEST_F(HooksTest, Subscribe) {
     HookCallbacks hookCallbacks;
     auto hooks = make_shared<Hooks>();
     hooks->addOnClientReady([&]() { hookCallbacks.onClientReady(); });
-    hooks->addOnConfigChanged([&](std::shared_ptr<configcat::Settings> config) { hookCallbacks.onConfigChanged(config); });
+    hooks->addOnConfigChanged([&](std::shared_ptr<const configcat::Settings> config) { hookCallbacks.onConfigChanged(config); });
     hooks->addOnFlagEvaluated([&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); });
     hooks->addOnError([&](const string& error) { hookCallbacks.onError(error); });
 
@@ -89,7 +89,7 @@ TEST_F(HooksTest, Subscribe) {
     expectedConfig->preferences = {};
     expectedConfig->segments = {};
     Config actualConfig;
-    actualConfig.settings = hookCallbacks.changedConfig;
+    actualConfig.settings = make_shared<Settings>(*hookCallbacks.changedConfig);
 
     EXPECT_EQ("testValue", value);
     EXPECT_TRUE(hookCallbacks.isReady);

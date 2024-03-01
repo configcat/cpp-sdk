@@ -21,7 +21,7 @@ namespace configcat {
 class Hooks {
 public:
     explicit Hooks(const std::function<void()>& onClientReady = nullptr,
-          const std::function<void(std::shared_ptr<Settings>)>& onConfigChanged = nullptr,
+          const std::function<void(std::shared_ptr<const Settings>)>& onConfigChanged = nullptr,
           const std::function<void(const EvaluationDetailsBase&)>& onFlagEvaluated = nullptr,
           const std::function<void(const std::string&)>& onError = nullptr) {
         if (onClientReady) {
@@ -43,7 +43,7 @@ public:
         onClientReadyCallbacks.push_back(callback);
     }
 
-    void addOnConfigChanged(const std::function<void(std::shared_ptr<Settings>)>& callback) {
+    void addOnConfigChanged(const std::function<void(std::shared_ptr<const Settings>)>& callback) {
         std::lock_guard<std::mutex> lock(mutex);
         onConfigChangedCallbacks.push_back(callback);
     }
@@ -97,7 +97,7 @@ public:
 private:
     std::mutex mutex;
     std::vector<std::function<void()>> onClientReadyCallbacks;
-    std::vector<std::function<void(std::shared_ptr<Settings>)>> onConfigChangedCallbacks;
+    std::vector<std::function<void(std::shared_ptr<const Settings>)>> onConfigChangedCallbacks;
     std::vector<std::function<void(const EvaluationDetailsBase&)>> onFlagEvaluatedCallbacks;
     std::vector<std::function<void(const std::string&)>> onErrorCallbacks;
 };

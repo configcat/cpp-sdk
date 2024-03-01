@@ -45,7 +45,7 @@ class HookCallbacks {
 public:
     bool isReady = false;
     int isReadyCallCount = 0;
-    std::shared_ptr<configcat::Settings> changedConfig;
+    std::shared_ptr<const configcat::Settings> changedConfig;
     int changedConfigCallCount = 0;
     configcat::EvaluationDetails<> evaluationDetails;
     int evaluationDetailsCallCount = 0;
@@ -57,7 +57,7 @@ public:
         isReadyCallCount += 1;
     }
 
-    void onConfigChanged(std::shared_ptr<configcat::Settings> config) {
+    void onConfigChanged(std::shared_ptr<const configcat::Settings> config) {
         changedConfig = config;
         changedConfigCallCount += 1;
     }
