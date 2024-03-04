@@ -220,7 +220,7 @@ namespace configcat {
         }
 
         const auto userAttributeValuePtr = get_if<string>(percentageOptionsAttributeValuePtr);
-        const auto userAttributeValue = move(userAttributeValuePtr ? string() : userAttributeValueToString(*percentageOptionsAttributeValuePtr));
+        const auto userAttributeValue = userAttributeValuePtr ? string() : userAttributeValueToString(*percentageOptionsAttributeValuePtr);
 
         auto sha1 = (*this->sha1)(context.key + (userAttributeValuePtr ? *userAttributeValuePtr : userAttributeValue));
         const auto hashValue = std::stoul(sha1.erase(7), nullptr, 16) % 100;
@@ -352,7 +352,7 @@ namespace configcat {
         case UserComparator::TextIsOneOf:
         case UserComparator::TextIsNotOneOf: {
             const auto textPtr = get_if<string>(userAttributeValuePtr);
-            const auto text = move(textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key));
+            const auto text = textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key);
 
             return evaluateTextIsOneOf(
                 textPtr ? *textPtr : text,
@@ -364,7 +364,7 @@ namespace configcat {
         case UserComparator::SensitiveTextIsOneOf:
         case UserComparator::SensitiveTextIsNotOneOf: {
             const auto textPtr = get_if<string>(userAttributeValuePtr);
-            const auto text = move(textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key));
+            const auto text = textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key);
 
             return evaluateSensitiveTextIsOneOf(
                 textPtr ? *textPtr : text,
@@ -394,7 +394,7 @@ namespace configcat {
         case UserComparator::TextContainsAnyOf:
         case UserComparator::TextNotContainsAnyOf: {
             const auto textPtr = get_if<string>(userAttributeValuePtr);
-            const auto text = move(textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key));
+            const auto text = textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key);
 
             return evaluateTextContainsAnyOf(
                 textPtr ? *textPtr : text,

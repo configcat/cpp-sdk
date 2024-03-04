@@ -334,7 +334,7 @@ namespace configcat {
         Preferences& operator=(const Preferences& other) {
             this->baseUrl = other.baseUrl;
             this->redirectMode = other.redirectMode;
-            this->salt = std::move(other.salt ? std::make_shared<std::string>(*other.salt) : std::shared_ptr<std::string>());
+            this->salt = other.salt ? std::make_shared<std::string>(*other.salt) : nullptr;
             return *this;
         }
 
