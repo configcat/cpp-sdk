@@ -26,10 +26,10 @@ inline double getUtcNowSecondsSinceEpoch() {
     return std::chrono::duration<double>(duration).count();
 }
 
-std::optional<double> dateTimeToUnixTimeSeconds(const std::chrono::system_clock::time_point& tp);
-std::optional<std::chrono::system_clock::time_point> dateTimeFromUnixTimeSeconds(double timestamp);
+std::optional<double> datetime_to_unixtimeseconds(const std::chrono::system_clock::time_point& tp);
+std::optional<std::chrono::system_clock::time_point> datetime_from_unixtimeseconds(double timestamp);
 
-std::string formatDateTimeISO(const std::chrono::system_clock::time_point& tp);
+std::string datetime_to_isostring(const std::chrono::system_clock::time_point& tp);
 
 template<typename... Args>
 std::string string_format(const std::string& format, Args&&... args) {
@@ -51,7 +51,7 @@ std::string string_format(const std::string& format, Args&&... args) {
 }
 
 template<typename StreamType>
-StreamType& appendStringList(
+StreamType& append_stringlist(
     StreamType& stream,
     const std::vector<std::string>& items,
     size_t maxLength = 0,
@@ -111,10 +111,10 @@ inline bool contains(const std::string& str, const std::string& sub) {
     return str.find(sub) != std::string::npos;
 }
 
-std::string numberToString(double number);
+std::string number_to_string(double number);
 
-std::optional<double> numberFromString(const std::string& str);
+std::optional<double> number_from_string(const std::string& str);
 
-std::optional<long long> integerFromString(const std::string& str);
+std::optional<long long> integer_from_string(const std::string& str);
 
 } // namespace configcat

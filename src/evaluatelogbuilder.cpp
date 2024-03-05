@@ -61,7 +61,7 @@ namespace configcat {
                 comparisonAttribute.c_str(),
                 getUserComparatorText(comparator));
 
-            appendStringList(this->ss, *comparisonValuesPtr, kStringListMaxCount, [](size_t count) {
+            append_stringlist(this->ss, *comparisonValuesPtr, kStringListMaxCount, [](size_t count) {
                 return string_format(", ... <%d more %s>", count, count ? kValueText : kValuesText);
             });
 
@@ -76,12 +76,12 @@ namespace configcat {
         }
 
         if (isDateTime) {
-            if (const auto tp = dateTimeFromUnixTimeSeconds(*comparisonValuePtr); tp) {
+            if (const auto tp = datetime_from_unixtimeseconds(*comparisonValuePtr); tp) {
                 return appendFormat("User.%s %s '%g' (%s UTC)",
                     comparisonAttribute.c_str(),
                     getUserComparatorText(comparator),
                     *comparisonValuePtr,
-                    formatDateTimeISO(*tp).c_str());
+                    datetime_to_isostring(*tp).c_str());
             }
         }
 
@@ -331,7 +331,7 @@ namespace configcat {
         else if (const auto stringArrayPtr = get_if<vector<string>>(&comparisonValue)) {
             ostringstream ss;
             ss << "[";
-            appendStringList(ss, *stringArrayPtr);
+            append_stringlist(ss, *stringArrayPtr);
             ss << "]";
             return str = ss.str();
         }

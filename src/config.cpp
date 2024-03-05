@@ -54,7 +54,7 @@ namespace configcat {
                 return string_format("%d", alt);
             }
             else if constexpr (is_same_v<T, double>) {
-                return numberToString(alt);
+                return number_to_string(alt);
             }
             else {
                 static_assert(always_false_v<T>, "Non-exhaustive visitor.");

@@ -59,25 +59,25 @@ TEST(UtilsTest, trim_test_1) {
     ASSERT_EQ("abc", s);
 }
 
-TEST(UtilsTest, formatDateTimeISOTest) {
-    auto s = formatDateTimeISO(*dateTimeFromUnixTimeSeconds(0));
+TEST(UtilsTest, datetime_to_isostring_test) {
+    auto s = datetime_to_isostring(*datetime_from_unixtimeseconds(0));
 
     ASSERT_EQ(string("1970-01-01T00:00:00.000Z"), s);
 }
 
-class numberToStringTestSuite : public ::testing::TestWithParam<std::tuple<double, std::string>> {
+class datetime_to_isostring_testsuite : public ::testing::TestWithParam<std::tuple<double, std::string>> {
 };
 
-TEST_P(numberToStringTestSuite, numberToStringTest) {
+TEST_P(datetime_to_isostring_testsuite, numberToStringTest) {
     auto [input, expectedOutput] = GetParam();
-    auto actualOutput = numberToString(input);
+    auto actualOutput = number_to_string(input);
 
     ASSERT_EQ(expectedOutput, actualOutput);
 }
 
 INSTANTIATE_TEST_SUITE_P(
     UtilsTest,
-    numberToStringTestSuite,
+    datetime_to_isostring_testsuite,
     ::testing::Values(
         std::make_tuple(NAN, "NaN"),
         std::make_tuple(INFINITY, "Infinity"),
@@ -113,13 +113,13 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(-1.003001000000000005e+02, "-100.3001")
     ));
 
-class numberFromStringTestSuite : public ::testing::TestWithParam<std::tuple<std::string, std::optional<double>>> {
+class number_from_string_testsuite : public ::testing::TestWithParam<std::tuple<std::string, std::optional<double>>> {
 };
 
-TEST_P(numberFromStringTestSuite, numberFromStringTest) {
+TEST_P(number_from_string_testsuite, number_from_string_test) {
     auto [input, expectedOutput] = GetParam();
     string inputCopy(input);
-    auto actualOutput = numberFromString(input);
+    auto actualOutput = number_from_string(input);
 
     ASSERT_EQ(input, inputCopy);
     ASSERT_EQ(expectedOutput.has_value(), actualOutput.has_value());
@@ -135,7 +135,7 @@ TEST_P(numberFromStringTestSuite, numberFromStringTest) {
 
 INSTANTIATE_TEST_SUITE_P(
     UtilsTest,
-    numberFromStringTestSuite,
+    number_from_string_testsuite,
     ::testing::Values(
         std::make_tuple("", nullopt),
         std::make_tuple(" ", nullopt),
@@ -169,13 +169,13 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("-0.123e+3", -123)
     ));
 
-class integerFromStringTestSuite : public ::testing::TestWithParam<std::tuple<std::string, std::optional<long long>>> {
+class integer_from_string_testsuite : public ::testing::TestWithParam<std::tuple<std::string, std::optional<long long>>> {
 };
 
-TEST_P(integerFromStringTestSuite, integerFromStringTest) {
+TEST_P(integer_from_string_testsuite, integer_from_string_test) {
     auto [input, expectedOutput] = GetParam();
     string inputCopy(input);
-    auto actualOutput = integerFromString(input);
+    auto actualOutput = integer_from_string(input);
 
     ASSERT_EQ(input, inputCopy);
     ASSERT_EQ(expectedOutput.has_value(), actualOutput.has_value());
@@ -186,7 +186,7 @@ TEST_P(integerFromStringTestSuite, integerFromStringTest) {
 
 INSTANTIATE_TEST_SUITE_P(
     UtilsTest,
-    integerFromStringTestSuite,
+    integer_from_string_testsuite,
     ::testing::Values(
         std::make_tuple("", nullopt),
         std::make_tuple(" ", nullopt),

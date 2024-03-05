@@ -26,7 +26,7 @@ using namespace std;
 
 namespace configcat {
 
-    std::optional<double> dateTimeToUnixTimeSeconds(const std::chrono::system_clock::time_point& tp) {
+    std::optional<double> datetime_to_unixtimeseconds(const std::chrono::system_clock::time_point& tp) {
         long long millisecondsSinceEpoch = tp.time_since_epoch() / std::chrono::milliseconds(1);
         auto timestamp = millisecondsSinceEpoch / 1000.0;
 
@@ -34,7 +34,7 @@ namespace configcat {
         return timestamp < -62135596800 || 253402300800 <= timestamp ? nullopt : optional<double>(timestamp);
     }
 
-    std::optional<std::chrono::system_clock::time_point> dateTimeFromUnixTimeSeconds(double timestamp) {
+    std::optional<std::chrono::system_clock::time_point> datetime_from_unixtimeseconds(double timestamp) {
         // Allow values only between 0001-01-01T00:00:00.000Z and 9999-12-31T23:59:59.999
         if (timestamp < -62135596800 || 253402300800 <= timestamp) {
             return nullopt;
@@ -43,7 +43,7 @@ namespace configcat {
         return chrono::system_clock::time_point{ chrono::milliseconds{ static_cast<long long>(timestamp) } };
     }
 
-    std::string formatDateTimeISO(const std::chrono::system_clock::time_point& tp) {
+    std::string datetime_to_isostring(const std::chrono::system_clock::time_point& tp) {
         const auto secondsSinceEpoch = chrono::system_clock::to_time_t(tp);
         const auto remainder = (tp - chrono::system_clock::from_time_t(secondsSinceEpoch));
         const auto milliseconds = chrono::duration_cast<chrono::milliseconds>(remainder).count();
@@ -86,7 +86,7 @@ namespace configcat {
         return min(17, -exp);
     }
 
-    std::string numberToString(double number) {
+    std::string number_to_string(double number) {
         if (isnan(number)) {
             return "NaN";
         }
@@ -120,7 +120,7 @@ namespace configcat {
         return str;
     }
 
-    std::optional<double> numberFromString(const std::string& str) {
+    std::optional<double> number_from_string(const std::string& str) {
         if (str.empty()) return nullopt;
 
         auto strPtr = const_cast<string*>(&str);
@@ -176,7 +176,7 @@ namespace configcat {
         return value;
     }
 
-    std::optional<long long> integerFromString(const std::string& str) {
+    std::optional<long long> integer_from_string(const std::string& str) {
         if (str.empty()) return nullopt;
 
         auto strPtr = const_cast<string*>(&str);

@@ -629,7 +629,7 @@ namespace configcat {
 
             size_t sliceLength;
             if (index == string::npos
-                || (sliceLength = integerFromString(comparisonValue.substr(0, index)).value_or(-1)) < 0) {
+                || (sliceLength = integer_from_string(comparisonValue.substr(0, index)).value_or(-1)) < 0) {
                 throw runtime_error("Comparison value is missing or invalid.");
             }
 
@@ -805,7 +805,7 @@ namespace configcat {
             visitedFlags->push_back(prerequisiteFlagKey);
             ostringstream ss;
             ss << "Circular dependency detected between the following depending flags: ";
-            appendStringList(ss, *visitedFlags, 0, nullopt, " -> ");
+            append_stringlist(ss, *visitedFlags, 0, nullopt, " -> ");
             throw runtime_error(ss.str());
         }
 
@@ -944,11 +944,11 @@ namespace configcat {
                 return alt;
             }
             else if constexpr (is_same_v<T, double>) {
-                return numberToString(alt);
+                return number_to_string(alt);
             }
             else if constexpr (is_same_v<T, date_time_t>) {
-                const auto unixTimeSeconds = dateTimeToUnixTimeSeconds(alt);
-                return numberToString(unixTimeSeconds ? *unixTimeSeconds : NAN);
+                const auto unixTimeSeconds = datetime_to_unixtimeseconds(alt);
+                return number_to_string(unixTimeSeconds ? *unixTimeSeconds : NAN);
             }
             else if constexpr (is_same_v<T, vector<string>>) {
                 nlohmann::json j = alt;
@@ -998,7 +998,7 @@ namespace configcat {
             return *numberPtr;
         }
         else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
-            auto number = numberFromString(*textPtr);
+            auto number = number_from_string(*textPtr);
             if (number) return *number;
         }
 
@@ -1010,14 +1010,14 @@ namespace configcat {
         const UserCondition& condition, const std::string& key) const {
 
         if (const auto dateTimePtr = get_if<date_time_t>(&attributeValue); dateTimePtr) {
-            const auto unixTimeSeconds = dateTimeToUnixTimeSeconds(*dateTimePtr);
+            const auto unixTimeSeconds = datetime_to_unixtimeseconds(*dateTimePtr);
             if (unixTimeSeconds) return *unixTimeSeconds;
         }
         else if (const auto numberPtr = get_if<double>(&attributeValue); numberPtr) {
             return *numberPtr;
         }
         else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
-            auto number = numberFromString(*textPtr);
+            auto number = number_from_string(*textPtr);
             if (number) return *number;
         }
 

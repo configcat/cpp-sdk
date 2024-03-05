@@ -37,7 +37,7 @@ string ConfigCatUser::toJson() const {
             visit([&j, &nameRef = name] (auto&& alt) { // rebind reference to keep clang compiler happy (https://stackoverflow.com/a/74376436)
                 using T = decay_t<decltype(alt)>;
                 if constexpr (is_same_v<T, date_time_t>) {
-                    j[nameRef] = formatDateTimeISO(alt);
+                    j[nameRef] = datetime_to_isostring(alt);
                 }
                 else {
                     j[nameRef] = alt;

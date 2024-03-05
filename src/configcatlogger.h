@@ -84,7 +84,7 @@ public:
     LogEntry& operator<<(const std::vector<std::string>& v) {
         if (logger->isEnabled(level)) {
             message += "[";
-            appendStringList(*this, v);
+            append_stringlist(*this, v);
             message += "]";
         }
         return *this;
