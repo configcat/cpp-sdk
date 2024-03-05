@@ -11,6 +11,11 @@ struct KeyValue {
         value(value) {
     }
 
+    KeyValue(const std::string& key, Value&& value) :
+        key(key),
+        value(value) {
+    }
+
     std::string key;
     Value value;
 };

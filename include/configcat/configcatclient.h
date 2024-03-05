@@ -126,6 +126,7 @@ private:
                                           const std::optional<Value>& defaultValue,
                                           const std::shared_ptr<ConfigCatUser>& effectiveUser,
                                           const Setting& setting,
+                                          const std::shared_ptr<Settings>& settings,
                                           double fetchTime) const;
 
     std::shared_ptr<Hooks> hooks;

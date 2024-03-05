@@ -145,20 +145,35 @@ namespace configcat {
         case UserComparator::SensitiveTextNotEquals:
             return appendUserConditionString(comparisonAttribute, comparator, comparisonValue, true);
 
-        default:
-            return appendUserConditionCore(comparisonAttribute, comparator, formatUserConditionComparisonValue(comparisonValue));
+        default: {
+            string str;
+            return appendUserConditionCore(comparisonAttribute, comparator, formatUserConditionComparisonValue(comparisonValue, str));
         }
+        }
+    }
+
+    EvaluateLogBuilder& EvaluateLogBuilder::appendPrerequisiteFlagCondition(const PrerequisiteFlagCondition& condition, const std::shared_ptr<Settings>& settings) {
+        const auto& prerequisiteFlagKey = condition.prerequisiteFlagKey;
+        
+        assert(settings);
+        const auto it = settings->find(prerequisiteFlagKey);
+        const char* $prerequisiteFlagKeyCStr = it != settings->end() ? prerequisiteFlagKey.c_str() : kInvalidReferencePlaceholder;
+
+        string str;
+        return appendFormat("Flag '%s' %s '{$comparisonValueFormatted}'",
+            $prerequisiteFlagKeyCStr, getPrerequisiteFlagComparatorText(condition.comparator), formatSettingValue(condition.comparisonValue, str).c_str());
+
     }
 
     EvaluateLogBuilder& EvaluateLogBuilder::appendSegmentCondition(const SegmentCondition& condition, const std::shared_ptr<Segments>& segments) {
         const auto segmentIndex = condition.segmentIndex;
         const auto segmentPtr = segmentIndex < 0 || (segments ? segments->size() : 0) <= segmentIndex ? nullptr : &(*segments)[segmentIndex];
         
-        const char* segmentName;
-        if (segmentPtr) segmentName = !segmentPtr->name.empty() ? segmentPtr->name.c_str() : kInvalidNamePlaceholder;
-        else segmentName = kInvalidReferencePlaceholder;
+        const char* segmentNameCStr;
+        if (segmentPtr) segmentNameCStr = !segmentPtr->name.empty() ? segmentPtr->name.c_str() : kInvalidNamePlaceholder;
+        else segmentNameCStr = kInvalidReferencePlaceholder;
 
-        return appendFormat("User %s '%s'", getSegmentComparatorText(condition.comparator), segmentName);
+        return appendFormat("User %s '%s'", getSegmentComparatorText(condition.comparator), segmentNameCStr);
     }
 
     EvaluateLogBuilder& EvaluateLogBuilder::appendConditionConsequence(bool result) {
@@ -173,7 +188,8 @@ namespace configcat {
 
         const auto simpleValuePtr = get_if<SettingValueContainer>(&targetingRule.then);
         if (simpleValuePtr) {
-            return appendFormat(" '%s'", formatSettingValue(simpleValuePtr->value).c_str());
+            string str;
+            return appendFormat(" '%s'", formatSettingValue(simpleValuePtr->value, str).c_str());
         }
         else {
             return append(" % options");
@@ -277,8 +293,15 @@ namespace configcat {
         }
     }
 
-    const char* getSegmentComparatorText(SegmentComparator comparator)
-    {
+    const char* getPrerequisiteFlagComparatorText(PrerequisiteFlagComparator comparator) {
+        switch (comparator) {
+        case PrerequisiteFlagComparator::Equals: return "EQUALS";
+        case PrerequisiteFlagComparator::NotEquals: return "NOT EQUALS";
+        default: return kInvalidOperatorPlaceholder;
+        }
+    }
+
+    const char* getSegmentComparatorText(SegmentComparator comparator) {
         switch (comparator) {
         case SegmentComparator::IsIn: return "IS IN SEGMENT";
         case SegmentComparator::IsNotIn: return "IS NOT IN SEGMENT";
@@ -286,32 +309,34 @@ namespace configcat {
         }
     }
 
-    std::string formatSettingValue(const SettingValue& settingValue) {
+    const std::string& formatSettingValue(const SettingValue& settingValue, std::string& str) {
         if (const auto textPtr = get_if<string>(&settingValue)) {
+            // Avoid copy if we already have a string.
             return *textPtr;
         }
         else {
             auto value = static_cast<std::optional<Value>>(settingValue);
-            return value ? value->toString() : kInvalidValuePlaceholder;
+            return str = value ? value->toString() : kInvalidValuePlaceholder;
         }
     }
 
-    std::string formatUserConditionComparisonValue(const UserConditionComparisonValue& comparisonValue) {
+    const std::string& formatUserConditionComparisonValue(const UserConditionComparisonValue& comparisonValue, std::string& str) {
         if (const auto textPtr = get_if<string>(&comparisonValue)) {
+            // Avoid copy if we already have a string.
             return *textPtr;
         }
         else if (const auto numberPtr = get_if<double>(&comparisonValue)) {
-            return to_string(*numberPtr);
+            return str = to_string(*numberPtr);
         }
         else if (const auto stringArrayPtr = get_if<vector<string>>(&comparisonValue)) {
             ostringstream ss;
             ss << "[";
             appendStringList(ss, *stringArrayPtr);
             ss << "]";
-            return ss.str();
+            return str = ss.str();
         }
         else {
-            return kInvalidValuePlaceholder;
+            return str = kInvalidValuePlaceholder;
         }
     }
 

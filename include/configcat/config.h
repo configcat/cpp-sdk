@@ -298,6 +298,7 @@ namespace configcat {
         TargetingRules targetingRules;
         PercentageOptions percentageOptions;
 
+        inline bool hasInvalidType() const { return this->type < SettingType::Boolean || SettingType::Double < this->type; }
         SettingType getTypeChecked() const;
 
     protected:

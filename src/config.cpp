@@ -353,7 +353,7 @@ namespace configcat {
     }
 
     SettingType Setting::getTypeChecked() const {
-        if (this->type < SettingType::Boolean || SettingType::Double < this->type) {
+        if (hasInvalidType()) {
             throw std::runtime_error("Setting type is invalid.");
         }
         return this->type;

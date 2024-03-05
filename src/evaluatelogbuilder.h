@@ -52,6 +52,7 @@ namespace configcat {
         }
 
         EvaluateLogBuilder& appendUserCondition(const UserCondition& condition);
+        EvaluateLogBuilder& appendPrerequisiteFlagCondition(const PrerequisiteFlagCondition& condition, const std::shared_ptr<Settings>& settings);
         EvaluateLogBuilder& appendSegmentCondition(const SegmentCondition& condition, const std::shared_ptr<Segments>& segments);
 
         inline EvaluateLogBuilder& appendConditionResult(bool result) { return append(result ? "true" : "false"); }
@@ -72,10 +73,11 @@ namespace configcat {
     const char* getSettingTypeText(SettingType settingType);
     const char* getSettingValueTypeText(const SettingValue& settingValue);
     const char* getUserComparatorText(UserComparator comparator);
+    const char* getPrerequisiteFlagComparatorText(PrerequisiteFlagComparator comparator);
     const char* getSegmentComparatorText(SegmentComparator comparator);
 
-    std::string formatSettingValue(const SettingValue& settingValue);
-    std::string formatUserConditionComparisonValue(const UserConditionComparisonValue& comparisonValue);
+    const std::string& formatSettingValue(const SettingValue& settingValue, std::string& str);
+    const std::string& formatUserConditionComparisonValue(const UserConditionComparisonValue& comparisonValue, std::string& str);
     std::string formatUserCondition(const UserCondition& condition);
 
 } // namespace configcat

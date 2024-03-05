@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <exception>
 #include <ostream> // must be imported before <semver/semver.hpp>
+#include <sstream>
 
 #include <hash-library/sha1.h>
 #include <hash-library/sha256.h>
@@ -50,7 +51,7 @@ namespace configcat {
 
         // Building the evaluation log is expensive, so let's not do it if it wouldn't be logged anyway.
         if (this->logger->isEnabled(LogLevel::LOG_LEVEL_INFO)) {
-            logBuilder = make_unique<EvaluateLogBuilder>();
+            logBuilder = make_shared<EvaluateLogBuilder>();
 
             logBuilder->appendFormat("Evaluating '%s'", context.key.c_str());
 
@@ -64,7 +65,7 @@ namespace configcat {
         const auto log = [](
             const std::optional<Value>& returnValue,
             const shared_ptr<ConfigCatLogger>& logger,
-            const unique_ptr<EvaluateLogBuilder>& logBuilder
+            const shared_ptr<EvaluateLogBuilder>& logBuilder
             ) {
                 if (logBuilder) {
                     logBuilder->newLine().appendFormat("Returning '%s'.", returnValue ? returnValue->toString().c_str() : "");
@@ -243,8 +244,9 @@ namespace configcat {
             }
 
             if (logBuilder) {
+                string str;
                 logBuilder->newLine().appendFormat("- Hash value %d selects %% option %d (%d%), '%s'.",
-                    hashValue, optionNumber, percentage, formatSettingValue(percentageOption.value).c_str());
+                    hashValue, optionNumber, percentage, formatSettingValue(percentageOption.value, str).c_str());
             }
 
             return EvaluateResult{ percentageOption, matchedTargetingRule, &percentageOption };
@@ -284,7 +286,8 @@ namespace configcat {
                 newLineBeforeThen = conditions.size() > 1;
             }
             else if (const auto prerequisiteFlagConditionPtr = get_if<PrerequisiteFlagCondition>(&condition); prerequisiteFlagConditionPtr) {
-                throw runtime_error("Not implemented."); // TODO
+                result = evaluatePrerequisiteFlagCondition(*prerequisiteFlagConditionPtr, context);
+                newLineBeforeThen = true;
             }
             else if (const auto segmentConditionPtr = get_if<SegmentCondition>(&condition); segmentConditionPtr) {
                 result = evaluateSegmentCondition(*segmentConditionPtr, context);
@@ -769,6 +772,88 @@ namespace configcat {
         }
 
         return negate;
+    }
+
+    bool RolloutEvaluator::evaluatePrerequisiteFlagCondition(const PrerequisiteFlagCondition& condition, EvaluateContext& context) const {
+        const auto& logBuilder = context.logBuilder;
+
+        if (logBuilder) logBuilder->appendPrerequisiteFlagCondition(condition, context.settings);
+
+        const auto& prerequisiteFlagKey = condition.prerequisiteFlagKey;
+
+        assert(context.settings);
+        const auto it = context.settings->find(prerequisiteFlagKey);
+        if (it == context.settings->end()) {
+            throw runtime_error("Prerequisite flag is missing or invalid.");
+        }
+        const auto& prerequisiteFlag = it->second;
+
+        const auto& comparisonValue = condition.comparisonValue;
+        if (holds_alternative<nullopt_t>(comparisonValue)) {
+            throw runtime_error("Comparison value is missing or invalid.");
+        }
+
+        const auto expectedSettingType = comparisonValue.getSettingType();
+        if (!prerequisiteFlag.hasInvalidType() && prerequisiteFlag.type != expectedSettingType) {
+            string str;
+            throw runtime_error(string_format("Type mismatch between comparison value '%s' and prerequisite flag '%s'.",
+                formatSettingValue(comparisonValue, str).c_str(), prerequisiteFlagKey.c_str()));
+        }
+
+        auto visitedFlags = context.getVisitedFlags();
+        visitedFlags->push_back(context.key);
+        if (find(visitedFlags->begin(), visitedFlags->end(), prerequisiteFlagKey) != visitedFlags->end()) {
+            visitedFlags->push_back(prerequisiteFlagKey);
+            ostringstream ss;
+            ss << "Circular dependency detected between the following depending flags: ";
+            appendStringList(ss, *visitedFlags, 0, nullopt, " -> ");
+            throw runtime_error(ss.str());
+        }
+
+        auto prerequisiteFlagContext = EvaluateContext::forPrerequisiteFlag(prerequisiteFlagKey, prerequisiteFlag, context);
+
+        if (logBuilder) {
+            logBuilder->newLine('(')
+                .increaseIndent()
+                .newLine().appendFormat("Evaluating prerequisite flag '%s':", prerequisiteFlagKey.c_str());
+        }
+
+        const auto prerequisiteFlagEvaluateResult = this->evaluateSetting(prerequisiteFlagContext);
+
+        visitedFlags->pop_back();
+
+        const auto prerequisiteFlagValue = *prerequisiteFlagEvaluateResult.selectedValue.value.toValueChecked(expectedSettingType);
+        // At this point it's ensured that the return value of the prerequisite flag is compatible with the comparison value.
+
+        const auto comparator = condition.comparator;
+
+        bool result;
+        switch (comparator) {
+        case PrerequisiteFlagComparator::Equals:
+            if (const auto& comparisonValuePtr = get_if<string>(&comparisonValue); comparisonValuePtr) result = *comparisonValuePtr == get<string>(prerequisiteFlagValue);
+            else result = *static_cast<std::optional<Value>>(comparisonValue) == prerequisiteFlagValue;
+            break;
+
+        case PrerequisiteFlagComparator::NotEquals:
+            if (const auto& comparisonValuePtr = get_if<string>(&comparisonValue); comparisonValuePtr) result = *comparisonValuePtr != get<string>(prerequisiteFlagValue);
+            else result = *static_cast<std::optional<Value>>(comparisonValue) != prerequisiteFlagValue;
+            break;
+
+        default:
+            throw runtime_error("Comparison operator is invalid.");
+        }
+
+        if (logBuilder) {
+            string str;
+            logBuilder->newLine().appendFormat("Prerequisite flag evaluation result: '%s'.", formatSettingValue(prerequisiteFlagEvaluateResult.selectedValue.value, str).c_str())
+                .newLine("Condition (")
+                .appendPrerequisiteFlagCondition(condition, context.settings)
+                .append(") evaluates to ").appendConditionResult(result).append('.')
+                .decreaseIndent()
+                .newLine(')');
+        }
+
+        return result;
     }
 
     RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateSegmentCondition(const SegmentCondition& condition, EvaluateContext& context) const {

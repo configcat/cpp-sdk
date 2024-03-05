@@ -236,7 +236,7 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
         }
 
         const auto& effectiveUser = user ? user : this->defaultUser;
-        return evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, fetchTime);
+        return evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, settings, fetchTime);
     }
     catch (...) {
         const auto& ex = unwrapException(std::current_exception());
@@ -346,7 +346,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const std::
         std::unordered_map<std::string, Value> result;
         const auto& effectiveUser = user ? user : this->defaultUser;
         for (const auto& [key, setting] : *settings) {
-            auto details = evaluate<Value>(key, nullopt, effectiveUser, setting, fetchTime);
+            auto details = evaluate<Value>(key, nullopt, effectiveUser, setting, settings, fetchTime);
             result.insert({ key, move(details.value) });
         }
 
@@ -373,7 +373,7 @@ std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const 
         std::vector<EvaluationDetails<Value>> result;
         const auto& effectiveUser = user ? user : this->defaultUser;
         for (const auto& [key, setting] : *settings) {
-            result.push_back(evaluate<Value>(key, nullopt, effectiveUser, setting, fetchTime));
+            result.push_back(evaluate<Value>(key, nullopt, effectiveUser, setting, settings, fetchTime));
         }
 
         return result;
@@ -428,7 +428,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         }
 
         const auto& effectiveUser = user ? user : this->defaultUser;
-        auto details = evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, fetchTime);
+        auto details = evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, settings, fetchTime);
 
         return move(details.value);
     }
@@ -453,8 +453,9 @@ EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
                                                        const std::optional<Value>& defaultValue,
                                                        const std::shared_ptr<ConfigCatUser>& effectiveUser,
                                                        const Setting& setting,
+                                                       const std::shared_ptr<Settings>& settings,
                                                        double fetchTime) const {
-    EvaluateContext evaluateContext(key, setting, effectiveUser);
+    EvaluateContext evaluateContext(key, setting, effectiveUser, settings);
     std::optional<Value> returnValue;
     auto evaluateResult = rolloutEvaluator->evaluate(defaultValue, evaluateContext, returnValue);
 

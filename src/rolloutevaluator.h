@@ -27,20 +27,43 @@ struct EvaluateContext {
     const std::string& key;
     const Setting& setting;
     const std::shared_ptr<ConfigCatUser>& user;
+    const std::shared_ptr<Settings>& settings;
 
     bool isMissingUserObjectLogged;
     bool isMissingUserObjectAttributeLogged;
-    std::unique_ptr<EvaluateLogBuilder> logBuilder;
+    std::shared_ptr<EvaluateLogBuilder> logBuilder; // initialized by RolloutEvaluator.evaluate
 
     EvaluateContext(
         const std::string& key,
         const Setting& setting,
-        const std::shared_ptr<ConfigCatUser>& user)
+        const std::shared_ptr<ConfigCatUser>& user,
+        const std::shared_ptr<Settings>& settings)
         : key(key)
         , setting(setting)
         , user(user)
+        , settings(settings)
         , isMissingUserObjectLogged(false)
         , isMissingUserObjectAttributeLogged(false) {}
+
+    static EvaluateContext forPrerequisiteFlag(
+        const std::string& key,
+        const Setting& setting,
+        EvaluateContext& dependentFlagContext) {
+
+        EvaluateContext context(key, setting, dependentFlagContext.user, dependentFlagContext.settings);
+        context.visitedFlags = dependentFlagContext.getVisitedFlags(); // crucial to use `getVisitedFlags` here to make sure the list is created!
+        context.logBuilder = dependentFlagContext.logBuilder;
+        return context;
+    }
+
+    inline std::shared_ptr<std::vector<std::string>> getVisitedFlags() {
+        return this->visitedFlags
+            ? this->visitedFlags
+            : (this->visitedFlags = std::make_shared<std::vector<std::string>>());
+    }
+
+private:
+    std::shared_ptr<std::vector<std::string>> visitedFlags;
 };
 
 struct EvaluateResult {
@@ -85,6 +108,8 @@ private:
     bool evaluateDateTimeRelation(double number, const UserConditionComparisonValue& comparisonValue, bool before) const;
     bool evaluateArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, bool negate) const;
     bool evaluateSensitiveArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const;
+
+    bool evaluatePrerequisiteFlagCondition(const PrerequisiteFlagCondition& condition, EvaluateContext& context) const;
 
     RolloutEvaluator::SuccessOrError evaluateSegmentCondition(const SegmentCondition& condition, EvaluateContext& context) const;
 
