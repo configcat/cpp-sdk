@@ -72,17 +72,36 @@ private:
         const TargetingRule* targetingRule, const std::string& contextSalt, EvaluateContext& context) const;
 
     RolloutEvaluator::SuccessOrError evaluateUserCondition(const UserCondition& condition, const std::string& contextSalt, EvaluateContext& context) const;
+    bool evaluateTextEquals(const std::string& text, const UserConditionComparisonValue& comparisonValue, bool negate) const;
+    bool evaluateSensitiveTextEquals(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const;
     bool evaluateTextIsOneOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, bool negate) const;
     bool evaluateSensitiveTextIsOneOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const;
+    bool evaluateTextSliceEqualsAnyOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, bool startsWith, bool negate) const;
+    bool evaluateSensitiveTextSliceEqualsAnyOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool startsWith, bool negate) const;
     bool evaluateTextContainsAnyOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, bool negate) const;
     bool evaluateSemVerIsOneOf(const semver::version& version, const UserConditionComparisonValue& comparisonValue, bool negate) const;
     bool evaluateSemVerRelation(const semver::version& version, UserComparator comparator, const UserConditionComparisonValue& comparisonValue) const;
     bool evaluateNumberRelation(double number, UserComparator comparator, const UserConditionComparisonValue& comparisonValue) const;
+    bool evaluateDateTimeRelation(double number, const UserConditionComparisonValue& comparisonValue, bool before) const;
+    bool evaluateArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, bool negate) const;
+    bool evaluateSensitiveArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const;
 
     static std::string userAttributeValueToString(const ConfigCatUser::AttributeValue& attributeValue);
-    std::string getUserAttributeValueAsText(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue, const UserCondition& condition, const std::string& key) const;
-    std::variant<semver::version, std::string> getUserAttributeValueAsSemVer(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue, const UserCondition& condition, const std::string& key) const;
-    std::variant<double, std::string> getUserAttributeValueAsNumber(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue, const UserCondition& condition, const std::string& key) const;
+
+    const std::string& getUserAttributeValueAsText(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key, std::string& text) const;
+
+    std::variant<const semver::version*, std::string> getUserAttributeValueAsSemVer(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key, semver::version& version) const;
+
+    std::variant<double, std::string> getUserAttributeValueAsNumber(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key) const;
+
+    std::variant<double, std::string> getUserAttributeValueAsUnixTimeSeconds(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key) const;
+
+    std::variant<const std::vector<std::string>*, std::string> getUserAttributeValueAsStringArray(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key, std::vector<std::string>& array) const;
 
     void logUserObjectIsMissing(const std::string& key) const;
     void logUserObjectAttributeIsMissingPercentage(const std::string& key, const std::string& attributeName) const;

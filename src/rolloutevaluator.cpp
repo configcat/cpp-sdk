@@ -342,79 +342,137 @@ namespace configcat {
 
         switch (comparator) {
         case UserComparator::TextEquals:
-        case UserComparator::TextNotEquals:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::TextNotEquals: {
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
+
+            return evaluateTextEquals(
+                textRef,
+                condition.comparisonValue,
+                comparator == UserComparator::TextNotEquals
+            );
+        }
 
         case UserComparator::SensitiveTextEquals:
-        case UserComparator::SensitiveTextNotEquals:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::SensitiveTextNotEquals: {
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
+
+            return evaluateSensitiveTextEquals(
+                textRef,
+                condition.comparisonValue,
+                ensureConfigJsonSalt(context.setting.configJsonSalt),
+                contextSalt,
+                comparator == UserComparator::SensitiveTextNotEquals
+            );
+        }
 
         case UserComparator::TextIsOneOf:
         case UserComparator::TextIsNotOneOf: {
-            const auto textPtr = get_if<string>(userAttributeValuePtr);
-            const auto text = textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key);
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
 
             return evaluateTextIsOneOf(
-                textPtr ? *textPtr : text,
+                textRef,
                 condition.comparisonValue,
-                UserComparator::TextIsNotOneOf == comparator
+                comparator == UserComparator::TextIsNotOneOf
             );
         }
 
         case UserComparator::SensitiveTextIsOneOf:
         case UserComparator::SensitiveTextIsNotOneOf: {
-            const auto textPtr = get_if<string>(userAttributeValuePtr);
-            const auto text = textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key);
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
 
             return evaluateSensitiveTextIsOneOf(
-                textPtr ? *textPtr : text,
+                textRef,
                 condition.comparisonValue,
                 ensureConfigJsonSalt(context.setting.configJsonSalt),
                 contextSalt,
-                UserComparator::SensitiveTextIsNotOneOf == comparator
+                comparator == UserComparator::SensitiveTextIsNotOneOf
             );
         }
 
         case UserComparator::TextStartsWithAnyOf:
-        case UserComparator::TextNotStartsWithAnyOf:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::TextNotStartsWithAnyOf: {
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
+
+            return evaluateTextSliceEqualsAnyOf(
+                textRef,
+                condition.comparisonValue,
+                true,
+                comparator == UserComparator::TextNotStartsWithAnyOf
+            );
+        }
 
         case UserComparator::SensitiveTextStartsWithAnyOf:
-        case UserComparator::SensitiveTextNotStartsWithAnyOf:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::SensitiveTextNotStartsWithAnyOf: {
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
+
+            return evaluateSensitiveTextSliceEqualsAnyOf(
+                textRef,
+                condition.comparisonValue,
+                ensureConfigJsonSalt(context.setting.configJsonSalt),
+                contextSalt,
+                true,
+                comparator == UserComparator::SensitiveTextNotStartsWithAnyOf
+            );
+        }
 
         case UserComparator::TextEndsWithAnyOf:
-        case UserComparator::TextNotEndsWithAnyOf:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::TextNotEndsWithAnyOf: {
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
+
+            return evaluateTextSliceEqualsAnyOf(
+                textRef,
+                condition.comparisonValue,
+                false,
+                comparator == UserComparator::TextNotEndsWithAnyOf
+            );
+        }
 
         case UserComparator::SensitiveTextEndsWithAnyOf:
-        case UserComparator::SensitiveTextNotEndsWithAnyOf:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::SensitiveTextNotEndsWithAnyOf: {
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
+
+            return evaluateSensitiveTextSliceEqualsAnyOf(
+                textRef,
+                condition.comparisonValue,
+                ensureConfigJsonSalt(context.setting.configJsonSalt),
+                contextSalt,
+                false,
+                comparator == UserComparator::SensitiveTextNotEndsWithAnyOf
+            );
+        }
 
         case UserComparator::TextContainsAnyOf:
         case UserComparator::TextNotContainsAnyOf: {
-            const auto textPtr = get_if<string>(userAttributeValuePtr);
-            const auto text = textPtr ? string() : getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key);
+            string text;
+            const auto& textRef = getUserAttributeValueAsText(userAttributeName, *userAttributeValuePtr, condition, context.key, text);
 
             return evaluateTextContainsAnyOf(
-                textPtr ? *textPtr : text,
+                textRef,
                 condition.comparisonValue,
-                UserComparator::TextNotContainsAnyOf == comparator
+                comparator == UserComparator::TextNotContainsAnyOf
             );
         }
 
         case UserComparator::SemVerIsOneOf:
         case UserComparator::SemVerIsNotOneOf: {
-            const auto versionOrError = this->getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key);
-            const auto versionPtr = get_if<semver::version>(&versionOrError);
-            if (!versionPtr) {
-                return get<string>(versionOrError);
+            semver::version version;
+            const auto versionPtrOrError = this->getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
+            if (auto errorPtr = get_if<string>(&versionPtrOrError)) {
+                return move(*const_cast<string*>(errorPtr));
             }
 
             return evaluateSemVerIsOneOf(
-                *versionPtr,
+                *get<const semver::version*>(versionPtrOrError),
                 condition.comparisonValue,
-                UserComparator::SemVerIsNotOneOf == comparator
+                comparator == UserComparator::SemVerIsNotOneOf
             );
         }
 
@@ -422,14 +480,14 @@ namespace configcat {
         case UserComparator::SemVerLessOrEquals:
         case UserComparator::SemVerGreater:
         case UserComparator::SemVerGreaterOrEquals: {
-            const auto versionOrError = this->getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key);
-            const auto versionPtr = get_if<semver::version>(&versionOrError);
-            if (!versionPtr) {
-                return get<string>(versionOrError);
+            semver::version version;
+            const auto versionPtrOrError = this->getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
+            if (auto errorPtr = get_if<string>(&versionPtrOrError)) {
+                return move(*const_cast<string*>(errorPtr));
             }
 
             return evaluateSemVerRelation(
-                *versionPtr,
+                *get<const semver::version*>(versionPtrOrError),
                 comparator,
                 condition.comparisonValue
             );
@@ -442,33 +500,80 @@ namespace configcat {
         case UserComparator::NumberGreater:
         case UserComparator::NumberGreaterOrEquals: {
             const auto numberOrError = this->getUserAttributeValueAsNumber(userAttributeName, *userAttributeValuePtr, condition, context.key);
-            const auto numberPtr = get_if<double>(&numberOrError);
-            if (!numberPtr) {
-                return get<string>(numberOrError);
+            if (auto errorPtr = get_if<string>(&numberOrError)) {
+                return move(*const_cast<string*>(errorPtr));
             }
 
             return evaluateNumberRelation(
-                *numberPtr,
+                get<double>(numberOrError),
                 comparator,
                 condition.comparisonValue
             );
         }
 
         case UserComparator::DateTimeBefore:
-        case UserComparator::DateTimeAfter:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::DateTimeAfter: {
+            const auto numberOrError = this->getUserAttributeValueAsUnixTimeSeconds(userAttributeName, *userAttributeValuePtr, condition, context.key);
+            if (auto errorPtr = get_if<string>(&numberOrError)) {
+                return move(*const_cast<string*>(errorPtr));
+            }
+
+            return evaluateDateTimeRelation(
+                get<double>(numberOrError),
+                condition.comparisonValue,
+                comparator == UserComparator::DateTimeBefore
+            );
+        }
 
         case UserComparator::ArrayContainsAnyOf:
-        case UserComparator::ArrayNotContainsAnyOf:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::ArrayNotContainsAnyOf: {
+            vector<string> array;
+            const auto arrayPtrOrError = this->getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
+            if (auto errorPtr = get_if<string>(&arrayPtrOrError)) {
+                return move(*const_cast<string*>(errorPtr));
+            }
+
+            return evaluateArrayContainsAnyOf(
+                *get<const vector<string>*>(arrayPtrOrError),
+                condition.comparisonValue,
+                comparator == UserComparator::ArrayNotContainsAnyOf
+            );
+        }
 
         case UserComparator::SensitiveArrayContainsAnyOf:
-        case UserComparator::SensitiveArrayNotContainsAnyOf:
-            throw runtime_error("Not implemented."); // TODO
+        case UserComparator::SensitiveArrayNotContainsAnyOf: {
+            vector<string> array;
+            const auto arrayPtrOrError = this->getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
+            if (auto errorPtr = get_if<string>(&arrayPtrOrError)) {
+                return move(*const_cast<string*>(errorPtr));
+            }
+
+            return evaluateSensitiveArrayContainsAnyOf(
+                *get<const vector<string>*>(arrayPtrOrError),
+                condition.comparisonValue,
+                ensureConfigJsonSalt(context.setting.configJsonSalt),
+                contextSalt,
+                comparator == UserComparator::SensitiveArrayNotContainsAnyOf
+            );
+        }
 
         default:
             throw runtime_error("Comparison operator is invalid.");
         }
+    }
+
+    bool RolloutEvaluator::evaluateTextEquals(const std::string& text, const UserConditionComparisonValue& comparisonValue, bool negate) const {
+        const auto& text2 = ensureComparisonValue<string>(comparisonValue);
+
+        return (text == text2) ^ negate;
+    }
+
+    bool RolloutEvaluator::evaluateSensitiveTextEquals(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
+        const auto& hash2 = ensureComparisonValue<string>(comparisonValue);
+
+        const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+
+        return (hash == hash2) ^ negate;
     }
 
     bool RolloutEvaluator::evaluateTextIsOneOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, bool negate) const {
@@ -490,6 +595,54 @@ namespace configcat {
 
         for (const auto& comparisonValue : comparisonValues) {
             if (hash == comparisonValue) {
+                return !negate;
+            }
+        }
+
+        return negate;
+    }
+
+    bool RolloutEvaluator::evaluateTextSliceEqualsAnyOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, bool startsWith, bool negate) const {
+        const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
+
+        for (const auto& comparisonValue : comparisonValues) {
+            const auto success = startsWith ? starts_with(text, comparisonValue) : ends_with(text, comparisonValue);
+
+            if (success) {
+                return !negate;
+            }
+        }
+
+        return negate;
+    }
+
+    bool RolloutEvaluator::evaluateSensitiveTextSliceEqualsAnyOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool startsWith, bool negate) const {
+        const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
+
+        const auto textLength = text.length();
+
+        for (const auto& comparisonValue : comparisonValues) {
+            const auto index = text.find('_');
+
+            size_t sliceLength;
+            if (index == string::npos
+                || (sliceLength = integerFromString(comparisonValue.substr(0, index)).value_or(-1)) < 0) {
+                throw runtime_error("Comparison value is missing or invalid.");
+            }
+
+            const string hash2(comparisonValue.substr(index + 1));
+            if (hash2.empty()) {
+                throw runtime_error("Comparison value is missing or invalid.");
+            }
+
+            if (textLength < sliceLength) {
+                continue;
+            }
+
+            const auto slice = startsWith ? text.substr(0, sliceLength) : text.substr(textLength - sliceLength);
+
+            const auto hash = hashComparisonValue(*sha256, slice, configJsonSalt, contextSalt);
+            if (hash == hash2) {
                 return !negate;
             }
         }
@@ -580,6 +733,43 @@ namespace configcat {
         }
     }
 
+    bool RolloutEvaluator::evaluateDateTimeRelation(double number, const UserConditionComparisonValue& comparisonValue, bool before) const
+    {
+        const auto number2 = ensureComparisonValue<double>(comparisonValue);
+
+        return before ? number < number2 : number > number2;
+    }
+
+    bool RolloutEvaluator::evaluateArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, bool negate) const {
+        const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
+
+        for (const auto& text : array) {
+            for (const auto& comparisonValue : comparisonValues) {
+                if (text == comparisonValue) {
+                    return !negate;
+                }
+            }
+        }
+
+        return negate;
+    }
+
+    bool RolloutEvaluator::evaluateSensitiveArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
+        const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
+
+        for (const auto& text : array) {
+            const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+
+            for (const auto& comparisonValue : comparisonValues) {
+                if (hash == comparisonValue) {
+                    return !negate;
+                }
+            }
+        }
+
+        return negate;
+    }
+
     std::string RolloutEvaluator::userAttributeValueToString(const ConfigCatUser::AttributeValue& attributeValue) {
         return visit([](auto&& alt) -> string {
             using T = decay_t<decltype(alt)>;
@@ -603,41 +793,88 @@ namespace configcat {
         }, attributeValue);
     }
 
-    std::string RolloutEvaluator::getUserAttributeValueAsText(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue, const UserCondition& condition, const std::string& key) const {
+    const std::string& RolloutEvaluator::getUserAttributeValueAsText(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key, std::string& text) const {
+
         if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
             return *textPtr;
         }
 
-        string text = userAttributeValueToString(attributeValue);
+        text = userAttributeValueToString(attributeValue);
         logUserObjectAttributeIsAutoConverted(formatUserCondition(condition), key, attributeName, text);
         return text;
     }
 
-    std::variant<semver::version, std::string> RolloutEvaluator::getUserAttributeValueAsSemVer(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue, const UserCondition& condition, const std::string& key) const {
+    std::variant<const semver::version*, std::string> RolloutEvaluator::getUserAttributeValueAsSemVer(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key, semver::version& version) const {
+
         if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
             try { 
-                auto text = *textPtr;
+                string text(*textPtr);
                 trim(text);
-                return semver::version::parse(text);
+                version = semver::version::parse(text);
+                return &version;
             }
             catch (const semver::semver_exception&) {
                 /* intentional no-op */
             }
         }
 
-        return handleInvalidUserAttribute(condition, key, attributeName, string_format("'%s' is not a valid semantic version", userAttributeValueToString(attributeValue).c_str()));
+        return handleInvalidUserAttribute(condition, key, attributeName,
+            string_format("'%s' is not a valid semantic version", userAttributeValueToString(attributeValue).c_str()));
     }
 
-    std::variant<double, std::string> RolloutEvaluator::getUserAttributeValueAsNumber(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue, const UserCondition& condition, const std::string& key) const {
+    std::variant<double, std::string> RolloutEvaluator::getUserAttributeValueAsNumber(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key) const {
+
         if (const auto numberPtr = get_if<double>(&attributeValue); numberPtr) {
             return *numberPtr;
         }
-        if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
+        else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
             auto number = numberFromString(*textPtr);
             if (number) return *number;
         }
 
-        return handleInvalidUserAttribute(condition, key, attributeName, string_format("'%s' is not a valid decimal number", userAttributeValueToString(attributeValue).c_str()));
+        return handleInvalidUserAttribute(condition, key, attributeName,
+            string_format("'%s' is not a valid decimal number", userAttributeValueToString(attributeValue).c_str()));
+    }
+
+    std::variant<double, std::string> RolloutEvaluator::getUserAttributeValueAsUnixTimeSeconds(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key) const {
+
+        if (const auto dateTimePtr = get_if<date_time_t>(&attributeValue); dateTimePtr) {
+            const auto unixTimeSeconds = dateTimeToUnixTimeSeconds(*dateTimePtr);
+            if (unixTimeSeconds) return *unixTimeSeconds;
+        }
+        else if (const auto numberPtr = get_if<double>(&attributeValue); numberPtr) {
+            return *numberPtr;
+        }
+        else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
+            auto number = numberFromString(*textPtr);
+            if (number) return *number;
+        }
+
+        return handleInvalidUserAttribute(condition, key, attributeName,
+            string_format("'%s' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)", userAttributeValueToString(attributeValue).c_str()));
+    }
+
+    std::variant<const std::vector<std::string>*, std::string> RolloutEvaluator::getUserAttributeValueAsStringArray(const std::string& attributeName, const ConfigCatUser::AttributeValue& attributeValue,
+        const UserCondition& condition, const std::string& key, std::vector<std::string>& array) const {
+
+        if (const auto arrayPtr = get_if<vector<string>>(&attributeValue); arrayPtr) {
+            return arrayPtr;
+        }
+        else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
+            try {
+                auto j = nlohmann::json::parse(*textPtr, nullptr, true, false);
+                j.get_to(array);
+                return &array;
+            }
+            catch (...) { /* intentional no-op */ }
+        }
+
+        return handleInvalidUserAttribute(condition, key, attributeName,
+            string_format("'%s' is not a valid string array", userAttributeValueToString(attributeValue).c_str()));
     }
 
     void RolloutEvaluator::logUserObjectIsMissing(const std::string& key) const {

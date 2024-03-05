@@ -121,45 +121,84 @@ namespace configcat {
     }
 
     std::optional<double> numberFromString(const std::string& str) {
-        string s(str);
-        trim(s);
+        if (str.empty()) return nullopt;
 
-        if (s.empty()) {
-            return nullopt;
+        auto strPtr = const_cast<string*>(&str);
+
+        // Make a copy of str only if necessary.
+        string strCopy;
+        if (isspace(str[0]) || isspace(str[str.size() - 1])) {
+            strCopy = string(str);
+            trim(strCopy);
+            if (strCopy.empty()) return nullopt;
+            strPtr = &strCopy;
         }
-        else if (s == "NaN") {
-            return numeric_limits<double>::quiet_NaN();
-        }
-        else if (s == "Infinity" || s == "+Infinity") {
-            return numeric_limits<double>::infinity();
-        }
-        else if (s == "-Infinity") {
-            return -numeric_limits<double>::infinity();
-        }
+
+        if (*strPtr == "NaN") return numeric_limits<double>::quiet_NaN();
+        else if (*strPtr == "Infinity" || *strPtr == "+Infinity") return numeric_limits<double>::infinity();
+        else if (*strPtr == "-Infinity") return -numeric_limits<double>::infinity();
 
         // Accept ',' as decimal separator.
-        replace(s.begin(), s.end(), ',', '.');
+        if (strPtr->find(',') != string::npos) {
+            if (strPtr == &str) {
+                strCopy = string(str);
+                strPtr = &strCopy;
+            }
+
+            replace(strPtr->begin(), strPtr->end(), ',', '.');
+        }
 
         // Reject hex numbers and other forms of INF, NAN, etc. that are accepted by std::stod.
         size_t index = 0;
-        auto ch = s[index];
+        auto ch = (*strPtr)[index];
         if (ch == '+' || ch == '-') {
             ++index;
-            if (index >= s.size()) return nullopt;
-            ch = s[index];
+            if (index >= strPtr->size()) return nullopt;
+            ch = (*strPtr)[index];
         }
 
         if (isdigit(ch)) {
             ++index;
-            if (index < s.size() && !isdigit(ch = s[index]) && ch != '.' && ch != 'e' && ch != 'E') return std::nullopt;
+            if (index < strPtr->size() && !isdigit(ch = (*strPtr)[index]) && ch != '.' && ch != 'e' && ch != 'E') return std::nullopt;
         }
         else if (ch != '.') return nullopt;
 
         size_t charsProcessed;
-        const auto value = stod(s, &charsProcessed);
+        double value;
+        try { value = stod(*strPtr, &charsProcessed); }
+        catch (const invalid_argument&) { return nullopt; }
 
         // Reject strings which contain invalid characters after the number.
-        if (charsProcessed != s.size()) {
+        if (charsProcessed != strPtr->size()) {
+            return nullopt;
+        }
+
+        return value;
+    }
+
+    std::optional<long long> integerFromString(const std::string& str) {
+        if (str.empty()) return nullopt;
+
+        auto strPtr = const_cast<string*>(&str);
+
+        // Make a copy of str only if necessary.
+        string strCopy;
+        if (isspace(str[0]) || isspace(str[str.size() - 1])) {
+            strCopy = string(str);
+            trim(strCopy);
+            if (strCopy.empty()) {
+                return nullopt;
+            }
+            strPtr = &strCopy;
+        }
+
+        size_t charsProcessed;
+        long long value;
+        try { value = stoll(*strPtr, &charsProcessed); }
+        catch (const invalid_argument&) { return nullopt; }
+
+        // Reject strings which contain invalid characters after the number.
+        if (charsProcessed != strPtr->size()) {
             return nullopt;
         }
 

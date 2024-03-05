@@ -115,4 +115,6 @@ std::string numberToString(double number);
 
 std::optional<double> numberFromString(const std::string& str);
 
+std::optional<long long> integerFromString(const std::string& str);
+
 } // namespace configcat
