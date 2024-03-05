@@ -23,14 +23,17 @@ enum Status {
 struct FetchResponse {
     Status status;
     std::shared_ptr<const ConfigEntry> entry;
-    std::string error;
+    std::optional<std::string> errorMessage;
+    std::exception_ptr errorException;
     bool isTransientError = false;
 
-    FetchResponse(Status status, const std::shared_ptr<const ConfigEntry>& entry, const std::string& error = "", bool isTransientError = false):
-        status(status),
-        entry(entry),
-        error(error),
-        isTransientError(isTransientError) {
+    FetchResponse(Status status, const std::shared_ptr<const ConfigEntry>& entry,
+        const std::optional<std::string>& errorMessage = std::nullopt, const std::exception_ptr& errorException = nullptr, bool isTransientError = false)
+        : status(status)
+        , entry(entry)
+        , errorMessage(errorMessage)
+        , errorException(errorException)
+        , isTransientError(isTransientError) {
     }
 
     bool isFetched() {

@@ -75,7 +75,6 @@ namespace configcat {
                 }
             };
 
-        exception_ptr eptr;
         try {
             const auto settingType = context.setting.getTypeChecked();
 
@@ -103,11 +102,11 @@ namespace configcat {
             return result;
         }
         catch (...) {
-            eptr = current_exception();
+            auto ex = current_exception();
             if (logBuilder) logBuilder->resetIndent().increaseIndent();
 
             log(defaultValue, this->logger, logBuilder);
-            rethrow_exception(eptr);
+            rethrow_exception(ex);
         }
     }
 

@@ -17,13 +17,13 @@ public:
         hooks(hooks) {
     }
 
-    void log(LogLevel level, int eventId, const std::string& message, const std::optional<std::exception>& ex = std::nullopt) {
+    void log(LogLevel level, int eventId, const std::string& message, const std::exception_ptr& exception = nullptr) {
         if (hooks && level == LOG_LEVEL_ERROR) {
-            hooks->invokeOnError(message);
+            hooks->invokeOnError(message, exception);
         }
 
         if (isEnabled(level)) {
-            logger->log(level, "[" + std::to_string(eventId) + "] " + message, ex);
+            logger->log(level, "[" + std::to_string(eventId) + "] " + message, exception);
         }
     }
 
@@ -36,12 +36,12 @@ private:
 
 class LogEntry {
 public:
-    LogEntry(const std::shared_ptr<ConfigCatLogger>& logger, LogLevel level, int eventId, const std::optional<std::exception>& ex = std::nullopt)
-        : logger(logger), level(level), eventId(eventId), ex(ex) {}
+    LogEntry(const std::shared_ptr<ConfigCatLogger>& logger, LogLevel level, int eventId, const std::exception_ptr& exception = nullptr)
+        : logger(logger), level(level), eventId(eventId), exception(exception) {}
 
     ~LogEntry() {
         if (logger->isEnabled(level))
-            logger->log(level, eventId, message, ex);
+            logger->log(level, eventId, message, exception);
     }
 
     LogEntry& operator<<(const char* str) {
@@ -97,7 +97,7 @@ private:
     LogLevel level;
     int eventId;
     std::string message;
-    std::optional<std::exception> ex;
+    std::exception_ptr exception;
 };
 
 } // namespace configcat

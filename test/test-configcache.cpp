@@ -25,7 +25,7 @@ TEST(ConfigCatTest, InvalidCacheContent) {
     static constexpr char kTestJsonFormat[] = R"({"f":{"testKey":{"t":%d,"v":%s}}})";
     HookCallbacks hookCallbacks;
     auto hooks = make_shared<Hooks>();
-    hooks->addOnError([&](const string& error) { hookCallbacks.onError(error); });
+    hooks->addOnError([&](const string& message, const exception_ptr& exception) { hookCallbacks.onError(message, exception); });
     auto configJsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})");
     auto configCache = make_shared<SingleValueCache>(ConfigEntry(
         Config::fromJson(configJsonString),
@@ -46,17 +46,20 @@ TEST(ConfigCatTest, InvalidCacheContent) {
     // Invalid fetch time in cache
     configCache->value = "text\n"s + "test-etag\n" + string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})");
     EXPECT_EQ("test", client->getValue("testKey", "default"));
-    EXPECT_TRUE(hookCallbacks.error.find("Error occurred while reading the cache. Invalid fetch time: text") != std::string::npos);
+    EXPECT_EQ("Error occurred while reading the cache.", hookCallbacks.errorMessage);
+    EXPECT_TRUE(unwrap_exception_message(hookCallbacks.errorException).find("Invalid fetch time: text") != string::npos);
 
     // Number of values is fewer than expected
     configCache->value = std::to_string(getUtcNowSecondsSinceEpoch()) + "\n" + string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})");
     EXPECT_EQ("test", client->getValue("testKey", "default"));
-    EXPECT_TRUE(hookCallbacks.error.find("Error occurred while reading the cache. Number of values is fewer than expected.") != std::string::npos);
+    EXPECT_TRUE(hookCallbacks.errorMessage.find("Error occurred while reading the cache.") != std::string::npos);
+    EXPECT_TRUE(unwrap_exception_message(hookCallbacks.errorException).find("Number of values is fewer than expected.") != string::npos);
 
     // Invalid config JSON
     configCache->value = std::to_string(getUtcNowSecondsSinceEpoch()) + "\n" + "test-etag\n" + "wrong-json";
     EXPECT_EQ("test", client->getValue("testKey", "default"));
-    EXPECT_TRUE(hookCallbacks.error.find("Error occurred while reading the cache. Invalid config JSON: wrong-json.") != std::string::npos);
+    EXPECT_TRUE(hookCallbacks.errorMessage.find("Error occurred while reading the cache.") != std::string::npos);
+    EXPECT_TRUE(unwrap_exception_message(hookCallbacks.errorException).find("Invalid config JSON: wrong-json.") != string::npos);
 
     ConfigCatClient::close(client);
 }

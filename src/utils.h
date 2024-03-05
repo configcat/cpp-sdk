@@ -2,11 +2,11 @@
 
 #include <algorithm>
 #include <array>
-#include <stdexcept>
 #include <functional>
 #include <limits>
 #include <chrono>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>

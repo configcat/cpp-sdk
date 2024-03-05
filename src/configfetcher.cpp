@@ -104,7 +104,7 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
         auto error = "HttpSessionAdapter is not provided.";
         LOG_ERROR(0) << error;
         assert(false);
-        return FetchResponse(failure, ConfigEntry::empty, error, true);
+        return FetchResponse(failure, ConfigEntry::empty, error, nullptr, true);
     }
 
     string requestUrl(url + "/configuration-files/" + sdkKey + "/" + kConfigJsonName);
@@ -121,12 +121,20 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
         LogEntry logEntry = LogEntry(logger, LOG_LEVEL_ERROR, 1102);
         logEntry << "Request timed out while trying to fetch config JSON. "
                     "Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]";
-        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), nullptr, true);
     }
     if (response.error.length() > 0) {
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1103);
-        logEntry << "Unexpected error occurred while trying to fetch config JSON: " << response.error;
-        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+        try { throw std::runtime_error(response.error); }
+        catch (...)
+        {
+            exception_ptr ex = current_exception();
+            LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1103, ex);
+            logEntry <<
+                "Unexpected error occurred while trying to fetch config JSON. "
+                "It is most likely due to a local network issue. "
+                "Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP.";
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), ex, true);
+        }
     }
 
     switch (response.statusCode) {
@@ -141,12 +149,13 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
                 auto config = Config::fromJson(response.text);
                 LOG_DEBUG << "Fetch was successful: new config fetched.";
                 return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, response.text, getUtcNowSecondsSinceEpoch()));
-            } catch (exception& exception) {
-                LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105);
+            } catch (...) {
+                auto ex = current_exception();
+                LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105, ex);
                 logEntry <<
                     "Fetching config JSON was successful but the HTTP response content was invalid. "
-                    "Config JSON parsing failed. " << exception.what();
-                return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+                    "Config JSON parsing failed.";
+                return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), ex, true);
             }
         }
 
@@ -160,13 +169,13 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
             logEntry <<
                 "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey. "
                 "Received unexpected response: " << response.statusCode;
-            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), false);
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), nullptr, false);
         }
 
         default: {
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1101);
             logEntry << "Unexpected HTTP response was received while trying to fetch config JSON: " << response.statusCode;
-            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), nullptr, true);
         }
     }
 }

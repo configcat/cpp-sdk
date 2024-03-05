@@ -11,7 +11,7 @@ public:
     class TestLogger : public ILogger {
     public:
         TestLogger(): ILogger(LOG_LEVEL_INFO) {}
-        void log(LogLevel level, const std::string& message, const std::optional<std::exception>& ex = std::nullopt) override {
+        void log(LogLevel level, const std::string& message, const std::exception_ptr& exception = nullptr) override {
             text += message + "\n";
         }
         std::string text;

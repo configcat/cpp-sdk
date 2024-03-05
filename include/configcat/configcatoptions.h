@@ -5,6 +5,8 @@
 #include <functional>
 #include <vector>
 #include <mutex>
+#include <exception>
+#include <optional>
 #include "datagovernance.h"
 #include "pollingmode.h"
 #include "configcache.h"
@@ -23,7 +25,7 @@ public:
     explicit Hooks(const std::function<void()>& onClientReady = nullptr,
           const std::function<void(std::shared_ptr<const Settings>)>& onConfigChanged = nullptr,
           const std::function<void(const EvaluationDetailsBase&)>& onFlagEvaluated = nullptr,
-          const std::function<void(const std::string&)>& onError = nullptr) {
+          const std::function<void(const std::string&, const std::exception_ptr&)>& onError = nullptr) {
         if (onClientReady) {
             onClientReadyCallbacks.push_back(onClientReady);
         }
@@ -53,7 +55,7 @@ public:
         onFlagEvaluatedCallbacks.push_back(callback);
     }
 
-    void addOnError(const std::function<void(const std::string&)>& callback) {
+    void addOnError(const std::function<void(const std::string&, const std::exception_ptr&)>& callback) {
         std::lock_guard<std::mutex> lock(mutex);
         onErrorCallbacks.push_back(callback);
     }
@@ -79,10 +81,10 @@ public:
         }
     }
 
-    void invokeOnError(const std::string& error) {
+    void invokeOnError(const std::string& message, const std::exception_ptr& exception) {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto& callback : onErrorCallbacks) {
-            callback(error);
+            callback(message, exception);
         }
     }
 
@@ -99,7 +101,7 @@ private:
     std::vector<std::function<void()>> onClientReadyCallbacks;
     std::vector<std::function<void(std::shared_ptr<const Settings>)>> onConfigChangedCallbacks;
     std::vector<std::function<void(const EvaluationDetailsBase&)>> onFlagEvaluatedCallbacks;
-    std::vector<std::function<void(const std::string&)>> onErrorCallbacks;
+    std::vector<std::function<void(const std::string&, const std::exception_ptr&)>> onErrorCallbacks;
 };
 
 // Configuration options for ConfigCatClient.

@@ -108,7 +108,7 @@ public:
                                          settingKey.c_str(),
                                          testObjects[3].c_str(),
                                          expected.c_str(),
-                                         !value ? value->toString().c_str() : "##null##"));
+                                         value ? value->toString().c_str() : "##null##"));
                     }
                 } else {
                     auto details = client->getValueDetails(settingKey, user);

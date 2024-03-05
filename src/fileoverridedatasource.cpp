@@ -40,10 +40,12 @@ void FileOverrideDataSource::reloadFileContent() {
             auto config = Config::fromFile(filePath);
             overrides = config->getSettingsOrEmpty();
         }
-    } catch (filesystem::filesystem_error exception) {
-        LOG_ERROR(1302) << "Failed to read the local config file '" << filePath << "'. " << exception.what();
-    } catch (exception& exception) {
-        LOG_ERROR(2302) << "Failed to decode JSON from the local config file '" << filePath << "'. " << exception.what();
+    } catch (const filesystem::filesystem_error&) {
+        LogEntry logEntry(logger, configcat::LOG_LEVEL_ERROR, 1302, current_exception());
+        logEntry << "Failed to read the local config file '" << filePath << "'.";
+    } catch (...) {
+        LogEntry logEntry(logger, configcat::LOG_LEVEL_ERROR, 2302, current_exception());
+        logEntry << "Failed to decode JSON from the local config file '" << filePath << "'.";
     }
 }
 

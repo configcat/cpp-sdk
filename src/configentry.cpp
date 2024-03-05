@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 #include "configcat/config.h"
+#include "configcat/log.h"
 #include "configentry.h"
 
 using namespace std;
@@ -24,8 +25,8 @@ namespace configcat {
         double fetchTime;
         try {
             fetchTime = stod(fetchTimeString);
-        } catch (const exception& e) {
-            throw invalid_argument("Invalid fetch time: " + fetchTimeString + ". " + e.what());
+        } catch (...) {
+            throw invalid_argument("Invalid fetch time: " + fetchTimeString + ". " + unwrap_exception_message(current_exception()));
         }
     
         auto eTag = text.substr(fetchTimeIndex + 1, eTagIndex - fetchTimeIndex - 1);
@@ -36,8 +37,8 @@ namespace configcat {
         auto configJsonString = text.substr(eTagIndex + 1);
         try {
             return make_shared<ConfigEntry>(Config::fromJson(configJsonString), eTag, configJsonString, fetchTime / 1000.0);
-        } catch (const exception& e) {
-            throw invalid_argument("Invalid config JSON: " + configJsonString + ". " + e.what());
+        } catch (...) {
+            throw invalid_argument("Invalid config JSON: " + configJsonString + ". " + unwrap_exception_message(current_exception()));
         }
     }
     

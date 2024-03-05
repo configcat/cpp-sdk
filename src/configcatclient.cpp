@@ -155,19 +155,6 @@ SettingResult ConfigCatClient::getSettings() const {
     return configService->getSettings();
 }
 
-static optional<exception> unwrapException(
-    exception_ptr eptr // passing by value is ok (https://en.cppreference.com/w/cpp/error/current_exception#Example)
-) {
-    try {
-        if (eptr) std::rethrow_exception(eptr);
-    }
-    catch (const std::exception& ex) {
-        return ex;
-    }
-
-    return nullopt;
-}
-
 bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
     return _getValue(key, defaultValue, user);
 }
@@ -262,7 +249,7 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
         return evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, settings, fetchTime);
     }
     catch (...) {
-        const auto& ex = unwrapException(std::current_exception());
+        auto ex = std::current_exception();
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, ex);
         logEntry << "Error occurred in the `getValueDetails` method while evaluating setting '" << key << "'. ";
         if constexpr (is_same_v<ValueType, optional<Value>>) {
@@ -295,8 +282,7 @@ std::vector<std::string> ConfigCatClient::getAllKeys() const {
         return keys;
     }
     catch (...) {
-        const auto& ex = unwrapException(std::current_exception());
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, ex);
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, std::current_exception());
         logEntry << "Error occurred in the `getAllKeys` method. Returning empty list.";
         return {};
     }
@@ -349,8 +335,7 @@ std::optional<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& varia
         return std::nullopt;
     }
     catch (...) {
-        const auto& ex = unwrapException(std::current_exception());
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, ex);
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, std::current_exception());
         logEntry << "Error occurred in the `getKeyAndValue` method. Returning std::nullopt.";
         return std::nullopt;
     }
@@ -376,8 +361,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const std::
         return result;
     }
     catch (...) {
-        const auto& ex = unwrapException(std::current_exception());
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, ex);
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, std::current_exception());
         logEntry << "Error occurred in the `getAllValues` method. Returning empty map.";
         return {};
     }
@@ -402,8 +386,7 @@ std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const 
         return result;
     }
     catch (...) {
-        const auto& ex = unwrapException(std::current_exception());
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, ex);
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, std::current_exception());
         logEntry << "Error occurred in the `getAllValueDetails` method. Returning empty list.";
         return {};
     }
@@ -456,7 +439,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         return move(details.value);
     }
     catch (...) {
-        const auto& ex = unwrapException(std::current_exception());
+        auto ex = std::current_exception();
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1002, ex);
         logEntry << "Error occurred in the `getValue` method while evaluating setting '" << key << "'. ";
         if constexpr (is_same_v<ValueType, optional<Value>>) {
@@ -504,7 +487,7 @@ EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
                                  effectiveUser,
                                  false,
                                  nullopt,
-                                 nullopt,
+                                 nullptr,
                                  evaluateResult.targetingRule,
                                  evaluateResult.percentageOption);
     hooks->invokeOnFlagEvaluated(details);

@@ -124,20 +124,22 @@ TEST_F(ManualPollingTest, OnlineOffline) {
     auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
     EXPECT_FALSE(service.isOffline());
-    EXPECT_TRUE(service.refresh().success);
+    EXPECT_TRUE(service.refresh().success());
     auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 
     service.setOffline();
     EXPECT_TRUE(service.isOffline());
-    EXPECT_FALSE(service.refresh().success);
+    EXPECT_FALSE(service.refresh().success());
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 
     service.setOnline();
 
+    mockHttpSessionAdapter->enqueueResponse(response);
+
     EXPECT_FALSE(service.isOffline());
-    EXPECT_TRUE(service.refresh().success);
+    EXPECT_TRUE(service.refresh().success());
     EXPECT_EQ(2, mockHttpSessionAdapter->requests.size());
 }
 
@@ -152,13 +154,13 @@ TEST_F(ManualPollingTest, InitOffline) {
     auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), make_shared<NullConfigCache>(), options);
 
     EXPECT_TRUE(service.isOffline());
-    EXPECT_FALSE(service.refresh().success);
+    EXPECT_FALSE(service.refresh().success());
     EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
 
     service.setOnline();
 
     EXPECT_FALSE(service.isOffline());
-    EXPECT_TRUE(service.refresh().success);
+    EXPECT_TRUE(service.refresh().success());
     auto settings = *service.getSettings().settings;
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());

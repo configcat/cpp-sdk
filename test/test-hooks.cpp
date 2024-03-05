@@ -24,7 +24,7 @@ TEST_F(HooksTest, Init) {
         [&]() { hookCallbacks.onClientReady(); },
         [&](std::shared_ptr<const configcat::Settings> config) { hookCallbacks.onConfigChanged(config); },
         [&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); },
-        [&](const string& error) { hookCallbacks.onError(error); }
+        [&](const string& message, const std::exception_ptr& exception) { hookCallbacks.onError(message, exception); }
     );
 
     ConfigCatOptions options;
@@ -59,7 +59,7 @@ TEST_F(HooksTest, Init) {
     EXPECT_FALSE(hookCallbacks.evaluationDetails.errorMessage.has_value());
     EXPECT_EQ(1, hookCallbacks.evaluationDetailsCallCount);
 
-    EXPECT_TRUE(hookCallbacks.error.empty());
+    EXPECT_TRUE(hookCallbacks.errorMessage.empty());
     EXPECT_EQ(0, hookCallbacks.errorCallCount);
 
     ConfigCatClient::close(client);
@@ -71,7 +71,7 @@ TEST_F(HooksTest, Subscribe) {
     hooks->addOnClientReady([&]() { hookCallbacks.onClientReady(); });
     hooks->addOnConfigChanged([&](std::shared_ptr<const configcat::Settings> config) { hookCallbacks.onConfigChanged(config); });
     hooks->addOnFlagEvaluated([&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); });
-    hooks->addOnError([&](const string& error) { hookCallbacks.onError(error); });
+    hooks->addOnError([&](const string& message, const std::exception_ptr& exception) { hookCallbacks.onError(message, exception); });
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
@@ -105,7 +105,7 @@ TEST_F(HooksTest, Subscribe) {
     EXPECT_FALSE(hookCallbacks.evaluationDetails.errorMessage.has_value());
     EXPECT_EQ(1, hookCallbacks.evaluationDetailsCallCount);
 
-    EXPECT_TRUE(hookCallbacks.error.empty());
+    EXPECT_TRUE(hookCallbacks.errorMessage.empty());
     EXPECT_EQ(0, hookCallbacks.errorCallCount);
 
     ConfigCatClient::close(client);

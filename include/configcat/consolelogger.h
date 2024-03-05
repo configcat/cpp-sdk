@@ -9,9 +9,9 @@ class ConsoleLogger : public ILogger {
 public:
     ConsoleLogger(LogLevel logLevel = LOG_LEVEL_WARNING): ILogger(logLevel) {}
 
-    void log(LogLevel level, const std::string& message, const std::optional<std::exception>& ex = std::nullopt) override {
+    void log(LogLevel level, const std::string& message, const std::exception_ptr& exception = nullptr) override {
         printf("[%s]: %s\n", logLevelAsString(level), message.c_str());
-        if (ex) printf("Exception details: %s\n", ex->what());
+        if (exception) printf("Exception details: %s\n", unwrap_exception_message(exception).c_str());
     }
 };
 

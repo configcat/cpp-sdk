@@ -49,7 +49,8 @@ public:
     int changedConfigCallCount = 0;
     configcat::EvaluationDetails<> evaluationDetails;
     int evaluationDetailsCallCount = 0;
-    std::string error;
+    std::string errorMessage;
+    std::exception_ptr errorException;
     int errorCallCount = 0;
 
     void onClientReady() {
@@ -67,8 +68,9 @@ public:
         evaluationDetailsCallCount += 1;
     }
 
-    void onError(const std::string& error) {
-        this->error = error;
+    void onError(const std::string& error, const std::exception_ptr& exception) {
+        this->errorMessage = error;
+        this->errorException = exception;
         errorCallCount += 1;
     }
 };

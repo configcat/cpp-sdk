@@ -17,7 +17,7 @@ struct EvaluationDetailsBase {
     std::shared_ptr<ConfigCatUser> user;
     bool isDefaultValue;
     std::optional<std::string> errorMessage;
-    std::optional<std::exception> errorException;
+    std::exception_ptr errorException;
     std::optional<TargetingRule> matchedTargetingRule;
     std::optional<PercentageOption> matchedPercentageOption;
 
@@ -30,7 +30,7 @@ protected:
         const std::shared_ptr<ConfigCatUser>& user = nullptr,
         bool isDefaultValue = false,
         const std::optional<std::string>& errorMessage = std::nullopt,
-        const std::optional<std::exception>& errorException = std::nullopt,
+        const std::exception_ptr& errorException = nullptr,
         const TargetingRule* matchedTargetingRule = nullptr,
         const PercentageOption* matchedPercentageOption = nullptr)
         : key(key)
@@ -59,7 +59,7 @@ struct EvaluationDetails : public EvaluationDetailsBase {
                       const std::shared_ptr<ConfigCatUser>& user = nullptr,
                       bool isDefaultValue = false,
                       const std::optional<std::string>& errorMessage = std::nullopt,
-                      const std::optional<std::exception>& errorException = std::nullopt,
+                      const std::exception_ptr& errorException = nullptr,
                       const TargetingRule* matchedTargetingRule = nullptr,
                       const PercentageOption* matchedPercentageOption = nullptr) :
         EvaluationDetailsBase(key, variationId, fetchTime, user, isDefaultValue, errorMessage, errorException, matchedTargetingRule, matchedPercentageOption),
@@ -69,7 +69,7 @@ struct EvaluationDetails : public EvaluationDetailsBase {
     static EvaluationDetails fromError(const std::string& key,
                                        const ValueType& defaultValue,
                                        const std::string& errorMessage,
-                                       const std::optional<std::exception>& errorException = std::nullopt) {
+                                       const std::exception_ptr& errorException = nullptr) {
         return EvaluationDetails<ValueType>(key, defaultValue, std::nullopt, {}, nullptr, true, errorMessage, errorException);
     }
 
