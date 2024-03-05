@@ -38,7 +38,7 @@ TEST(ConfigCatTest, InvalidCacheContent) {
     options.pollingMode = PollingMode::manualPoll();
     options.configCache = configCache;
     options.hooks = hooks;
-    auto client = ConfigCatClient::get("test", &options);
+    auto client = ConfigCatClient::get("test-67890123456789012/1234567890123456789012", &options);
 
     EXPECT_EQ("test", client->getValue("testKey", "default"));
     EXPECT_EQ(0, hookCallbacks.errorCallCount);

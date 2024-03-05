@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <chrono>
+#include <regex>
 
 #include "configcat/configcatclient.h"
 #include "configcat/configcatuser.h"
@@ -20,9 +21,31 @@ namespace configcat {
 std::mutex ConfigCatClient::instancesMutex;
 std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> ConfigCatClient::instances;
 
+bool isValidSdkKey(const string& sdkKey, bool customBaseUrl) {
+    static constexpr char proxyPrefix[] = "configcat-proxy/";
+
+    if (customBaseUrl && sdkKey.size() >= sizeof(proxyPrefix) && starts_with(sdkKey, proxyPrefix)) {
+        return true;
+    }
+
+    static const regex re("^(?:configcat-sdk-1/)?[^/]{22}/[^/]{22}$", regex_constants::ECMAScript);
+    return regex_match(sdkKey, re);
+}
+
 ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCatOptions* options) {
     if (sdkKey.empty()) {
-        throw std::invalid_argument("The SDK key cannot be empty.");
+        throw invalid_argument("SDK Key cannot be empty.");
+    }
+
+    ConfigCatOptions defaultOptions;
+    const auto& actualOptions = options ? *options : defaultOptions;
+
+    const auto& flagOverrides = actualOptions.flagOverrides;
+    if (!flagOverrides || flagOverrides->getBehavior() != OverrideBehaviour::LocalOnly) {
+        const auto customBaseUrl = !actualOptions.baseUrl.empty();
+        if (!isValidSdkKey(sdkKey, customBaseUrl)) {
+            throw invalid_argument(string_format("SDK Key '%s' is invalid.", sdkKey.c_str()));
+        }
     }
 
     lock_guard<mutex> lock(instancesMutex);
@@ -39,7 +62,7 @@ ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCat
 
     client = instances.insert({
         sdkKey,
-        std::move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, options ? *options : ConfigCatOptions())))
+        std::move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, actualOptions)))
     }).first;
 
     return client->second.get();

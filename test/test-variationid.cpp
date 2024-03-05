@@ -10,7 +10,7 @@ using namespace std;
 
 class VariationIdTest : public ::testing::Test {
 public:
-    static constexpr char kTestSdkKey[] = "TestSdkKey";
+    static constexpr char kTestSdkKey[] = "TestSdkKey-23456789012/1234567890123456789012";
     static constexpr char kTestJson[] = R"({
       "f": {
         "key1": {

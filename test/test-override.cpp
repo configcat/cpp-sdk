@@ -43,7 +43,7 @@ public:
 
     string directoryPath = RemoveFileName(__FILE__);
     vector<string> tempFiles;
-    static constexpr char kTestSdkKey[] = "TestSdkKey";
+    static constexpr char kTestSdkKey[] = "TestSdkKey-23456789012/1234567890123456789012";
     static constexpr char kTestJsonFormat[] = R"({"f":{"fakeKey":{"t":%d,"v":%s}}})";
     ConfigCatClient* client = nullptr;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();

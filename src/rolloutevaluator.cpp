@@ -623,7 +623,7 @@ namespace configcat {
     bool RolloutEvaluator::evaluateSensitiveTextSliceEqualsAnyOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool startsWith, bool negate) const {
         const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
 
-        const auto textLength = text.length();
+        const auto textLength = text.size();
 
         for (const auto& comparisonValue : comparisonValues) {
             const auto index = text.find('_');

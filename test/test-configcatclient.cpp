@@ -11,7 +11,7 @@ using namespace std::this_thread;
 
 class ConfigCatClientTest : public ::testing::Test {
 public:
-    static constexpr char kTestSdkKey[] = "TestSdkKey";
+    static constexpr char kTestSdkKey[] = "TestSdkKey-23456789012/1234567890123456789012";
     static constexpr char kTestJsonFormat[] = R"({"f":{"fakeKey":{"t":%d,"v":%s}}})";
     static constexpr char kTestJsonMultiple[] = R"({"f":{"key1":{"t":0,"v":{"b":true},"i":"fakeId1"},"key2":{"t":0,"v":{"b":false},"i":"fakeId2"}}})";
 
@@ -39,21 +39,21 @@ TEST_F(ConfigCatClientTest, EnsureSingletonPerSdkKey) {
 }
 
 TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
-    auto client = ConfigCatClient::get("another");
-    auto client2 = ConfigCatClient::get("another");
+    auto client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
+    auto client2 = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     EXPECT_TRUE(client2 == client);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 
     ConfigCatClient::close(client2);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
 
-    client = ConfigCatClient::get("another");
+    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 
     ConfigCatClient::closeAll();
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
 
-    client = ConfigCatClient::get("another");
+    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 }
 

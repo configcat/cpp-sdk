@@ -35,7 +35,7 @@ TEST_F(HooksTest, Init) {
         kTestJsonString).serialize()
     );
     options.hooks = hooks;
-    auto client = ConfigCatClient::get("test", &options);
+    auto client = ConfigCatClient::get("test-67890123456789012/1234567890123456789012", &options);
 
     auto value = client->getValue("testStringKey", "");
 
@@ -81,7 +81,7 @@ TEST_F(HooksTest, Subscribe) {
         kTestJsonString).serialize()
     );
     options.hooks = hooks;
-    auto client = ConfigCatClient::get("test", &options);
+    auto client = ConfigCatClient::get("test-67890123456789012/1234567890123456789012", &options);
 
     auto value = client->getValue("testStringKey", "");
 
@@ -119,7 +119,7 @@ TEST_F(HooksTest, Evaluation) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get("test", &options);
+    auto client = ConfigCatClient::get("test-67890123456789012/1234567890123456789012", &options);
 
     client->getHooks()->addOnFlagEvaluated([&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); });
 
