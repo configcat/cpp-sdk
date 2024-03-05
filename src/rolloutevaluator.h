@@ -67,8 +67,8 @@ private:
     std::optional<EvaluateResult> evaluateTargetingRules(const std::vector<TargetingRule>& targetingRules, EvaluateContext& context) const;
     std::optional<EvaluateResult> evaluatePercentageOptions(const std::vector<PercentageOption>& percentageOptions, const TargetingRule* matchedTargetingRule, EvaluateContext& context) const;
 
-    template <typename ConditionType>
-    RolloutEvaluator::SuccessOrError evaluateConditions(const std::vector<ConditionType>& conditions, const std::function<const Condition& (const ConditionType&)>& conditionAccessor,
+    template <typename ContainerType, typename ConditionType>
+    RolloutEvaluator::SuccessOrError evaluateConditions(const std::vector<ContainerType>& conditions, const std::function<ConditionType (const ContainerType&)>& conditionAccessor,
         const TargetingRule* targetingRule, const std::string& contextSalt, EvaluateContext& context) const;
 
     RolloutEvaluator::SuccessOrError evaluateUserCondition(const UserCondition& condition, const std::string& contextSalt, EvaluateContext& context) const;
@@ -85,6 +85,8 @@ private:
     bool evaluateDateTimeRelation(double number, const UserConditionComparisonValue& comparisonValue, bool before) const;
     bool evaluateArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, bool negate) const;
     bool evaluateSensitiveArrayContainsAnyOf(const std::vector<std::string>& array, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const;
+
+    RolloutEvaluator::SuccessOrError evaluateSegmentCondition(const SegmentCondition& condition, EvaluateContext& context) const;
 
     static std::string userAttributeValueToString(const ConfigCatUser::AttributeValue& attributeValue);
 

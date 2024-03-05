@@ -98,14 +98,14 @@ namespace configcat {
             // At this point it's ensured that the return value is compatible with the default value
             // (specifically, with the return type of the evaluation method overload that was called).
 
-            log(returnValue, logger, logBuilder);
+            log(returnValue, this->logger, logBuilder);
             return result;
         }
         catch (...) {
             eptr = current_exception();
             if (logBuilder) logBuilder->resetIndent().increaseIndent();
 
-            log(defaultValue, logger, logBuilder);
+            log(defaultValue, this->logger, logBuilder);
             rethrow_exception(eptr);
         }
     }
@@ -253,8 +253,8 @@ namespace configcat {
         throw runtime_error("Sum of percentage option percentages are less than 100.");
     }
 
-    template <typename ConditionType>
-    RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateConditions(const std::vector<ConditionType>& conditions, const std::function<const Condition& (const ConditionType&)>& conditionAccessor,
+    template <typename ContainerType, typename ConditionType>
+    RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateConditions(const std::vector<ContainerType>& conditions, const std::function<ConditionType (const ContainerType&)>& conditionAccessor,
         const TargetingRule* targetingRule, const std::string& contextSalt, EvaluateContext& context) const {
 
         RolloutEvaluator::SuccessOrError result = true;
@@ -266,7 +266,7 @@ namespace configcat {
 
         auto i = 0;
         for (const auto& it : conditions) {
-            const Condition& condition = conditionAccessor(it);
+            const ConditionType& condition = conditionAccessor(it);
 
             if (logBuilder) {
                 if (i == 0) {
@@ -287,7 +287,8 @@ namespace configcat {
                 throw runtime_error("Not implemented."); // TODO
             }
             else if (const auto segmentConditionPtr = get_if<SegmentCondition>(&condition); segmentConditionPtr) {
-                throw runtime_error("Not implemented."); // TODO
+                result = evaluateSegmentCondition(*segmentConditionPtr, context);
+                newLineBeforeThen = !holds_alternative<string>(result) || get<string>(result) != kMissingUserObjectError || conditions.size() > 1;
             }
             else {
                 throw runtime_error("Condition is missing or invalid.");
@@ -322,7 +323,7 @@ namespace configcat {
 
         if (!context.user) {
             if (!context.isMissingUserObjectLogged) {
-                this->logUserObjectIsMissing(context.key);
+                logUserObjectIsMissing(context.key);
                 context.isMissingUserObjectLogged = true;
             }
 
@@ -333,7 +334,7 @@ namespace configcat {
         const auto userAttributeValuePtr = context.user->getAttribute(userAttributeName);
 
         if (const string* textPtr; !userAttributeValuePtr || (textPtr = get_if<string>(userAttributeValuePtr)) && textPtr->empty()) {
-            this->logUserObjectAttributeIsMissingCondition(formatUserCondition(condition), context.key, userAttributeName);
+            logUserObjectAttributeIsMissingCondition(formatUserCondition(condition), context.key, userAttributeName);
 
             return string_format(kMissingUserAttributeError, userAttributeName.c_str());
         }
@@ -464,7 +465,7 @@ namespace configcat {
         case UserComparator::SemVerIsOneOf:
         case UserComparator::SemVerIsNotOneOf: {
             semver::version version;
-            const auto versionPtrOrError = this->getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
+            const auto versionPtrOrError = getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
             if (auto errorPtr = get_if<string>(&versionPtrOrError)) {
                 return move(*const_cast<string*>(errorPtr));
             }
@@ -481,7 +482,7 @@ namespace configcat {
         case UserComparator::SemVerGreater:
         case UserComparator::SemVerGreaterOrEquals: {
             semver::version version;
-            const auto versionPtrOrError = this->getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
+            const auto versionPtrOrError = getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
             if (auto errorPtr = get_if<string>(&versionPtrOrError)) {
                 return move(*const_cast<string*>(errorPtr));
             }
@@ -499,7 +500,7 @@ namespace configcat {
         case UserComparator::NumberLessOrEquals:
         case UserComparator::NumberGreater:
         case UserComparator::NumberGreaterOrEquals: {
-            const auto numberOrError = this->getUserAttributeValueAsNumber(userAttributeName, *userAttributeValuePtr, condition, context.key);
+            const auto numberOrError = getUserAttributeValueAsNumber(userAttributeName, *userAttributeValuePtr, condition, context.key);
             if (auto errorPtr = get_if<string>(&numberOrError)) {
                 return move(*const_cast<string*>(errorPtr));
             }
@@ -513,7 +514,7 @@ namespace configcat {
 
         case UserComparator::DateTimeBefore:
         case UserComparator::DateTimeAfter: {
-            const auto numberOrError = this->getUserAttributeValueAsUnixTimeSeconds(userAttributeName, *userAttributeValuePtr, condition, context.key);
+            const auto numberOrError = getUserAttributeValueAsUnixTimeSeconds(userAttributeName, *userAttributeValuePtr, condition, context.key);
             if (auto errorPtr = get_if<string>(&numberOrError)) {
                 return move(*const_cast<string*>(errorPtr));
             }
@@ -528,7 +529,7 @@ namespace configcat {
         case UserComparator::ArrayContainsAnyOf:
         case UserComparator::ArrayNotContainsAnyOf: {
             vector<string> array;
-            const auto arrayPtrOrError = this->getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
+            const auto arrayPtrOrError = getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
             if (auto errorPtr = get_if<string>(&arrayPtrOrError)) {
                 return move(*const_cast<string*>(errorPtr));
             }
@@ -543,7 +544,7 @@ namespace configcat {
         case UserComparator::SensitiveArrayContainsAnyOf:
         case UserComparator::SensitiveArrayNotContainsAnyOf: {
             vector<string> array;
-            const auto arrayPtrOrError = this->getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
+            const auto arrayPtrOrError = getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
             if (auto errorPtr = get_if<string>(&arrayPtrOrError)) {
                 return move(*const_cast<string*>(errorPtr));
             }
@@ -571,7 +572,7 @@ namespace configcat {
     bool RolloutEvaluator::evaluateSensitiveTextEquals(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
         const auto& hash2 = ensureComparisonValue<string>(comparisonValue);
 
-        const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+        const auto hash = hashComparisonValue(*this->sha256, text, configJsonSalt, contextSalt);
 
         return (hash == hash2) ^ negate;
     }
@@ -591,7 +592,7 @@ namespace configcat {
     bool RolloutEvaluator::evaluateSensitiveTextIsOneOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
         const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
 
-        const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+        const auto hash = hashComparisonValue(*this->sha256, text, configJsonSalt, contextSalt);
 
         for (const auto& comparisonValue : comparisonValues) {
             if (hash == comparisonValue) {
@@ -641,7 +642,7 @@ namespace configcat {
 
             const auto slice = startsWith ? text.substr(0, sliceLength) : text.substr(textLength - sliceLength);
 
-            const auto hash = hashComparisonValue(*sha256, slice, configJsonSalt, contextSalt);
+            const auto hash = hashComparisonValue(*this->sha256, slice, configJsonSalt, contextSalt);
             if (hash == hash2) {
                 return !negate;
             }
@@ -758,7 +759,7 @@ namespace configcat {
         const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
 
         for (const auto& text : array) {
-            const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+            const auto hash = hashComparisonValue(*this->sha256, text, configJsonSalt, contextSalt);
 
             for (const auto& comparisonValue : comparisonValues) {
                 if (hash == comparisonValue) {
@@ -768,6 +769,88 @@ namespace configcat {
         }
 
         return negate;
+    }
+
+    RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateSegmentCondition(const SegmentCondition& condition, EvaluateContext& context) const {
+        const auto& logBuilder = context.logBuilder;
+
+        const auto& segments = context.setting.segments;
+        if (logBuilder) logBuilder->appendSegmentCondition(condition, segments);
+
+        if (!context.user) {
+            if (!context.isMissingUserObjectLogged) {
+                logUserObjectIsMissing(context.key);
+                context.isMissingUserObjectLogged = true;
+            }
+
+            return string(kMissingUserObjectError);
+        }
+
+        const auto segmentIndex = condition.segmentIndex;
+        if (segmentIndex < 0 || (segments ? segments->size() : 0) <= segmentIndex) {
+            throw runtime_error("Segment reference is invalid.");
+        }
+
+        const auto& segment = (*segments)[segmentIndex];
+
+        const auto& segmentName = segment.name;
+        if (segmentName.empty()) {
+            throw runtime_error("Segment name is missing.");
+        }
+
+        if (logBuilder) {
+            logBuilder->newLine('(')
+                .increaseIndent()
+                .newLine().appendFormat("Evaluating segment '%s':", segmentName.c_str());
+        }
+
+        const auto& conditions = segment.conditions;
+        const auto conditionAccessor = std::function([](const UserCondition& condition) -> Condition { return condition; });
+
+        auto result = evaluateConditions(conditions, conditionAccessor, nullptr, segmentName, context);
+        SegmentComparator segmentResult;
+
+        if (!holds_alternative<string>(result)) {
+            segmentResult = get<bool>(result) ? SegmentComparator::IsIn : SegmentComparator::IsNotIn;
+            const auto comparator = condition.comparator;
+
+            switch (comparator) {
+            case SegmentComparator::IsIn:
+                break;
+
+            case SegmentComparator::IsNotIn:
+                result = !get<bool>(result);
+                break;
+
+            default:
+                throw runtime_error("Comparison operator is invalid.");
+            }
+        }
+        else segmentResult = static_cast<SegmentComparator>(-1);
+
+        if (logBuilder) {
+            logBuilder->newLine("Segment evaluation result: ");
+
+            if (!holds_alternative<string>(result)) {
+                logBuilder->appendFormat("User %s", getSegmentComparatorText(segmentResult));
+            }
+            else {
+                logBuilder->append(get<string>(result));
+            }
+            logBuilder->append('.');
+
+            logBuilder->newLine("Condition(").appendSegmentCondition(condition, segments).append(')');
+            (!holds_alternative<string>(result)
+                ? logBuilder->append(" evaluates to ").appendConditionResult(get<bool>(result))
+                : logBuilder->append(" failed to evaluate"))
+                .append('.');
+
+            logBuilder
+                ->decreaseIndent()
+                .newLine(')');
+        }
+
+        return result;
     }
 
     std::string RolloutEvaluator::userAttributeValueToString(const ConfigCatUser::AttributeValue& attributeValue) {

@@ -7,8 +7,10 @@ using namespace std;
 
 namespace configcat {
 
-    static constexpr char kInvalidValuePlaceholder[] = "<invalid value>";
+    static constexpr char kInvalidNamePlaceholder[] = "<invalid name>";
     static constexpr char kInvalidOperatorPlaceholder[] = "<invalid operator>";
+    static constexpr char kInvalidReferencePlaceholder[] = "<invalid reference>";
+    static constexpr char kInvalidValuePlaceholder[] = "<invalid value>";
 
     static constexpr char kValueText[] = "value";
     static constexpr char kValuesText[] = "values";
@@ -89,7 +91,7 @@ namespace configcat {
             *comparisonValuePtr);
     }
 
-    EvaluateLogBuilder& EvaluateLogBuilder::appendUserCondition(UserCondition condition) {       
+    EvaluateLogBuilder& EvaluateLogBuilder::appendUserCondition(const UserCondition& condition) {
         const auto& comparisonAttribute = condition.comparisonAttribute;
         const auto comparator = condition.comparator;
         const auto& comparisonValue = condition.comparisonValue;
@@ -146,6 +148,17 @@ namespace configcat {
         default:
             return appendUserConditionCore(comparisonAttribute, comparator, formatUserConditionComparisonValue(comparisonValue));
         }
+    }
+
+    EvaluateLogBuilder& EvaluateLogBuilder::appendSegmentCondition(const SegmentCondition& condition, const std::shared_ptr<Segments>& segments) {
+        const auto segmentIndex = condition.segmentIndex;
+        const auto segmentPtr = segmentIndex < 0 || (segments ? segments->size() : 0) <= segmentIndex ? nullptr : &(*segments)[segmentIndex];
+        
+        const char* segmentName;
+        if (segmentPtr) segmentName = !segmentPtr->name.empty() ? segmentPtr->name.c_str() : kInvalidNamePlaceholder;
+        else segmentName = kInvalidReferencePlaceholder;
+
+        return appendFormat("User %s '%s'", getSegmentComparatorText(condition.comparator), segmentName);
     }
 
     EvaluateLogBuilder& EvaluateLogBuilder::appendConditionConsequence(bool result) {
@@ -260,6 +273,15 @@ namespace configcat {
         case UserComparator::ArrayNotContainsAnyOf:
         case UserComparator::SensitiveArrayNotContainsAnyOf: return "ARRAY NOT CONTAINS ANY OF";
 
+        default: return kInvalidOperatorPlaceholder;
+        }
+    }
+
+    const char* getSegmentComparatorText(SegmentComparator comparator)
+    {
+        switch (comparator) {
+        case SegmentComparator::IsIn: return "IS IN SEGMENT";
+        case SegmentComparator::IsNotIn: return "IS NOT IN SEGMENT";
         default: return kInvalidOperatorPlaceholder;
         }
     }
