@@ -621,7 +621,7 @@ bool RolloutEvaluator::evaluateSensitiveTextSliceEqualsAnyOf(const std::string& 
     const auto textLength = text.size();
 
     for (const auto& comparisonValue : comparisonValues) {
-        const auto index = text.find('_');
+        const auto index = comparisonValue.find('_');
 
         size_t sliceLength;
         if (index == string::npos
