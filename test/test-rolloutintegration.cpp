@@ -89,14 +89,11 @@ public:
                     if (success) {
                         if (holds_alternative<bool>(*value)) {
                             success = get<bool>(*value) ? expected == "True" : expected == "False";
-                        }
-                        else if (holds_alternative<string>(*value)) {
+                        } else if (holds_alternative<string>(*value)) {
                             success = get<string>(*value) == expected;
-                        }
-                        else if (holds_alternative<int32_t>(*value)) {
+                        } else if (holds_alternative<int32_t>(*value)) {
                             success = get<int32_t>(*value) == stoi(expected);
-                        }
-                        else {
+                        } else {
                             success = get<double>(*value) == stod(expected);
                         }
                     }

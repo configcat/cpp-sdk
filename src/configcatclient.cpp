@@ -212,8 +212,7 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
             if constexpr (is_same_v<ValueType, optional<Value>>) {
                 logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning std::nullopt.";
-            }
-            else {
+            } else {
                 logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
             }
             auto details = EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage());
@@ -234,8 +233,7 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
                     "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
                     "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
                     "Available keys: " << keys << ".";
-            }
-            else {
+            } else {
                 logEntry <<
                     "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
                     "Returning std::nullopt. Available keys: " << keys << ".";
@@ -254,8 +252,7 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
         logEntry << "Error occurred in the `getValueDetails` method while evaluating setting '" << key << "'. ";
         if constexpr (is_same_v<ValueType, optional<Value>>) {
             logEntry << "Returning std::nullopt.";
-        }
-        else {
+        } else {
             logEntry << "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         }
         auto details = EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage(), ex);
@@ -309,8 +306,7 @@ std::optional<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& varia
                     if (simpleValuePtr->variationId == variationId) {
                         return KeyValue(key, *simpleValuePtr->value.toValueChecked(settingType));
                     }
-                }
-                else if (const auto percentageOptionsPtr = get_if<PercentageOptions>(&targetingRule.then);
+                } else if (const auto percentageOptionsPtr = get_if<PercentageOptions>(&targetingRule.then);
                     percentageOptionsPtr && !percentageOptionsPtr->empty()) {
 
                     for (const auto& percentageOption : *percentageOptionsPtr) {
@@ -318,8 +314,7 @@ std::optional<KeyValue> ConfigCatClient::getKeyAndValue(const std::string& varia
                             return KeyValue(key, *percentageOption.value.toValueChecked(settingType));
                         }
                     }
-                }
-                else {
+                } else {
                     throw runtime_error("Targeting rule THEN part is missing or invalid.");
                 }
             }
@@ -402,8 +397,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1000);
             if constexpr (is_same_v<ValueType, optional<Value>>) {
                 logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning std::nullopt.";
-            }
-            else {
+            } else {
                 logEntry << "Config JSON is not present when evaluating setting '" << key << "'. Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
             }
             hooks->invokeOnFlagEvaluated(EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage()));
@@ -423,8 +417,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
                     "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
                     "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'. "
                     "Available keys: " << keys << ".";
-            }
-            else {
+            } else {
                 logEntry <<
                     "Failed to evaluate setting '" << key << "' (the key was not found in config JSON). "
                     "Returning std::nullopt. Available keys: " << keys << ".";
@@ -444,8 +437,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         logEntry << "Error occurred in the `getValue` method while evaluating setting '" << key << "'. ";
         if constexpr (is_same_v<ValueType, optional<Value>>) {
             logEntry << "Returning std::nullopt.";
-        }
-        else {
+        } else {
             logEntry << "Returning the `defaultValue` parameter that you specified in your application: '" << defaultValue << "'.";
         }
         auto details = EvaluationDetails<ValueType>::fromError(key, defaultValue, logEntry.getMessage(), ex);
@@ -469,14 +461,11 @@ EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
     if constexpr (is_same_v<ValueType, bool> || is_same_v<ValueType, string> || is_same_v<ValueType, int32_t> || is_same_v<ValueType, double>) {
         // RolloutEvaluator::evaluate makes sure that this variant access is always valid.
         value = std::get<ValueType>(*returnValue);
-    }
-    else if constexpr (is_same_v<ValueType, Value>) {
+    } else if constexpr (is_same_v<ValueType, Value>) {
         value = *returnValue;
-    }
-    else if constexpr (is_same_v<ValueType, optional<Value>>) {
+    } else if constexpr (is_same_v<ValueType, optional<Value>>) {
         value = returnValue;
-    }
-    else {
+    } else {
         static_assert(always_false_v<ValueType>, "Unsupported value type.");
     }
 
@@ -503,8 +492,7 @@ void ConfigCatClient::forceRefresh() {
 void ConfigCatClient::setOnline() {
     if (configService) {
         configService->setOnline();
-    }
-    else {
+    } else {
         LOG_WARN(3202) << "Client is configured to use the `LocalOnly` override behavior, thus `setOnline()` has no effect.";
     }
 }

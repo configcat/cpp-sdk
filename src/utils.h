@@ -37,8 +37,7 @@ std::string string_format(const std::string& format, Args&&... args) {
     int size_s = std::snprintf(&stackBuf[0], stackBuf.size(), format.c_str(), std::forward<Args>(args)...);
     if (size_s < 0) {
         throw std::runtime_error("Error during string formatting.");
-    }
-    else if (size_s < stackBuf.size()) {
+    } else if (size_s < stackBuf.size()) {
         return std::string(&stackBuf[0], &stackBuf[0] + size_s);
     }
 

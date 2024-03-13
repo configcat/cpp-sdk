@@ -19,7 +19,7 @@ namespace configcat {
     public:
         Value(const char* v) : _Base(std::string(v)) {}
 
-        // https://stackoverflow.com/a/59372958/8656352
+        // Disable the implicit conversion from pointer to bool: https://stackoverflow.com/a/59372958/8656352
         template<typename T>
         Value(T*) = delete;
 

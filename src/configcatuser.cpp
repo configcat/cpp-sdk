@@ -38,8 +38,7 @@ string ConfigCatUser::toJson() const {
                 using T = decay_t<decltype(alt)>;
                 if constexpr (is_same_v<T, date_time_t>) {
                     j[nameRef] = datetime_to_isostring(alt);
-                }
-                else {
+                } else {
                     j[nameRef] = alt;
                 }
             }, setting);

@@ -273,8 +273,7 @@ namespace configcat {
                 if (i == 0) {
                     logBuilder->append("IF ")
                         .increaseIndent();
-                }
-                else {
+                } else {
                     logBuilder->increaseIndent()
                         .newLine("AND ");
                 }
@@ -283,16 +282,13 @@ namespace configcat {
             if (const auto userConditionPtr = get_if<UserCondition>(&condition); userConditionPtr) {
                 result = evaluateUserCondition(*userConditionPtr, contextSalt, context);
                 newLineBeforeThen = conditions.size() > 1;
-            }
-            else if (const auto prerequisiteFlagConditionPtr = get_if<PrerequisiteFlagCondition>(&condition); prerequisiteFlagConditionPtr) {
+            } else if (const auto prerequisiteFlagConditionPtr = get_if<PrerequisiteFlagCondition>(&condition); prerequisiteFlagConditionPtr) {
                 result = evaluatePrerequisiteFlagCondition(*prerequisiteFlagConditionPtr, context);
                 newLineBeforeThen = true;
-            }
-            else if (const auto segmentConditionPtr = get_if<SegmentCondition>(&condition); segmentConditionPtr) {
+            } else if (const auto segmentConditionPtr = get_if<SegmentCondition>(&condition); segmentConditionPtr) {
                 result = evaluateSegmentCondition(*segmentConditionPtr, context);
                 newLineBeforeThen = !holds_alternative<string>(result) || get<string>(result) != kMissingUserObjectError || conditions.size() > 1;
-            }
-            else {
+            } else {
                 throw runtime_error("Condition is missing or invalid.");
             }
 
@@ -909,16 +905,16 @@ namespace configcat {
             default:
                 throw runtime_error("Comparison operator is invalid.");
             }
+        } else {
+            segmentResult = static_cast<SegmentComparator>(-1);
         }
-        else segmentResult = static_cast<SegmentComparator>(-1);
 
         if (logBuilder) {
             logBuilder->newLine("Segment evaluation result: ");
 
             if (!holds_alternative<string>(result)) {
                 logBuilder->appendFormat("User %s", getSegmentComparatorText(segmentResult));
-            }
-            else {
+            } else {
                 logBuilder->append(get<string>(result));
             }
             logBuilder->append('.');
@@ -942,19 +938,15 @@ namespace configcat {
             using T = decay_t<decltype(alt)>;
             if constexpr (is_same_v<T, string>) {
                 return alt;
-            }
-            else if constexpr (is_same_v<T, double>) {
+            } else if constexpr (is_same_v<T, double>) {
                 return number_to_string(alt);
-            }
-            else if constexpr (is_same_v<T, date_time_t>) {
+            } else if constexpr (is_same_v<T, date_time_t>) {
                 const auto unixTimeSeconds = datetime_to_unixtimeseconds(alt);
                 return number_to_string(unixTimeSeconds ? *unixTimeSeconds : NAN);
-            }
-            else if constexpr (is_same_v<T, vector<string>>) {
+            } else if constexpr (is_same_v<T, vector<string>>) {
                 nlohmann::json j = alt;
                 return j.dump();
-            }
-            else {
+            } else {
                 static_assert(always_false_v<T>, "Non-exhaustive visitor.");
             }
         }, attributeValue);
@@ -996,8 +988,7 @@ namespace configcat {
 
         if (const auto numberPtr = get_if<double>(&attributeValue); numberPtr) {
             return *numberPtr;
-        }
-        else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
+        } else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
             auto number = number_from_string(*textPtr);
             if (number) return *number;
         }
@@ -1012,11 +1003,9 @@ namespace configcat {
         if (const auto dateTimePtr = get_if<date_time_t>(&attributeValue); dateTimePtr) {
             const auto unixTimeSeconds = datetime_to_unixtimeseconds(*dateTimePtr);
             if (unixTimeSeconds) return *unixTimeSeconds;
-        }
-        else if (const auto numberPtr = get_if<double>(&attributeValue); numberPtr) {
+        } else if (const auto numberPtr = get_if<double>(&attributeValue); numberPtr) {
             return *numberPtr;
-        }
-        else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
+        } else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
             auto number = number_from_string(*textPtr);
             if (number) return *number;
         }
@@ -1030,8 +1019,7 @@ namespace configcat {
 
         if (const auto arrayPtr = get_if<vector<string>>(&attributeValue); arrayPtr) {
             return arrayPtr;
-        }
-        else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
+        } else if (const auto textPtr = get_if<string>(&attributeValue); textPtr) {
             try {
                 auto j = nlohmann::json::parse(*textPtr, nullptr, true, false);
                 j.get_to(array);

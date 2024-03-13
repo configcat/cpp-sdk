@@ -14,8 +14,7 @@ namespace nlohmann {
         static void to_json(json& j, const optional<T>& opt) {
             if (opt) {
                 j = *opt;
-            }
-            else {
+            } else {
                 j = nullptr;
             }
         }
@@ -23,8 +22,7 @@ namespace nlohmann {
         static void from_json(const json& j, optional<T>& opt) {
             if (j.is_null()) {
                 opt = nullopt;
-            }
-            else {
+            } else {
                 opt = optional{ j.get<T>() };
             }
         }
@@ -33,30 +31,24 @@ namespace nlohmann {
 
 namespace configcat {
 
-    Value::operator SettingValue() const
-    {
+    Value::operator SettingValue() const {
         return visit([](auto&& alt) -> SettingValue {
             return alt;
         }, *this);
     }
 
-    string Value::toString() const
-    {
+    string Value::toString() const {
         return visit([](auto&& alt) -> string {
             using T = decay_t<decltype(alt)>;
             if constexpr (is_same_v<T, bool>) {
                 return alt ? "true" : "false";
-            }
-            else if constexpr (is_same_v<T, string>) {
+            } else if constexpr (is_same_v<T, string>) {
                 return alt;
-            }
-            else if constexpr (is_same_v<T, int32_t>) {
+            } else if constexpr (is_same_v<T, int32_t>) {
                 return string_format("%d", alt);
-            }
-            else if constexpr (is_same_v<T, double>) {
+            } else if constexpr (is_same_v<T, double>) {
                 return number_to_string(alt);
-            }
-            else {
+            } else {
                 static_assert(always_false_v<T>, "Non-exhaustive visitor.");
             }
         }, *this);
@@ -76,14 +68,11 @@ namespace configcat {
     void to_json(json& j, const SettingValue& value) {
         if (holds_alternative<bool>(value)) {
             j[SettingValue::kBoolean] = get<bool>(value);
-        }
-        else if (holds_alternative<string>(value)) {
+        } else if (holds_alternative<string>(value)) {
             j[SettingValue::kString] = get<string>(value);
-        }
-        else if (holds_alternative<int32_t>(value)) {
+        } else if (holds_alternative<int32_t>(value)) {
             j[SettingValue::kInt] = get<int32_t>(value);
-        }
-        else if (holds_alternative<double>(value)) {
+        } else if (holds_alternative<double>(value)) {
             j[SettingValue::kDouble] = get<double>(value);
         }
     }
@@ -116,8 +105,7 @@ namespace configcat {
             using T = decay_t<decltype(alt)>;
             if constexpr (is_same_v<T, nullopt_t>) {
                 return nullopt;
-            }
-            else {
+            } else {
                 return alt;
             }
         }, *this);
@@ -130,17 +118,13 @@ namespace configcat {
 
             if constexpr (is_same_v<T, bool>) {
                 if (type == SettingType::Boolean) return alt;
-            }
-            else if constexpr (is_same_v<T, string>) {
+            } else if constexpr (is_same_v<T, string>) {
                 if (type == SettingType::String) return alt;
-            }
-            else if constexpr (is_same_v<T, int32_t>) {
+            } else if constexpr (is_same_v<T, int32_t>) {
                 if (type == SettingType::Int) return alt;
-            }
-            else if constexpr (is_same_v<T, double>) {
+            } else if constexpr (is_same_v<T, double>) {
                 if (type == SettingType::Double) return alt;
-            }
-            else if constexpr (is_same_v<T, nullopt_t>) {
+            } else if constexpr (is_same_v<T, nullopt_t>) {
                 if (throwIfInvalid) {
                     auto& unsupportedValue = *this->unsupportedValue;
                     throw runtime_error(unsupportedValue.type == "null"
@@ -148,8 +132,7 @@ namespace configcat {
                         : string_format("Setting value '%s' is of an unsupported type (%s).", unsupportedValue.value.c_str(), unsupportedValue.type.c_str()));
                 }
                 return nullopt;
-            }
-            else {
+            } else {
                 static_assert(always_false_v<T>, "Non-exhaustive visitor.");
             }
 
@@ -198,11 +181,9 @@ namespace configcat {
         j[UserCondition::kComparator] = condition.comparator;
         if (holds_alternative<string>(condition.comparisonValue)) {
             j[UserCondition::kStringComparisonValue] = get<string>(condition.comparisonValue);
-        }
-        else if (holds_alternative<double>(condition.comparisonValue)) {
+        } else if (holds_alternative<double>(condition.comparisonValue)) {
             j[UserCondition::kNumberComparisonValue] = get<double>(condition.comparisonValue);
-        }
-        else if (holds_alternative<vector<string>>(condition.comparisonValue)) {
+        } else if (holds_alternative<vector<string>>(condition.comparisonValue)) {
             j[UserCondition::kStringListComparisonValue] = get<vector<string>>(condition.comparisonValue);
         }
     }
@@ -261,11 +242,9 @@ namespace configcat {
     void to_json(json& j, const ConditionContainer& container) {
         if (holds_alternative<UserCondition>(container.condition)) {
             j[ConditionContainer::kUserCondition] = get<UserCondition>(container.condition);
-        }
-        else if (holds_alternative<PrerequisiteFlagCondition>(container.condition)) {
+        } else if (holds_alternative<PrerequisiteFlagCondition>(container.condition)) {
             j[ConditionContainer::kPrerequisiteFlagCondition] = get<PrerequisiteFlagCondition>(container.condition);
-        }
-        else if (holds_alternative<SegmentCondition>(container.condition)) {
+        } else if (holds_alternative<SegmentCondition>(container.condition)) {
             j[ConditionContainer::kSegmentCondition] = get<SegmentCondition>(container.condition);
         }
     }
@@ -293,8 +272,7 @@ namespace configcat {
         if (!targetingRule.conditions.empty()) j[TargetingRule::kConditions] = targetingRule.conditions;
         if (holds_alternative<SettingValueContainer>(targetingRule.then)) {
             j[TargetingRule::kSimpleValue] = get<SettingValueContainer>(targetingRule.then);
-        }
-        else {
+        } else {
             j[TargetingRule::kPercentageOptions] = get<vector<PercentageOption>>(targetingRule.then);
         }
     }
@@ -368,8 +346,7 @@ namespace configcat {
         j[Preferences::kRedirectMode] = preferences.redirectMode;
         if (preferences.salt) {
             j[Preferences::kSalt] = *preferences.salt;
-        }
-        else {
+        } else {
             j[Preferences::kSalt] = nullptr;
         }
     }
@@ -406,7 +383,7 @@ namespace configcat {
     }
 
     shared_ptr<Config> Config::fromJson(const string& jsonString, bool tolerant) {
-        json configObj = json::parse(jsonString, nullptr, true, tolerant);
+        json configObj = json::parse(jsonString, nullptr, true, tolerant); // tolerant = ignore comment
         auto config = make_shared<Config>();
         configObj.get_to(*config);
         config->fixupSaltAndSegments();
@@ -415,7 +392,7 @@ namespace configcat {
 
     shared_ptr<Config> Config::fromFile(const string& filePath, bool tolerant) {
         ifstream file(filePath);
-        json data = json::parse(file, nullptr, true, tolerant);
+        json data = json::parse(file, nullptr, true, tolerant); // tolerant = ignore comment
         auto config = make_shared<Config>();
         if (auto it = data.find("flags"); it != data.end()) {
             // Simple (key-value) json format
@@ -424,23 +401,18 @@ namespace configcat {
                 SettingValue settingValue;
                 if (value.is_boolean()) {
                     settingValue = value.get<bool>();
-                }
-                else if (value.is_string()) {
+                } else if (value.is_string()) {
                     settingValue = value.get<string>();
-                }
-                else if (value.is_number_integer()) {
+                } else if (value.is_number_integer()) {
                     settingValue = value.get<int32_t>();
-                }
-                else if (value.is_number()) {
+                } else if (value.is_number()) {
                     settingValue = value.get<double>();
-                }
-                else {
+                } else {
                     SettingValuePrivate::setUnsupportedValue(settingValue, value);
                 }
                 config->settings->insert({ key, Setting::fromValue(settingValue) });
             }
-        }
-        else {
+        } else {
             // Complex (full-featured) json format
             data.get_to(*config);
             config->fixupSaltAndSegments();

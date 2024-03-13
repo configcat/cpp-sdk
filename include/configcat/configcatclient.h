@@ -69,7 +69,7 @@ public:
 
     /**
      * Gets the value and evaluation details of a feature flag or setting identified by the given [key].
-     * In case of any failure, the [value] field of the returned returned EvaluationDetails struct will be set to std::nullopt. The [user] param identifies the caller.
+     * In case of any failure, the [value] field of the returned EvaluationDetails struct will be set to std::nullopt. The [user] param identifies the caller.
      */
     EvaluationDetails<std::optional<Value>> getValueDetails(const std::string& key, const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
 

@@ -79,8 +79,7 @@ protected:
     std::optional<Value> getValue() const override {
         if constexpr (std::is_same_v<ValueType, std::optional<Value>>) {
             return this->value;
-        }
-        else {
+        } else {
             return Value(this->value);
         }
     }
