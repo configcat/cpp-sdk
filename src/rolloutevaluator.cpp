@@ -88,7 +88,7 @@ EvaluateResult RolloutEvaluator::evaluate(const std::optional<Value>& defaultVal
                     "The type of a setting must match the type of the specified default value. "
                     "Setting's type was %s but the default value's type was %s. "
                     "Please use a default value which corresponds to the setting type %s. "
-                    "Learn more: https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping",
+                    "Learn more: https://configcat.com/docs/sdk-reference/cpp/#setting-type-mapping",
                     settingTypeFormatted, defaultValueTypeFormatted, settingTypeFormatted));
             }
         }
@@ -251,7 +251,7 @@ std::optional<EvaluateResult> RolloutEvaluator::evaluatePercentageOptions(const 
         return EvaluateResult{ percentageOption, matchedTargetingRule, &percentageOption };
     }
 
-    throw runtime_error("Sum of percentage option percentages are less than 100.");
+    throw runtime_error("Sum of percentage option percentages is less than 100.");
 }
 
 template <typename ContainerType, typename ConditionType>
