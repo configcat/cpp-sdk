@@ -59,93 +59,93 @@ enum class SettingType : int {
 
 /** User Object attribute comparison operator used during the evaluation process. */
 enum class UserComparator {
-    /** IS ONE OF (cleartext) - It matches when the comparison attribute is equal to any of the comparison values. */
+    /** IS ONE OF (cleartext) - Checks whether the comparison attribute is equal to any of the comparison values. */
     TextIsOneOf = 0,
-    /** IS NOT ONE OF (cleartext) - It matches when the comparison attribute is not equal to any of the comparison values. */
+    /** IS NOT ONE OF (cleartext) - Checks whether the comparison attribute is not equal to any of the comparison values. */
     TextIsNotOneOf = 1,
-    /** CONTAINS ANY OF (cleartext) - It matches when the comparison attribute contains any comparison values as a substring. */
+    /** CONTAINS ANY OF (cleartext) - Checks whether the comparison attribute contains any comparison values as a substring. */
     TextContainsAnyOf = 2,
-    /** NOT CONTAINS ANY OF (cleartext) - It matches when the comparison attribute does not contain any comparison values as a substring. */
+    /** NOT CONTAINS ANY OF (cleartext) - Checks whether the comparison attribute does not contain any comparison values as a substring. */
     TextNotContainsAnyOf = 3,
-    /** IS ONE OF (semver) - It matches when the comparison attribute interpreted as a semantic version is equal to any of the comparison values. */
+    /** IS ONE OF (semver) - Checks whether the comparison attribute interpreted as a semantic version is equal to any of the comparison values. */
     SemVerIsOneOf = 4,
-    /** IS NOT ONE OF (semver) - It matches when the comparison attribute interpreted as a semantic version is not equal to any of the comparison values. */
+    /** IS NOT ONE OF (semver) - Checks whether the comparison attribute interpreted as a semantic version is not equal to any of the comparison values. */
     SemVerIsNotOneOf = 5,
-    /** &lt; (semver) - It matches when the comparison attribute interpreted as a semantic version is less than the comparison value. */
+    /** &lt; (semver) - Checks whether the comparison attribute interpreted as a semantic version is less than the comparison value. */
     SemVerLess = 6,
-    /** &lt;= (semver) - It matches when the comparison attribute interpreted as a semantic version is less than or equal to the comparison value. */
+    /** &lt;= (semver) - Checks whether the comparison attribute interpreted as a semantic version is less than or equal to the comparison value. */
     SemVerLessOrEquals = 7,
-    /** &gt; (semver) - It matches when the comparison attribute interpreted as a semantic version is greater than the comparison value. */
+    /** &gt; (semver) - Checks whether the comparison attribute interpreted as a semantic version is greater than the comparison value. */
     SemVerGreater = 8,
-    /** &gt;= (semver) - It matches when the comparison attribute interpreted as a semantic version is greater than or equal to the comparison value. */
+    /** &gt;= (semver) - Checks whether the comparison attribute interpreted as a semantic version is greater than or equal to the comparison value. */
     SemVerGreaterOrEquals = 9,
-    /** = (number) - It matches when the comparison attribute interpreted as a decimal number is equal to the comparison value. */
+    /** = (number) - Checks whether the comparison attribute interpreted as a decimal number is equal to the comparison value. */
     NumberEquals = 10,
-    /** != (number) - It matches when the comparison attribute interpreted as a decimal number is not equal to the comparison value. */
+    /** != (number) - Checks whether the comparison attribute interpreted as a decimal number is not equal to the comparison value. */
     NumberNotEquals = 11,
-    /** &lt; (number) - It matches when the comparison attribute interpreted as a decimal number is less than the comparison value. */
+    /** &lt; (number) - Checks whether the comparison attribute interpreted as a decimal number is less than the comparison value. */
     NumberLess = 12,
-    /** &lt;= (number) - It matches when the comparison attribute interpreted as a decimal number is less than or equal to the comparison value. */
+    /** &lt;= (number) - Checks whether the comparison attribute interpreted as a decimal number is less than or equal to the comparison value. */
     NumberLessOrEquals = 13,
-    /** &gt; (number) - It matches when the comparison attribute interpreted as a decimal number is greater than the comparison value. */
+    /** &gt; (number) - Checks whether the comparison attribute interpreted as a decimal number is greater than the comparison value. */
     NumberGreater = 14,
-    /** &gt;= (number) - It matches when the comparison attribute interpreted as a decimal number is greater than or equal to the comparison value. */
+    /** &gt;= (number) - Checks whether the comparison attribute interpreted as a decimal number is greater than or equal to the comparison value. */
     NumberGreaterOrEquals = 15,
-    /** IS ONE OF (hashed) - It matches when the comparison attribute is equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** IS ONE OF (hashed) - Checks whether the comparison attribute is equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextIsOneOf = 16,
-    /** IS NOT ONE OF (hashed) - It matches when the comparison attribute is not equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** IS NOT ONE OF (hashed) - Checks whether the comparison attribute is not equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextIsNotOneOf = 17,
-    /** BEFORE (UTC datetime) - It matches when the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> is less than the comparison value. */
+    /** BEFORE (UTC datetime) - Checks whether the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> is less than the comparison value. */
     DateTimeBefore = 18,
-    /** AFTER (UTC datetime) - It matches when the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> is greater than the comparison value. */
+    /** AFTER (UTC datetime) - Checks whether the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> is greater than the comparison value. */
     DateTimeAfter = 19,
-    /** EQUALS (hashed) - It matches when the comparison attribute is equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** EQUALS (hashed) - Checks whether the comparison attribute is equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextEquals = 20,
-    /** NOT EQUALS (hashed) - It matches when the comparison attribute is not equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** NOT EQUALS (hashed) - Checks whether the comparison attribute is not equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextNotEquals = 21,
-    /** STARTS WITH ANY OF (hashed) - It matches when the comparison attribute starts with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** STARTS WITH ANY OF (hashed) - Checks whether the comparison attribute starts with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextStartsWithAnyOf = 22,
-    /** NOT STARTS WITH ANY OF (hashed) - It matches when the comparison attribute does not start with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** NOT STARTS WITH ANY OF (hashed) - Checks whether the comparison attribute does not start with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextNotStartsWithAnyOf = 23,
-    /** ENDS WITH ANY OF (hashed) - It matches when the comparison attribute ends with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** ENDS WITH ANY OF (hashed) - Checks whether the comparison attribute ends with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextEndsWithAnyOf = 24,
-    /** NOT ENDS WITH ANY OF (hashed) - It matches when the comparison attribute does not end with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** NOT ENDS WITH ANY OF (hashed) - Checks whether the comparison attribute does not end with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveTextNotEndsWithAnyOf = 25,
-    /** ARRAY CONTAINS ANY OF (hashed) - It matches when the comparison attribute interpreted as a comma-separated list contains any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** ARRAY CONTAINS ANY OF (hashed) - Checks whether the comparison attribute interpreted as a comma-separated list contains any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveArrayContainsAnyOf = 26,
-    /** ARRAY NOT CONTAINS ANY OF (hashed) - It matches when the comparison attribute interpreted as a comma-separated list does not contain any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
+    /** ARRAY NOT CONTAINS ANY OF (hashed) - Checks whether the comparison attribute interpreted as a comma-separated list does not contain any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values). */
     SensitiveArrayNotContainsAnyOf = 27,
-    /** EQUALS (cleartext) - It matches when the comparison attribute is equal to the comparison value. */
+    /** EQUALS (cleartext) - Checks whether the comparison attribute is equal to the comparison value. */
     TextEquals = 28,
-    /** NOT EQUALS (cleartext) - It matches when the comparison attribute is not equal to the comparison value. */
+    /** NOT EQUALS (cleartext) - Checks whether the comparison attribute is not equal to the comparison value. */
     TextNotEquals = 29,
-    /** STARTS WITH ANY OF (cleartext) - It matches when the comparison attribute starts with any of the comparison values. */
+    /** STARTS WITH ANY OF (cleartext) - Checks whether the comparison attribute starts with any of the comparison values. */
     TextStartsWithAnyOf = 30,
-    /** NOT STARTS WITH ANY OF (cleartext) - It matches when the comparison attribute does not start with any of the comparison values. */
+    /** NOT STARTS WITH ANY OF (cleartext) - Checks whether the comparison attribute does not start with any of the comparison values. */
     TextNotStartsWithAnyOf = 31,
-    /** ENDS WITH ANY OF (cleartext) - It matches when the comparison attribute ends with any of the comparison values. */
+    /** ENDS WITH ANY OF (cleartext) - Checks whether the comparison attribute ends with any of the comparison values. */
     TextEndsWithAnyOf = 32,
-    /** NOT ENDS WITH ANY OF (cleartext) - It matches when the comparison attribute does not end with any of the comparison values. */
+    /** NOT ENDS WITH ANY OF (cleartext) - Checks whether the comparison attribute does not end with any of the comparison values. */
     TextNotEndsWithAnyOf = 33,
-    /** ARRAY CONTAINS ANY OF (cleartext) - It matches when the comparison attribute interpreted as a comma-separated list contains any of the comparison values. */
+    /** ARRAY CONTAINS ANY OF (cleartext) - Checks whether the comparison attribute interpreted as a comma-separated list contains any of the comparison values. */
     ArrayContainsAnyOf = 34,
-    /** ARRAY NOT CONTAINS ANY OF (cleartext) - It matches when the comparison attribute interpreted as a comma-separated list does not contain any of the comparison values. */
+    /** ARRAY NOT CONTAINS ANY OF (cleartext) - Checks whether the comparison attribute interpreted as a comma-separated list does not contain any of the comparison values. */
     ArrayNotContainsAnyOf = 35,
 };
 
 /** Prerequisite flag comparison operator used during the evaluation process. */
 enum class PrerequisiteFlagComparator {
-    /** EQUALS - It matches when the evaluated value of the specified prerequisite flag is equal to the comparison value. */
+    /** EQUALS - Checks whether the evaluated value of the specified prerequisite flag is equal to the comparison value. */
     Equals = 0,
-    /** NOT EQUALS - It matches when the evaluated value of the specified prerequisite flag is not equal to the comparison value. */
+    /** NOT EQUALS - Checks whether the evaluated value of the specified prerequisite flag is not equal to the comparison value. */
     NotEquals = 1
 };
 
 /** Segment comparison operator used during the evaluation process. */
 enum class SegmentComparator {
-    /** IS IN SEGMENT - It matches when the conditions of the specified segment are evaluated to true. */
+    /** IS IN SEGMENT - Checks whether the conditions of the specified segment are evaluated to true. */
     IsIn = 0,
-    /** IS NOT IN SEGMENT - It matches when the conditions of the specified segment are evaluated to false. */
+    /** IS NOT IN SEGMENT - Checks whether the conditions of the specified segment are evaluated to false. */
     IsNotIn = 1,
 };
 
