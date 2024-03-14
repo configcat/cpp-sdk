@@ -86,7 +86,7 @@ public:
     std::vector<EvaluationDetails<Value>> getAllValueDetails(const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
 
     // Initiates a force refresh synchronously on the cached configuration.
-    void forceRefresh();
+    RefreshResult forceRefresh();
 
     // Sets the default user.
     inline void setDefaultUser(const std::shared_ptr<ConfigCatUser>& user) {

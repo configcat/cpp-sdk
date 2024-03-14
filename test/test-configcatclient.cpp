@@ -185,12 +185,18 @@ TEST_F(ConfigCatClientTest, GetLatestOnFail) {
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
     configcat::Response secondResponse = {500, ""};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
-    client->forceRefresh();
+    auto refreshResult = client->forceRefresh();
+    EXPECT_TRUE(refreshResult.success());
+    EXPECT_FALSE(refreshResult.errorMessage.has_value());
+    EXPECT_EQ(nullptr, refreshResult.errorException);
 
     auto value = client->getValue("fakeKey", 0);
     EXPECT_EQ(55, value);
 
-    client->forceRefresh();
+    refreshResult = client->forceRefresh();
+    EXPECT_FALSE(refreshResult.success());
+    EXPECT_TRUE(refreshResult.errorMessage.has_value());
+    EXPECT_EQ(nullptr, refreshResult.errorException);
 
     value = client->getValue("fakeKey", 0);
     EXPECT_EQ(55, value);

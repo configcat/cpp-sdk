@@ -483,9 +483,16 @@ EvaluationDetails<ValueType> ConfigCatClient::evaluate(const std::string& key,
     return details;
 }
 
-void ConfigCatClient::forceRefresh() {
-    if (configService) {
-        configService->refresh();
+RefreshResult ConfigCatClient::forceRefresh() {
+    try {
+        return configService
+            ? configService->refresh()
+            : RefreshResult{"Client is configured to use the LocalOnly override behavior, which prevents making HTTP requests."};
+    } catch (...) {
+        auto ex = std::current_exception();
+        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1003, ex);
+        logEntry << "Error occurred in the `forceRefresh` method.";
+        return RefreshResult{logEntry.getMessage(), ex};
     }
 }
 
