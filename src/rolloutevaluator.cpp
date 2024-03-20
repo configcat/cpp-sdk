@@ -184,7 +184,7 @@ std::optional<EvaluateResult> RolloutEvaluator::evaluatePercentageOptions(const 
     const auto& logBuilder = context.logBuilder;
 
     if (!context.user) {
-        if (logBuilder) logBuilder->newLine("Skipping %% options because the User Object is missing.");
+        if (logBuilder) logBuilder->newLine("Skipping % options because the User Object is missing.");
 
         if (!context.isMissingUserObjectLogged) {
             logUserObjectIsMissing(context.key);
@@ -244,7 +244,7 @@ std::optional<EvaluateResult> RolloutEvaluator::evaluatePercentageOptions(const 
 
         if (logBuilder) {
             string str;
-            logBuilder->newLine().appendFormat("- Hash value %d selects %% option %d (%d%), '%s'.",
+            logBuilder->newLine().appendFormat("- Hash value %d selects %% option %d (%d%%), '%s'.",
                 hashValue, optionNumber, percentage, formatSettingValue(percentageOption.value, str).c_str());
         }
 
@@ -296,7 +296,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateConditions(const std:
         const auto success = successPtr && *successPtr;
 
         if (logBuilder) {
-            if (targetingRule || conditions.size() > 1) {
+            if (!targetingRule || conditions.size() > 1) {
                 logBuilder->appendConditionConsequence(success);
             }
 
@@ -919,7 +919,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateSegmentCondition(cons
         }
         logBuilder->append('.');
 
-        logBuilder->newLine("Condition(").appendSegmentCondition(condition, segments).append(')');
+        logBuilder->newLine("Condition (").appendSegmentCondition(condition, segments).append(')');
         (!holds_alternative<string>(result)
             ? logBuilder->append(" evaluates to ").appendConditionResult(get<bool>(result))
             : logBuilder->append(" failed to evaluate"))

@@ -19,10 +19,10 @@ enum LogLevel {
 
 inline const char* logLevelAsString(LogLevel level) {
     static const char* const names[] = {
-        "Error",
-        "Warning",
-        "Info",
-        "Debug"
+        "ERROR",
+        "WARNING",
+        "INFO",
+        "DEBUG"
     };
     return (LOG_LEVEL_ERROR <= level && level <= LOG_LEVEL_DEBUG) ? names[level] : "<unknown>";
 }

@@ -40,7 +40,10 @@ std::optional<std::chrono::system_clock::time_point> datetime_from_unixtimesecon
         return nullopt;
     }
 
-    return chrono::system_clock::time_point{ chrono::milliseconds{ static_cast<long long>(timestamp) } };
+    auto durationSinceEpoch = std::chrono::seconds(static_cast<long long>(timestamp)) +
+                              std::chrono::milliseconds(static_cast<long long>((timestamp - static_cast<long long>(timestamp)) * 1000));
+
+    return chrono::system_clock::time_point{ durationSinceEpoch };
 }
 
 std::string datetime_to_isostring(const std::chrono::system_clock::time_point& tp) {

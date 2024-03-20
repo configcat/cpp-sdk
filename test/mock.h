@@ -10,6 +10,7 @@
 #include "configcat/httpsessionadapter.h"
 #include "configcat/config.h"
 #include "configcat/evaluationdetails.h"
+#include "configcatlogger.h"
 
 class InMemoryConfigCache : public configcat::ConfigCache {
 public:
@@ -129,6 +130,20 @@ public:
 
 private:
     std::atomic<bool> closed = false;
+};
+
+class TestLogger : public configcat::ILogger {
+   public:
+    TestLogger(): ILogger(configcat::LOG_LEVEL_INFO) {}
+    void log(configcat::LogLevel level, const std::string& message, const std::exception_ptr& exception = nullptr) override {
+        text += logLevelAsString(level) + std::string(" ") + message + "\n";
+    }
+
+    void clear() {
+        text.clear();
+    }
+
+    std::string text;
 };
 
 static constexpr char kTestJsonString[] = R"({

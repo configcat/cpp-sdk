@@ -4,7 +4,7 @@
 #include "utils.h"
 
 using namespace std;
-using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
 
 namespace configcat {
 
@@ -25,7 +25,7 @@ const ConfigCatUser::AttributeValue* ConfigCatUser::getAttribute(const string& k
 }
 
 string ConfigCatUser::toJson() const {
-    json j = {
+    ordered_json j = {
         { kIdentifierAttribute, get<string>(this->identifier) }
     };
 

@@ -39,7 +39,7 @@ EvaluateLogBuilder& EvaluateLogBuilder::appendUserConditionString(const std::str
         return appendUserConditionCore(comparisonAttribute, comparator, nullopt);
     }
 
-    return appendUserConditionCore(comparisonAttribute, comparator, isSensitive ? *comparisonValuePtr : "<hashed value>");
+    return appendUserConditionCore(comparisonAttribute, comparator, isSensitive ? "<hashed value>" : *comparisonValuePtr);
 }
 
 EvaluateLogBuilder& EvaluateLogBuilder::appendUserConditionStringList(const std::string& comparisonAttribute, UserComparator comparator, const UserConditionComparisonValue& comparisonValue, bool isSensitive) {
@@ -62,7 +62,7 @@ EvaluateLogBuilder& EvaluateLogBuilder::appendUserConditionStringList(const std:
             getUserComparatorText(comparator));
 
         append_stringlist(this->ss, *comparisonValuesPtr, kStringListMaxCount, [](size_t count) {
-            return string_format(", ... <%d more %s>", count, count ? kValueText : kValuesText);
+            return string_format(", ... <%d more %s>", count, count == 1 ? kValueText : kValuesText);
         });
 
         return append("]");
@@ -77,10 +77,10 @@ EvaluateLogBuilder& EvaluateLogBuilder::appendUserConditionNumber(const std::str
 
     if (isDateTime) {
         if (const auto tp = datetime_from_unixtimeseconds(*comparisonValuePtr); tp) {
-            return appendFormat("User.%s %s '%g' (%s UTC)",
+            return appendFormat("User.%s %s '%s' (%s UTC)",
                 comparisonAttribute.c_str(),
                 getUserComparatorText(comparator),
-                *comparisonValuePtr,
+                number_to_string(*comparisonValuePtr).c_str(),
                 datetime_to_isostring(*tp).c_str());
         }
     }
@@ -160,7 +160,7 @@ EvaluateLogBuilder& EvaluateLogBuilder::appendPrerequisiteFlagCondition(const Pr
     const char* $prerequisiteFlagKeyCStr = it != settings->end() ? prerequisiteFlagKey.c_str() : kInvalidReferencePlaceholder;
 
     string str;
-    return appendFormat("Flag '%s' %s '{$comparisonValueFormatted}'",
+    return appendFormat("Flag '%s' %s '%s'",
         $prerequisiteFlagKeyCStr, getPrerequisiteFlagComparatorText(condition.comparator), formatSettingValue(condition.comparisonValue, str).c_str());
 
 }
