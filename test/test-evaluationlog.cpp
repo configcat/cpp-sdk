@@ -3,7 +3,8 @@
 #include "configcat/fileoverridedatasource.h"
 #include "configcat/configcatclient.h"
 #include <nlohmann/json.hpp>
-#include <configcat/configcatuser.h>
+#include "configcat/configcatuser.h"
+#include "platform.h"
 #include <fstream>
 #include "test.h"
 #include "mock.h"
@@ -117,6 +118,14 @@ TEST_P(EvaluationLogTest, TestEvaluationLog) {
 
         auto expectedLogFile = test.value("expectedLog", "");
         auto expectedLogFilePath = testSetDirectory + "/" + expectedLogFile;
+
+        // On Linux, the log file name is expected to be suffixed with "-linux" if it exists.
+        if (contains(getPlatformName(), "linux")) {
+            auto expectedLogFilePathLinux = expectedLogFilePath + ".linux";
+            if (filesystem::exists(expectedLogFilePathLinux)) {
+                expectedLogFilePath = expectedLogFilePathLinux;
+            }
+        }
 
         ASSERT_TRUE(filesystem::exists(expectedLogFilePath));
         std::ifstream logFile(expectedLogFilePath);
