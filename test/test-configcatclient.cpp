@@ -57,6 +57,44 @@ TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 }
 
+class SdkKeyFormatValidationTestSuite : public ::testing::TestWithParam<tuple<string, bool, bool>> {};
+INSTANTIATE_TEST_SUITE_P(ConfigCatClientTest, SdkKeyFormatValidationTestSuite, ::testing::Values(
+    make_tuple("sdk-key-90123456789012", false, false),
+    make_tuple("sdk-key-9012345678901/1234567890123456789012", false, false),
+    make_tuple("sdk-key-90123456789012/123456789012345678901", false, false),
+    make_tuple("sdk-key-90123456789012/12345678901234567890123", false, false),
+    make_tuple("sdk-key-901234567890123/1234567890123456789012", false, false),
+    make_tuple("sdk-key-90123456789012/1234567890123456789012", false, true),
+    make_tuple("configcat-sdk-1/sdk-key-90123456789012", false, false),
+    make_tuple("configcat-sdk-1/sdk-key-9012345678901/1234567890123456789012", false, false),
+    make_tuple("configcat-sdk-1/sdk-key-90123456789012/123456789012345678901", false, false),
+    make_tuple("configcat-sdk-1/sdk-key-90123456789012/12345678901234567890123", false, false),
+    make_tuple("configcat-sdk-1/sdk-key-901234567890123/1234567890123456789012", false, false),
+    make_tuple("configcat-sdk-1/sdk-key-90123456789012/1234567890123456789012", false, true),
+    make_tuple("configcat-sdk-2/sdk-key-90123456789012/1234567890123456789012", false, false),
+    make_tuple("configcat-proxy/", false, false),
+    make_tuple("configcat-proxy/", true, false),
+    make_tuple("configcat-proxy/sdk-key-90123456789012", false, false),
+    make_tuple("configcat-proxy/sdk-key-90123456789012", true, true)
+));
+TEST_P(SdkKeyFormatValidationTestSuite, SdkKeyFormatValidation) {
+    auto [sdkKey, customBaseUrl, isValid] = GetParam();
+    try {
+        ConfigCatOptions options;
+        options.pollingMode = PollingMode::manualPoll();
+        options.baseUrl = customBaseUrl ? "https://my-configcat-proxy" : "";
+        auto client = ConfigCatClient::get(sdkKey, &options);
+
+        if (!isValid) {
+            FAIL() << "Expected invalid_argument exception";
+        }
+    } catch (const invalid_argument& e) {
+        if (isValid) {
+            FAIL() << "Did not expect invalid_argument exception";
+        }
+    }
+}
+
 TEST_F(ConfigCatClientTest, GetIntValue) {
     SetUp();
 
