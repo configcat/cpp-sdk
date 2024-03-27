@@ -157,6 +157,42 @@ TEST_F(LazyLoadingTest, FetchConfigWhenCacheIsExpired) {
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 }
 
+TEST_F(LazyLoadingTest, CacheTTLRespectsExternalCache) {
+    auto cacheTimeToLiveSeconds = 1;
+    auto jsonStringLocal = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test-local"})");
+    auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(jsonStringLocal),
+        "etag",
+        jsonStringLocal,
+        getUtcNowSecondsSinceEpoch()).serialize()
+    );
+
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test-remote"})")};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::lazyLoad(cacheTimeToLiveSeconds);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
+
+    auto settings = *service.getSettings().settings;
+    EXPECT_EQ("test-local", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    sleep_for(seconds(1));
+
+    jsonStringLocal = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test-local2"})");
+    mockCache->value = ConfigEntry(
+        Config::fromJson(jsonStringLocal),
+        "etag2",
+        jsonStringLocal,
+        getUtcNowSecondsSinceEpoch()).serialize();
+
+    settings = *service.getSettings().settings;
+    EXPECT_EQ("test-local2", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+}
+
 TEST_F(LazyLoadingTest, OnlineOffline) {
     configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(response);

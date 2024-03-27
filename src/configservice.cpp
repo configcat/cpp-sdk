@@ -68,12 +68,19 @@ SettingResult ConfigService::getSettings() {
         }
     }
 
-    auto [ entry, _0, _1 ] = fetchIfOlder(kDistantPast, true);
+    // If we are initialized, we prefer the cached results
+    auto [ entry, _0, _1 ] = fetchIfOlder(kDistantPast, initialized);
     auto config = entry->config;
     return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime };
 }
 
 RefreshResult ConfigService::refresh() {
+    if (offline) {
+        auto offlineWarning = "Client is in offline mode, it cannot initiate HTTP calls.";
+        LOG_WARN(3200) << offlineWarning;
+        return { offlineWarning, nullptr };
+    }
+
     auto [ _, errorMessage, errorException ] = fetchIfOlder(kDistantFuture);
     return { errorMessage, errorException };
 }
@@ -113,37 +120,26 @@ void ConfigService::setOffline() {
 string ConfigService::generateCacheKey(const string& sdkKey) {
     return SHA1()(sdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
 }
-tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> ConfigService::fetchIfOlder(double time, bool preferCache) {
+tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> ConfigService::fetchIfOlder(double threshold, bool preferCache) {
     {
         lock_guard<mutex> lock(fetchMutex);
 
         // Sync up with the cache and use it when it's not expired.
-        if (cachedEntry == ConfigEntry::empty || cachedEntry->fetchTime > time) {
-            auto entry = readCache();
-            if (entry != ConfigEntry::empty && entry->eTag != cachedEntry->eTag) {
-                cachedEntry = const_pointer_cast<ConfigEntry>(entry);
-                hooks->invokeOnConfigChanged(entry->config->getSettingsOrEmpty());
-            }
-
-            // Cache isn't expired
-            if (cachedEntry && cachedEntry->fetchTime > time) {
-                setInitialized();
-                return { cachedEntry, nullopt, nullptr };
-            }
+        auto fromCache = readCache();
+        if (fromCache != ConfigEntry::empty && fromCache->eTag != cachedEntry->eTag) {
+            cachedEntry = const_pointer_cast<ConfigEntry>(fromCache);
+            hooks->invokeOnConfigChanged(fromCache->config->getSettingsOrEmpty());
         }
 
-        // Use cache anyway (get calls on auto & manual poll must not initiate fetch).
-        // The initialized check ensures that we subscribe for the ongoing fetch during the
-        // max init wait time window in case of auto poll.
-        if (preferCache && initialized) {
+        // Cache isn't expired
+        if (cachedEntry && cachedEntry->fetchTime > threshold) {
+            setInitialized();
             return { cachedEntry, nullopt, nullptr };
         }
 
-        // If we are in offline mode we are not allowed to initiate fetch.
-        if (offline) {
-            auto offlineWarning = "Client is in offline mode, it cannot initiate HTTP calls.";
-            LOG_WARN(3200) << offlineWarning;
-            return { cachedEntry, offlineWarning, nullptr };
+        // If we are in offline mode or the caller prefers cached values, do not initiate fetch.
+        if (offline || preferCache) {
+            return { cachedEntry, nullopt, nullptr };
         }
 
         // If there's an ongoing fetch running, we will wait for the ongoing fetch future and use its response.

@@ -40,7 +40,7 @@ public:
 
 private:
     // Returns the ConfigEntry object and error message in case of any error.
-    std::tuple<std::shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> fetchIfOlder(double time, bool preferCache = false);
+    std::tuple<std::shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> fetchIfOlder(double threshold, bool preferCache = false);
     void setInitialized();
     std::shared_ptr<const ConfigEntry> readCache();
     void writeCache(const std::shared_ptr<const ConfigEntry>& configEntry);
