@@ -64,6 +64,28 @@ std::string datetime_to_isostring(const std::chrono::system_clock::time_point& t
     return result;
 }
 
+std::chrono::system_clock::time_point make_datetime(int year, int month, int day, int hour, int min, int sec, int millisec) {
+    std::tm tm = {};
+    tm.tm_year = year - 1900; // Year since 1900
+    tm.tm_mon = month - 1;    // 0-11
+    tm.tm_mday = day;         // 1-31
+    tm.tm_hour = hour;        // 0-23
+    tm.tm_min = min;          // 0-59
+    tm.tm_sec = sec;          // 0-59
+
+    std::time_t t = std::mktime(&tm);
+    auto tp = std::chrono::system_clock::from_time_t(t);
+    tp += std::chrono::milliseconds(millisec); // Add milliseconds
+
+    // Correct for the timezone difference since mktime assumes local time
+    std::time_t current_time;
+    std::time(&current_time);
+    auto local_time = std::localtime(&current_time);
+    auto utc_time = std::gmtime(&current_time);
+    auto diff = std::difftime(std::mktime(local_time), std::mktime(utc_time));
+    return tp + chrono::seconds(static_cast<int>(diff));
+}
+
 int getExponent(double abs) {
     auto exp = log10(abs);
     auto ceil = std::ceil(exp);

@@ -134,9 +134,12 @@ private:
 
 class TestLogger : public configcat::ILogger {
    public:
-    TestLogger(): ILogger(configcat::LOG_LEVEL_INFO) {}
+    TestLogger(configcat::LogLevel level = configcat::LOG_LEVEL_INFO): ILogger(level) {}
     void log(configcat::LogLevel level, const std::string& message, const std::exception_ptr& exception = nullptr) override {
-        text += logLevelAsString(level) + std::string(" ") + message + "\n";
+        text += logLevelAsString(level) + std::string(" ") + message;
+        if (exception)
+            text += std::string("Exception details: ") + unwrap_exception_message(exception);
+        text += "\n";
     }
 
     void clear() {

@@ -14,7 +14,21 @@ using date_time_t = std::chrono::system_clock::time_point;
 // An object containing attributes to properly identify a given user for rollout evaluation.
 class ConfigCatUser {
 public:
-    using AttributeValue = std::variant<std::string, double, date_time_t, std::vector<std::string>>;
+    struct AttributeValue : public std::variant<std::string, double, date_time_t, std::vector<std::string>> {
+       private:
+        using _Base = std::variant<std::string, double, date_time_t, std::vector<std::string>>;
+       public:
+        AttributeValue(const char* v) : _Base(std::string(v)) {}
+        // CLang number type conversion to variant<double> fix
+        AttributeValue(double value) : _Base(value) {}
+
+        // Disable the implicit conversion from pointer to bool: https://stackoverflow.com/a/59372958/8656352
+        template<typename T>
+        AttributeValue(T*) = delete;
+
+        using _Base::_Base;
+        using _Base::operator=;
+    };
 
     static constexpr char kIdentifierAttribute[] = "Identifier";
     static constexpr char kEmailAttribute[] = "Email";

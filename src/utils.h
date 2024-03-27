@@ -30,6 +30,7 @@ std::optional<double> datetime_to_unixtimeseconds(const std::chrono::system_cloc
 std::optional<std::chrono::system_clock::time_point> datetime_from_unixtimeseconds(double timestamp);
 
 std::string datetime_to_isostring(const std::chrono::system_clock::time_point& tp);
+std::chrono::system_clock::time_point make_datetime(int year, int month, int day, int hour, int min, int sec, int millisec);
 
 template<typename... Args>
 std::string string_format(const std::string& format, Args&&... args) {

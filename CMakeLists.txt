@@ -57,7 +57,7 @@ if(CONFIGCAT_BUILD_TESTS)
     )
     target_include_directories(google_tests PRIVATE ${CONFIGCAT_INCLUDE_PATHS})
     # $<TARGET_PROPERTY:configcat,LINK_LIBRARIES> explicitly propagates private dependencies
-    target_link_libraries(google_tests configcat gtest_main $<TARGET_PROPERTY:configcat,LINK_LIBRARIES>)
+    target_link_libraries(google_tests configcat gmock_main $<TARGET_PROPERTY:configcat,LINK_LIBRARIES>)
 
     gtest_discover_tests(google_tests)
 endif()

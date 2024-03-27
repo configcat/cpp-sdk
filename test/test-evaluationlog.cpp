@@ -135,4 +135,6 @@ TEST_P(EvaluationLogTest, TestEvaluationLog) {
 
         ASSERT_EQ(expectedLog, testLogger->text);
     }
+
+    ConfigCatClient::closeAll();
 }

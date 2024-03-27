@@ -50,7 +50,7 @@ EvaluateResult RolloutEvaluator::evaluate(const std::optional<Value>& defaultVal
     auto& logBuilder = context.logBuilder;
 
     // Building the evaluation log is expensive, so let's not do it if it wouldn't be logged anyway.
-    if (this->logger->isEnabled(LogLevel::LOG_LEVEL_INFO)) {
+    if (logger->isEnabled(LogLevel::LOG_LEVEL_INFO)) {
         logBuilder = make_shared<EvaluateLogBuilder>();
 
         logBuilder->appendFormat("Evaluating '%s'", context.key.c_str());
@@ -98,14 +98,14 @@ EvaluateResult RolloutEvaluator::evaluate(const std::optional<Value>& defaultVal
         // At this point it's ensured that the return value is compatible with the default value
         // (specifically, with the return type of the evaluation method overload that was called).
 
-        log(returnValue, this->logger, logBuilder);
+        log(returnValue, logger, logBuilder);
         return result;
     }
     catch (...) {
         auto ex = current_exception();
         if (logBuilder) logBuilder->resetIndent().increaseIndent();
 
-        log(defaultValue, this->logger, logBuilder);
+        log(defaultValue, logger, logBuilder);
         rethrow_exception(ex);
     }
 }
@@ -813,7 +813,7 @@ bool RolloutEvaluator::evaluatePrerequisiteFlagCondition(const PrerequisiteFlagC
             .newLine().appendFormat("Evaluating prerequisite flag '%s':", prerequisiteFlagKey.c_str());
     }
 
-    const auto prerequisiteFlagEvaluateResult = this->evaluateSetting(prerequisiteFlagContext);
+    const auto prerequisiteFlagEvaluateResult = evaluateSetting(prerequisiteFlagContext);
 
     visitedFlags->pop_back();
 
@@ -1062,7 +1062,7 @@ void RolloutEvaluator::logUserObjectAttributeIsInvalid(const std::string& condit
 void RolloutEvaluator::logUserObjectAttributeIsAutoConverted(const std::string& condition, const std::string& key, const std::string& attributeName, const std::string& attributeValue) const {
     LOG_WARN(3005)
         << "Evaluation of condition (" << condition << ") for setting '" << key << "' may not produce the expected result "
-        << "(the User." << attributeName << " attribute is not a string value, thus it was automatically converted to the string value '{" << attributeValue << "}'). "
+        << "(the User." << attributeName << " attribute is not a string value, thus it was automatically converted to the string value '" << attributeValue << "'). "
         << "Please make sure that using a non-string value was intended.";
 }
 

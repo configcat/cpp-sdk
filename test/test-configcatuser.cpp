@@ -2,6 +2,7 @@
 #include "configcat/configcatuser.h"
 #include "configcat/log.h"
 #include <nlohmann/json.hpp>
+#include "utils.h"
 
 using namespace configcat;
 using namespace std;
@@ -32,15 +33,22 @@ TEST(ConfigCatUserTest, ToJson) {
         "id",
         "email",
         "country", {
-            {"custom", "test"}
+            {"string", "test"},
+            {"datetime", make_datetime(2023, 9, 19, 11, 1, 35, 999)},
+            {"int", 42},
+            {"double", 3.14}
         }
     );
 
     json userJson = json::parse(user.toJson());
+    string d = userJson["datetime"];
 
     EXPECT_EQ("id", userJson["Identifier"]);
     EXPECT_EQ("email", userJson["Email"]);
     EXPECT_EQ("country", userJson["Country"]);
-    EXPECT_EQ("test",  userJson["custom"]);
+    EXPECT_EQ("test", userJson["string"]);
+    EXPECT_EQ(42, userJson["int"]);
+    EXPECT_EQ(3.14, userJson["double"]);
+    EXPECT_EQ("2023-09-19T11:01:35.999Z"s, userJson["datetime"]);
 }
 
