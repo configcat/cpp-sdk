@@ -143,7 +143,11 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
         case 202:
         case 203:
         case 204: {
-            const auto it = response.header.find(kEtagHeaderName);
+            std::map<std::string, std::string>::const_iterator it = response.header.find(kEtagHeaderName);
+            // If the etag header is not present in the response, try to find it case-insensitively
+            if (it == response.header.end()) {
+                it = findCaseInsensitive(response.header, kEtagHeaderName);
+            }
             string eTag = it != response.header.end() ? it->second : "";
             try {
                 auto config = Config::fromJson(response.text);

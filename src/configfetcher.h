@@ -57,7 +57,7 @@ public:
     static constexpr char kUserAgentHeaderName[] = "X-ConfigCat-UserAgent";
     static constexpr char kPlatformHeaderName[] = "X-ConfigCat-Platform";
     static constexpr char kIfNoneMatchHeaderName[] = "If-None-Match";
-    static constexpr char kEtagHeaderName[] = "ETag";
+    static constexpr char kEtagHeaderName[] = "etag";
 
     ConfigFetcher(const std::string& sdkKey, const std::shared_ptr<ConfigCatLogger>& logger, const std::string& mode, const ConfigCatOptions& options);
     ~ConfigFetcher();

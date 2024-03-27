@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <functional>
+#include <iterator>
 #include <limits>
 #include <chrono>
 #include <optional>
@@ -109,6 +110,21 @@ inline bool ends_with(const std::string& str, const std::string& cmp) {
 
 inline bool contains(const std::string& str, const std::string& sub) {
     return str.find(sub) != std::string::npos;
+}
+
+inline std::string to_lower(const std::string& str) {
+    std::string lowerStr;
+    lowerStr.reserve(str.size());
+    std::transform(str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
+}
+
+template<typename Type>
+inline typename Type::const_iterator findCaseInsensitive(const Type& map, const std::string& searchKey) {
+    auto lowerSearchKey = to_lower(searchKey);
+    return std::find_if(map.begin(), map.end(), [&lowerSearchKey](const auto& pair) {
+        return to_lower(pair.first) == lowerSearchKey;
+    });
 }
 
 std::string number_to_string(double number);

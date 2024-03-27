@@ -259,7 +259,7 @@ TEST_F(ConfigFetcherTest, Fetcher_FetchNotModifiedEtag) {
     SetUp();
 
     auto eTag = "test";
-    configcat::Response firstResponse = {200, kTestJson, {{"ETag", eTag}}};
+    configcat::Response firstResponse = {200, kTestJson, {{"etag", eTag}}};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
     configcat::Response secondResponse = {304, ""};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
