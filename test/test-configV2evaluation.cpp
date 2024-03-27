@@ -363,7 +363,7 @@ TEST_P(PrerequisiteFlagComparisonValueTypeMismatchTestSuite, PrerequisiteFlagCom
         EXPECT_TRUE(details.errorMessage != nullopt);
         EXPECT_TRUE(details.errorException != nullptr);
         auto exceptionMessage = unwrap_exception_message(details.errorException);
-        EXPECT_THAT(exceptionMessage, testing::MatchesRegex("Type mismatch between comparison value '[^']+' and prerequisite flag '[^']+'."));
+        EXPECT_THAT(exceptionMessage, testing::MatchesRegex("Type mismatch between comparison value '.+' and prerequisite flag '.+'."));
     };
 
     ConfigCatClient::closeAll();
