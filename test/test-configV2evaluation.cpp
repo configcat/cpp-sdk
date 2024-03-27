@@ -482,7 +482,7 @@ TEST_P(EvaluationDetailsMatchedEvaluationRuleAndPercentageOptionTestSuite, Evalu
     std::unordered_map<string, ConfigCatUser::AttributeValue> custom = {};
     if (percentageBase)
         custom.insert({"PercentageBase", *percentageBase});
-    auto user = (userId) ? make_shared<ConfigCatUser>(*userId, *email, nullopt, custom) : nullptr;
+    auto user = (userId) ? make_shared<ConfigCatUser>(*userId, email, nullopt, custom) : nullptr;
     auto details = client->getValueDetails(key, user);
 
     EXPECT_EQ(expectedReturnValue, details.value);
