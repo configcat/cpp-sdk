@@ -189,11 +189,7 @@ TEST_F(ConfigV2EvaluationTest, UserObjectAttributeValueConversionTextComparisons
     string key = "boolTextEqualsNumber";
     string customAttributeName = "Custom1";
     int customAttributeValue = 42;
-
-    std::unordered_map<string, ConfigCatUser::AttributeValue> custom = {
-        {customAttributeName, customAttributeValue}
-    };
-    auto user = make_shared<ConfigCatUser>("12345", nullopt, nullopt, custom);
+    auto user = ConfigCatUser::create("12345", nullopt, nullopt, { { customAttributeName, customAttributeValue } });
 
     auto result = client->getValue(key, false, user);
     EXPECT_TRUE(result);

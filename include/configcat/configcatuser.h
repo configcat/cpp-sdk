@@ -1,8 +1,9 @@
 #pragma once
 
 #include <chrono>
-#include <string>
+#include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -15,9 +16,9 @@ using date_time_t = std::chrono::system_clock::time_point;
 class ConfigCatUser {
 public:
     struct AttributeValue : public std::variant<std::string, double, date_time_t, std::vector<std::string>> {
-       private:
+    private:
         using _Base = std::variant<std::string, double, date_time_t, std::vector<std::string>>;
-       public:
+    public:
         AttributeValue(const char* v) : _Base(std::string(v)) {}
         // CLang number type conversion to variant<double> fix
         AttributeValue(double value) : _Base(value) {}
@@ -78,6 +79,13 @@ public:
         , email(email)
         , country(country)
         , custom(custom) {}
+
+    static inline std::shared_ptr<ConfigCatUser> create(const std::string& id,
+        const std::optional<std::string>& email = std::nullopt,
+        const std::optional<std::string>& country = std::nullopt,
+        const std::unordered_map<std::string, ConfigCatUser::AttributeValue>& custom = {}) {
+        return std::make_shared<ConfigCatUser>(id, email, country, custom);
+    }
 
     inline const std::string& getIdentifier() const { return std::get<std::string>(this->identifier); }
     inline const ConfigCatUser::AttributeValue& getIdentifierAttribute() const { return this->identifier; }
