@@ -114,7 +114,7 @@ EvaluateResult RolloutEvaluator::evaluateSetting(EvaluateContext& context) const
     if (!targetingRules.empty()) {
         auto evaluateResult = evaluateTargetingRules(targetingRules, context);
         if (evaluateResult) {
-            return move(*evaluateResult);
+            return std::move(*evaluateResult);
         }
     }
 
@@ -122,7 +122,7 @@ EvaluateResult RolloutEvaluator::evaluateSetting(EvaluateContext& context) const
     if (!percentageOptions.empty()) {
         auto evaluateResult = evaluatePercentageOptions(percentageOptions, nullptr, context);
         if (evaluateResult) {
-            return move(*evaluateResult);
+            return std::move(*evaluateResult);
         }
     }
 
@@ -167,7 +167,7 @@ std::optional<EvaluateResult> RolloutEvaluator::evaluateTargetingRules(const std
         if (evaluateResult) {
             if (logBuilder) logBuilder->decreaseIndent();
 
-            return move(*evaluateResult);
+            return std::move(*evaluateResult);
         }
 
         if (logBuilder) {
@@ -464,7 +464,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateUserCondition(const U
         semver::version version;
         const auto versionPtrOrError = getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
         if (auto errorPtr = get_if<string>(&versionPtrOrError)) {
-            return move(*const_cast<string*>(errorPtr));
+            return std::move(*const_cast<string*>(errorPtr));
         }
 
         return evaluateSemVerIsOneOf(
@@ -481,7 +481,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateUserCondition(const U
         semver::version version;
         const auto versionPtrOrError = getUserAttributeValueAsSemVer(userAttributeName, *userAttributeValuePtr, condition, context.key, version);
         if (auto errorPtr = get_if<string>(&versionPtrOrError)) {
-            return move(*const_cast<string*>(errorPtr));
+            return std::move(*const_cast<string*>(errorPtr));
         }
 
         return evaluateSemVerRelation(
@@ -499,7 +499,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateUserCondition(const U
     case UserComparator::NumberGreaterOrEquals: {
         const auto numberOrError = getUserAttributeValueAsNumber(userAttributeName, *userAttributeValuePtr, condition, context.key);
         if (auto errorPtr = get_if<string>(&numberOrError)) {
-            return move(*const_cast<string*>(errorPtr));
+            return std::move(*const_cast<string*>(errorPtr));
         }
 
         return evaluateNumberRelation(
@@ -513,7 +513,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateUserCondition(const U
     case UserComparator::DateTimeAfter: {
         const auto numberOrError = getUserAttributeValueAsUnixTimeSeconds(userAttributeName, *userAttributeValuePtr, condition, context.key);
         if (auto errorPtr = get_if<string>(&numberOrError)) {
-            return move(*const_cast<string*>(errorPtr));
+            return std::move(*const_cast<string*>(errorPtr));
         }
 
         return evaluateDateTimeRelation(
@@ -528,7 +528,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateUserCondition(const U
         vector<string> array;
         const auto arrayPtrOrError = getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
         if (auto errorPtr = get_if<string>(&arrayPtrOrError)) {
-            return move(*const_cast<string*>(errorPtr));
+            return std::move(*const_cast<string*>(errorPtr));
         }
 
         return evaluateArrayContainsAnyOf(
@@ -543,7 +543,7 @@ RolloutEvaluator::SuccessOrError RolloutEvaluator::evaluateUserCondition(const U
         vector<string> array;
         const auto arrayPtrOrError = getUserAttributeValueAsStringArray(userAttributeName, *userAttributeValuePtr, condition, context.key, array);
         if (auto errorPtr = get_if<string>(&arrayPtrOrError)) {
-            return move(*const_cast<string*>(errorPtr));
+            return std::move(*const_cast<string*>(errorPtr));
         }
 
         return evaluateSensitiveArrayContainsAnyOf(
@@ -569,7 +569,7 @@ bool RolloutEvaluator::evaluateTextEquals(const std::string& text, const UserCon
 bool RolloutEvaluator::evaluateSensitiveTextEquals(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
     const auto& hash2 = ensureComparisonValue<string>(comparisonValue);
 
-    const auto hash = hashComparisonValue(*this->sha256, text, configJsonSalt, contextSalt);
+    const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
 
     return (hash == hash2) ^ negate;
 }
@@ -589,7 +589,7 @@ bool RolloutEvaluator::evaluateTextIsOneOf(const std::string& text, const UserCo
 bool RolloutEvaluator::evaluateSensitiveTextIsOneOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
     const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
 
-    const auto hash = hashComparisonValue(*this->sha256, text, configJsonSalt, contextSalt);
+    const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
 
     for (const auto& comparisonValue : comparisonValues) {
         if (hash == comparisonValue) {
@@ -639,7 +639,7 @@ bool RolloutEvaluator::evaluateSensitiveTextSliceEqualsAnyOf(const std::string& 
 
         const auto slice = startsWith ? text.substr(0, sliceLength) : text.substr(textLength - sliceLength);
 
-        const auto hash = hashComparisonValue(*this->sha256, slice, configJsonSalt, contextSalt);
+        const auto hash = hashComparisonValue(*sha256, slice, configJsonSalt, contextSalt);
         if (hash == hash2) {
             return !negate;
         }
@@ -756,7 +756,7 @@ bool RolloutEvaluator::evaluateSensitiveArrayContainsAnyOf(const std::vector<std
     const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
 
     for (const auto& text : array) {
-        const auto hash = hashComparisonValue(*this->sha256, text, configJsonSalt, contextSalt);
+        const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
 
         for (const auto& comparisonValue : comparisonValues) {
             if (hash == comparisonValue) {

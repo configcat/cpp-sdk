@@ -86,8 +86,8 @@ public:
         return std::make_shared<ConfigCatUser>(id, email, country, custom);
     }
 
-    inline const std::string& getIdentifier() const { return std::get<std::string>(this->identifier); }
-    inline const ConfigCatUser::AttributeValue& getIdentifierAttribute() const { return this->identifier; }
+    inline const std::string& getIdentifier() const { return std::get<std::string>(identifier); }
+    inline const ConfigCatUser::AttributeValue& getIdentifierAttribute() const { return identifier; }
     const ConfigCatUser::AttributeValue* getAttribute(const std::string& key) const;
     std::string toJson() const;
 

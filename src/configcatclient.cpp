@@ -242,7 +242,7 @@ EvaluationDetails<ValueType> ConfigCatClient::_getValueDetails(const std::string
             return details;
         }
 
-        const auto& effectiveUser = user ? user : this->defaultUser;
+        const auto& effectiveUser = user ? user : defaultUser;
         return evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, settings, fetchTime);
     }
     catch (...) {
@@ -346,7 +346,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const std::
         }
 
         std::unordered_map<std::string, Value> result;
-        const auto& effectiveUser = user ? user : this->defaultUser;
+        const auto& effectiveUser = user ? user : defaultUser;
         for (const auto& [key, setting] : *settings) {
             auto details = evaluate<Value>(key, nullopt, effectiveUser, setting, settings, fetchTime);
             result.insert({ key, move(details.value) });
@@ -372,7 +372,7 @@ std::vector<EvaluationDetails<Value>> ConfigCatClient::getAllValueDetails(const 
         }
 
         std::vector<EvaluationDetails<Value>> result;
-        const auto& effectiveUser = user ? user : this->defaultUser;
+        const auto& effectiveUser = user ? user : defaultUser;
         for (const auto& [key, setting] : *settings) {
             result.push_back(evaluate<Value>(key, nullopt, effectiveUser, setting, settings, fetchTime));
         }
@@ -425,7 +425,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
             return defaultValue;
         }
 
-        const auto& effectiveUser = user ? user : this->defaultUser;
+        const auto& effectiveUser = user ? user : defaultUser;
         auto details = evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, settings, fetchTime);
 
         return move(details.value);

@@ -70,8 +70,8 @@ public:
     }
 
     void onError(const std::string& error, const std::exception_ptr& exception) {
-        this->errorMessage = error;
-        this->errorException = exception;
+        errorMessage = error;
+        errorException = exception;
         errorCallCount += 1;
     }
 };

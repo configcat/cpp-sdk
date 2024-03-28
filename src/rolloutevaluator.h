@@ -57,9 +57,9 @@ struct EvaluateContext {
     }
 
     inline std::shared_ptr<std::vector<std::string>> getVisitedFlags() {
-        return this->visitedFlags
-            ? this->visitedFlags
-            : (this->visitedFlags = std::make_shared<std::vector<std::string>>());
+        return visitedFlags
+            ? visitedFlags
+            : (visitedFlags = std::make_shared<std::vector<std::string>>());
     }
 
 private:

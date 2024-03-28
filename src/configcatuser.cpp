@@ -9,15 +9,15 @@ namespace configcat {
 
 const ConfigCatUser::AttributeValue* ConfigCatUser::getAttribute(const string& key) const {
     if (key == ConfigCatUser::kIdentifierAttribute) {
-        return &this->identifier;
+        return &identifier;
     }
     if (key == ConfigCatUser::kEmailAttribute) {
-        return this->email ? &*this->email : nullptr;
+        return email ? &*email : nullptr;
     }
     if (key == ConfigCatUser::kCountryAttribute) {
-        return this->country ? &*this->country : nullptr;
+        return country ? &*country : nullptr;
     }
-    if (auto it = this->custom.find(key); it != custom.end()) {
+    if (auto it = custom.find(key); it != custom.end()) {
         return &it->second;
     }
     return nullptr;
@@ -25,13 +25,13 @@ const ConfigCatUser::AttributeValue* ConfigCatUser::getAttribute(const string& k
 
 string ConfigCatUser::toJson() const {
     ordered_json j = {
-        { kIdentifierAttribute, get<string>(this->identifier) }
+        { kIdentifierAttribute, get<string>(identifier) }
     };
 
-    if (this->email) j[kEmailAttribute] = get<string>(*this->email);
-    if (this->country) j[kCountryAttribute] = get<string>(*this->country);
+    if (email) j[kEmailAttribute] = get<string>(*email);
+    if (country) j[kCountryAttribute] = get<string>(*country);
 
-    for (const auto& [name, setting] : this->custom) {
+    for (const auto& [name, setting] : custom) {
         if (name != kIdentifierAttribute && name != kEmailAttribute && name != kCountryAttribute) {
             visit([&j, &nameRef = name] (auto&& alt) { // rebind reference to keep clang compiler happy (https://stackoverflow.com/a/74376436)
                 using T = decay_t<decltype(alt)>;

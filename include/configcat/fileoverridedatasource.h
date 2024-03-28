@@ -12,7 +12,7 @@ public:
     FileFlagOverrides(const std::string& filePath, OverrideBehaviour behaviour);
     std::shared_ptr<OverrideDataSource> createDataSource(const std::shared_ptr<ConfigCatLogger>& logger) override;
 
-    inline OverrideBehaviour getBehavior() override { return this->behaviour; }
+    inline OverrideBehaviour getBehavior() override { return behaviour; }
 
 private:
     const std::string filePath;

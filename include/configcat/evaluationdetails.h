@@ -21,7 +21,7 @@ struct EvaluationDetailsBase {
     std::optional<TargetingRule> matchedTargetingRule;
     std::optional<PercentageOption> matchedPercentageOption;
 
-    inline std::optional<Value> value() const { return this->getValue(); }
+    inline std::optional<Value> value() const { return getValue(); }
 
 protected:
     EvaluationDetailsBase(const std::string& key = "",
@@ -78,9 +78,9 @@ struct EvaluationDetails : public EvaluationDetailsBase {
 protected:
     std::optional<Value> getValue() const override {
         if constexpr (std::is_same_v<ValueType, std::optional<Value>>) {
-            return this->value;
+            return value;
         } else {
-            return Value(this->value);
+            return Value(value);
         }
     }
 };

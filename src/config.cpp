@@ -126,10 +126,9 @@ optional<Value> SettingValue::toValueChecked(SettingType type, bool throwIfInval
             if (type == SettingType::Double) return alt;
         } else if constexpr (is_same_v<T, nullopt_t>) {
             if (throwIfInvalid) {
-                auto& unsupportedValue = *this->unsupportedValue;
-                throw runtime_error(unsupportedValue.type == "null"
+                throw runtime_error(unsupportedValue->type == "null"
                     ? "Setting value is null."
-                    : string_format("Setting value '%s' is of an unsupported type (%s).", unsupportedValue.value.c_str(), unsupportedValue.type.c_str()));
+                    : string_format("Setting value '%s' is of an unsupported type (%s).", unsupportedValue->value.c_str(), unsupportedValue->type.c_str()));
             }
             return nullopt;
         } else {
@@ -334,7 +333,7 @@ SettingType Setting::getTypeChecked() const {
     if (hasInvalidType()) {
         throw std::runtime_error("Setting type is invalid.");
     }
-    return this->type;
+    return type;
 }
 
 #pragma endregion
@@ -421,11 +420,10 @@ shared_ptr<Config> Config::fromFile(const string& filePath, bool tolerant) {
 }
 
 void Config::fixupSaltAndSegments() {
-    if (this->settings && !this->settings->empty()) {
-        auto configJsonSalt = this->preferences ? (*this->preferences).salt : nullptr;
-        auto segments = this->segments;
+    if (settings && !settings->empty()) {
+        auto configJsonSalt = preferences ? (*preferences).salt : nullptr;
 
-        for (auto& [_, setting] :*this->settings) {
+        for (auto& [_, setting] : *settings) {
             setting.configJsonSalt = configJsonSalt;
             setting.segments = segments;
         }

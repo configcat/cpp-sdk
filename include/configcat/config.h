@@ -298,7 +298,7 @@ struct Setting : public SettingValueContainer {
     TargetingRules targetingRules;
     PercentageOptions percentageOptions;
 
-    inline bool hasInvalidType() const { return this->type < SettingType::Boolean || SettingType::Double < this->type; }
+    inline bool hasInvalidType() const { return type < SettingType::Boolean || SettingType::Double < type; }
     SettingType getTypeChecked() const;
 
 protected:
@@ -333,9 +333,9 @@ struct Preferences {
     Preferences(const Preferences& other) : Preferences() { *this = other; }
 
     Preferences& operator=(const Preferences& other) {
-        this->baseUrl = other.baseUrl;
-        this->redirectMode = other.redirectMode;
-        this->salt = other.salt ? std::make_shared<std::string>(*other.salt) : nullptr;
+        baseUrl = other.baseUrl;
+        redirectMode = other.redirectMode;
+        salt = other.salt ? std::make_shared<std::string>(*other.salt) : nullptr;
         return *this;
     }
 
@@ -380,14 +380,14 @@ struct Config {
         : preferences(other.preferences)
         , segments(other.segments ? std::make_shared<Segments>(*other.segments) : nullptr)
         , settings(other.settings ? std::make_shared<Settings>(*other.settings) : nullptr) {
-        this->fixupSaltAndSegments();
+        fixupSaltAndSegments();
     }
 
     Config& operator=(const Config& other) {
-        this->preferences = other.preferences;
-        this->segments = other.segments ? std::make_shared<Segments>(*other.segments) : nullptr;
-        this->settings = other.settings ? std::make_shared<Settings>(*other.settings) : nullptr;
-        this->fixupSaltAndSegments();
+        preferences = other.preferences;
+        segments = other.segments ? std::make_shared<Segments>(*other.segments) : nullptr;
+        settings = other.settings ? std::make_shared<Settings>(*other.settings) : nullptr;
+        fixupSaltAndSegments();
         return *this;
     }
 
