@@ -486,3 +486,72 @@ TEST_P(EvaluationDetailsMatchedEvaluationRuleAndPercentageOptionTestSuite, Evalu
 
     ConfigCatClient::closeAll();
 }
+
+template<typename ValueType>
+void checkValueAndDefaultValueTypeCompatibility(const ConfigCatClient& client,
+                       std::shared_ptr<TestLogger>& logger,
+                       const std::string& key,
+                       SettingType valueSettingType,
+                       const ValueType& defaultValue,
+                       SettingType defaultValueSettingType,
+                       const Value& expectedReturnValue) {
+    logger->clear();
+    EvaluationDetails<ValueType> details = client.getValueDetails(key, defaultValue);
+
+    if (valueSettingType == defaultValueSettingType) {
+        EXPECT_FALSE(details.isDefaultValue);
+        EXPECT_EQ(expectedReturnValue, Value(details.value));
+        EXPECT_EQ(nullopt, details.errorMessage);
+        EXPECT_EQ(nullptr, details.errorException);
+    } else {
+        EXPECT_TRUE(details.isDefaultValue);
+        EXPECT_EQ(expectedReturnValue, Value(details.value));
+        EXPECT_THAT(logger->text, ::testing::HasSubstr("The type of a setting must match the type of the specified default value."));
+    }
+}
+
+// https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-1927-4d6b-8fb9-b1472564e2d3/244cf8b0-f604-11e8-b543-f23c917f9d8d
+class ValueAndDefaultValueTypeCompatibilityTestSuite : public ::testing::TestWithParam<tuple<string, SettingType, Value, Value>> {};
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, ValueAndDefaultValueTypeCompatibilityTestSuite, ::testing::Values(
+    make_tuple("boolDefaultTrue", SettingType::Boolean, false, true),
+    make_tuple("boolDefaultTrue", SettingType::Boolean, "", ""),
+    make_tuple("boolDefaultTrue", SettingType::Boolean, 0, 0),
+    make_tuple("boolDefaultTrue", SettingType::Boolean, 0.0, 0.0),
+    make_tuple("stringDefaultCat", SettingType::String, false, false),
+    make_tuple("stringDefaultCat", SettingType::String, "", "Cat"),
+    make_tuple("stringDefaultCat", SettingType::String, 0, 0),
+    make_tuple("stringDefaultCat", SettingType::String, 0.0, 0.0),
+    make_tuple("integerDefaultOne", SettingType::Int, false, false),
+    make_tuple("integerDefaultOne", SettingType::Int, "", ""),
+    make_tuple("integerDefaultOne", SettingType::Int, 0, 1),
+    make_tuple("integerDefaultOne", SettingType::Int, 0.0, 0.0),
+    make_tuple("doubleDefaultPi", SettingType::Double, false, false),
+    make_tuple("doubleDefaultPi", SettingType::Double, "", ""),
+    make_tuple("doubleDefaultPi", SettingType::Double, 0, 0),
+    make_tuple("doubleDefaultPi", SettingType::Double, 0.0, 3.1415)
+));
+TEST_P(ValueAndDefaultValueTypeCompatibilityTestSuite, ValueAndDefaultValueTypeCompatibility) {
+    auto [key, valueSettingType, defaultValue, expectedReturnValue] = GetParam();
+
+    auto testLogger = make_shared<TestLogger>(LOG_LEVEL_WARNING);
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::manualPoll();
+    options.logger = testLogger;
+    auto client = ConfigCatClient::get("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/AG6C1ngVb0CvM07un6JisQ", &options);
+    client->forceRefresh();
+
+    auto defaultValueSettingType = static_cast<SettingValue>(defaultValue).getSettingType();
+    if (holds_alternative<bool>(defaultValue)) {
+        checkValueAndDefaultValueTypeCompatibility(*client, testLogger, key, valueSettingType, get<bool>(defaultValue), defaultValueSettingType, expectedReturnValue);
+    } else if (holds_alternative<string>(defaultValue)) {
+        checkValueAndDefaultValueTypeCompatibility(*client, testLogger, key, valueSettingType, get<string>(defaultValue), defaultValueSettingType, expectedReturnValue);
+    } else if (holds_alternative<int>(defaultValue)) {
+        checkValueAndDefaultValueTypeCompatibility(*client, testLogger, key, valueSettingType, get<int>(defaultValue), defaultValueSettingType, expectedReturnValue);
+    } else if (holds_alternative<double>(defaultValue)) {
+        checkValueAndDefaultValueTypeCompatibility(*client, testLogger, key, valueSettingType, get<double>(defaultValue), defaultValueSettingType, expectedReturnValue);
+    } else {
+        throw std::runtime_error("Return value type is invalid.");
+    }
+
+    ConfigCatClient::closeAll();
+}
