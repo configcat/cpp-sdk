@@ -10,7 +10,7 @@ using MatrixData = vector<vector<string>>;
 
 class SpecialCharacterTest : public ::testing::Test {
 public:
-    ConfigCatClient* client = nullptr;
+    shared_ptr<ConfigCatClient> client = nullptr;
     void SetUp() override {
         client = ConfigCatClient::get("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g");
     }

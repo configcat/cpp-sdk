@@ -14,7 +14,7 @@ public:
     static constexpr char kTestJsonFormat[] = R"({"f":{"fakeKey":{"t":%d,"v":%s}}})";
     static constexpr char kTestJsonMultiple[] = R"({"f":{"key1":{"t":0,"v":{"b":true},"i":"fakeId1"},"key2":{"t":0,"v":{"b":false},"i":"fakeId2"}}})";
 
-    ConfigCatClient* client = nullptr;
+    shared_ptr<ConfigCatClient> client = nullptr;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
     void SetUp(const std::string& sdkKey = kTestSdkKey) {
@@ -726,3 +726,50 @@ TEST_F(ConfigCatClientTest, InitOffline) {
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 }
 
+TEST_F(ConfigCatClientTest, ForceRefreshAfterClose) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    ConfigCatClient::close(client);
+
+    auto refreshResult = client->forceRefresh();
+
+    EXPECT_FALSE(refreshResult.success());
+    EXPECT_TRUE(refreshResult.errorMessage.has_value());
+    EXPECT_TRUE(refreshResult.errorMessage->find("has been closed") != string::npos);
+    EXPECT_TRUE(refreshResult.errorException == nullptr);
+}
+
+TEST_F(ConfigCatClientTest, GetValueDetailsAfterClose) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    ConfigCatClient::close(client);
+
+    auto user = make_shared<ConfigCatUser>("test@test1.com");
+    auto details = client->getValueDetails("testStringKey", "", user);
+
+    EXPECT_EQ("", details.value);
+    EXPECT_EQ("testStringKey", details.key);
+    EXPECT_TRUE(details.variationId == nullopt);
+    EXPECT_TRUE(details.isDefaultValue);
+    EXPECT_TRUE(details.errorMessage.has_value());
+    EXPECT_TRUE(details.matchedTargetingRule == std::nullopt);
+    EXPECT_TRUE(details.matchedPercentageOption == std::nullopt);
+}
+
+TEST_F(ConfigCatClientTest, SetOnlineAfterClose) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    EXPECT_FALSE(client->isOffline());
+    ConfigCatClient::close(client);
+
+    client->setOnline();
+    EXPECT_TRUE(client->isOffline());
+}
