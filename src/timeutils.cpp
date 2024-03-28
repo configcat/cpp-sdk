@@ -1,4 +1,3 @@
-#include <cmath>
 #include <time.h>
 
 #include "configcat/timeutils.h"
@@ -23,27 +22,7 @@ using namespace std;
 
 namespace configcat {
 
-std::optional<double> datetime_to_unixtimeseconds(const std::chrono::system_clock::time_point& tp) {
-    long long millisecondsSinceEpoch = tp.time_since_epoch() / std::chrono::milliseconds(1);
-    auto timestamp = millisecondsSinceEpoch / 1000.0;
-
-    // Allow values only between 0001-01-01T00:00:00.000Z and 9999-12-31T23:59:59.999
-    return timestamp < -62135596800 || 253402300800 <= timestamp ? nullopt : optional<double>(timestamp);
-}
-
-std::optional<std::chrono::system_clock::time_point> datetime_from_unixtimeseconds(double timestamp) {
-    // Allow values only between 0001-01-01T00:00:00.000Z and 9999-12-31T23:59:59.999
-    if (timestamp < -62135596800 || 253402300800 <= timestamp) {
-        return nullopt;
-    }
-
-    auto durationSinceEpoch = std::chrono::seconds(static_cast<long long>(timestamp)) +
-                              std::chrono::milliseconds(static_cast<long long>((timestamp - static_cast<long long>(timestamp)) * 1000));
-
-    return chrono::system_clock::time_point{ durationSinceEpoch };
-}
-
-std::string datetime_to_isostring(const std::chrono::system_clock::time_point& tp) {
+std::string datetime_to_isostring(const date_time_t& tp) {
     const auto secondsSinceEpoch = chrono::system_clock::to_time_t(tp);
     const auto remainder = (tp - chrono::system_clock::from_time_t(secondsSinceEpoch));
     const auto milliseconds = chrono::duration_cast<chrono::milliseconds>(remainder).count();
@@ -61,7 +40,7 @@ std::string datetime_to_isostring(const std::chrono::system_clock::time_point& t
     return result;
 }
 
-std::chrono::system_clock::time_point make_datetime(int year, int month, int day, int hour, int min, int sec, int millisec) {
+date_time_t make_datetime(int year, int month, int day, int hour, int min, int sec, int millisec) {
     std::tm tm = {};
     tm.tm_year = year - 1900; // Year since 1900
     tm.tm_mon = month - 1;    // 0-11

@@ -9,6 +9,26 @@ using namespace std;
 
 namespace configcat {
 
+std::optional<double> datetime_to_unixtimeseconds(const std::chrono::system_clock::time_point& tp) {
+    long long millisecondsSinceEpoch = tp.time_since_epoch() / std::chrono::milliseconds(1);
+    auto timestamp = millisecondsSinceEpoch / 1000.0;
+
+    // Allow values only between 0001-01-01T00:00:00.000Z and 9999-12-31T23:59:59.999
+    return timestamp < -62135596800 || 253402300800 <= timestamp ? nullopt : optional<double>(timestamp);
+}
+
+std::optional<std::chrono::system_clock::time_point> datetime_from_unixtimeseconds(double timestamp) {
+    // Allow values only between 0001-01-01T00:00:00.000Z and 9999-12-31T23:59:59.999
+    if (timestamp < -62135596800 || 253402300800 <= timestamp) {
+        return nullopt;
+    }
+
+    auto durationSinceEpoch = std::chrono::seconds(static_cast<long long>(timestamp)) +
+                              std::chrono::milliseconds(static_cast<long long>((timestamp - static_cast<long long>(timestamp)) * 1000));
+
+    return chrono::system_clock::time_point{ durationSinceEpoch };
+}
+
 int getExponent(double abs) {
     auto exp = log10(abs);
     auto ceil = std::ceil(exp);
