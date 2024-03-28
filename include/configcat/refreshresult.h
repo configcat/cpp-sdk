@@ -1,12 +1,15 @@
 #pragma once
 
+#include <exception>
+#include <optional>
 #include <string>
 
 namespace configcat {
 
 struct RefreshResult {
-    bool success = false;
-    std::string error;
+    inline bool success() { return !errorMessage; };
+    std::optional<std::string> errorMessage;
+    std::exception_ptr errorException;
 };
 
 } // namespace configcat

@@ -1,5 +1,5 @@
 #include "configcat/fileoverridedatasource.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 
 using namespace std;
 
@@ -10,11 +10,11 @@ FileFlagOverrides::FileFlagOverrides(const std::string& filePath, OverrideBehavi
     behaviour(behaviour) {
 }
 
-std::shared_ptr<OverrideDataSource> FileFlagOverrides::createDataSource(std::shared_ptr<ConfigCatLogger> logger) {
+std::shared_ptr<OverrideDataSource> FileFlagOverrides::createDataSource(const std::shared_ptr<ConfigCatLogger>& logger) {
     return make_shared<FileOverrideDataSource>(filePath, behaviour, logger);
 }
 
-FileOverrideDataSource::FileOverrideDataSource(const string& filePath, OverrideBehaviour behaviour, std::shared_ptr<ConfigCatLogger> logger):
+FileOverrideDataSource::FileOverrideDataSource(const string& filePath, OverrideBehaviour behaviour, const std::shared_ptr<ConfigCatLogger>& logger):
     OverrideDataSource(behaviour),
     overrides(make_shared<unordered_map<string, Setting>>()),
     filePath(filePath),
@@ -27,7 +27,7 @@ FileOverrideDataSource::FileOverrideDataSource(const string& filePath, OverrideB
     }
 }
 
-const shared_ptr<unordered_map<string, Setting>> FileOverrideDataSource::getOverrides() {
+shared_ptr<unordered_map<string, Setting>> FileOverrideDataSource::getOverrides() {
     reloadFileContent();
     return overrides;
 }
@@ -38,12 +38,14 @@ void FileOverrideDataSource::reloadFileContent() {
         if (fileLastWriteTime != lastWriteTime) {
             fileLastWriteTime = lastWriteTime;
             auto config = Config::fromFile(filePath);
-            overrides = config->entries;
+            overrides = config->getSettingsOrEmpty();
         }
-    } catch (filesystem::filesystem_error exception) {
-        LOG_ERROR(1302) << "Failed to read the local config file '" << filePath << "'. " << exception.what();
-    } catch (exception& exception) {
-        LOG_ERROR(2302) << "Failed to decode JSON from the local config file '" << filePath << "'. " << exception.what();
+    } catch (const filesystem::filesystem_error&) {
+        LogEntry logEntry(logger, configcat::LOG_LEVEL_ERROR, 1302, current_exception());
+        logEntry << "Failed to read the local config file '" << filePath << "'.";
+    } catch (...) {
+        LogEntry logEntry(logger, configcat::LOG_LEVEL_ERROR, 2302, current_exception());
+        logEntry << "Failed to decode JSON from the local config file '" << filePath << "'.";
     }
 }
 

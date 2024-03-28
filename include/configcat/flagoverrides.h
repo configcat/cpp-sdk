@@ -25,8 +25,10 @@ enum OverrideBehaviour {
 // FlagOverrides abstract base class.
 class FlagOverrides {
 public:
-    virtual std::shared_ptr<OverrideDataSource> createDataSource(std::shared_ptr<ConfigCatLogger> logger) = 0;
+    virtual std::shared_ptr<OverrideDataSource> createDataSource(const std::shared_ptr<ConfigCatLogger>& logger) = 0;
     virtual ~FlagOverrides() = default;
+
+    virtual OverrideBehaviour getBehavior() = 0;
 };
 
 } // namespace configcat

@@ -10,6 +10,7 @@
 #include "configcat/httpsessionadapter.h"
 #include "configcat/config.h"
 #include "configcat/evaluationdetails.h"
+#include "configcatlogger.h"
 
 class InMemoryConfigCache : public configcat::ConfigCache {
 public:
@@ -45,11 +46,12 @@ class HookCallbacks {
 public:
     bool isReady = false;
     int isReadyCallCount = 0;
-    std::shared_ptr<configcat::Settings> changedConfig;
+    std::shared_ptr<const configcat::Settings> changedConfig;
     int changedConfigCallCount = 0;
-    configcat::EvaluationDetails evaluationDetails;
+    configcat::EvaluationDetails<> evaluationDetails;
     int evaluationDetailsCallCount = 0;
-    std::string error;
+    std::string errorMessage;
+    std::exception_ptr errorException;
     int errorCallCount = 0;
 
     void onClientReady() {
@@ -57,18 +59,19 @@ public:
         isReadyCallCount += 1;
     }
 
-    void onConfigChanged(std::shared_ptr<configcat::Settings> config) {
+    void onConfigChanged(std::shared_ptr<const configcat::Settings> config) {
         changedConfig = config;
         changedConfigCallCount += 1;
     }
 
-    void onFlagEvaluated(const configcat::EvaluationDetails& details) {
-        evaluationDetails = details;
+    void onFlagEvaluated(const configcat::EvaluationDetailsBase& details) {
+        evaluationDetails = to_concrete(details);
         evaluationDetailsCallCount += 1;
     }
 
-    void onError(const std::string& error) {
-        this->error = error;
+    void onError(const std::string& error, const std::exception_ptr& exception) {
+        errorMessage = error;
+        errorException = exception;
         errorCallCount += 1;
     }
 };
@@ -129,37 +132,107 @@ private:
     std::atomic<bool> closed = false;
 };
 
-static constexpr char kTestJsonString[] = R"({
-    "p": {
-        "u": "https://cdn-global.configcat.com",
-        "r": 0
-    },
-    "f": {
-        "testBoolKey": {
-            "v": true, "t": 0, "p": [], "r": []
-        },
-        "testStringKey": {
-            "v": "testValue", "i": "id", "t": 1, "p": [],
-            "r": [
-                {
-                    "i": "id1", "v": "fake1", "a": "Identifier", "t": 2, "c": "@test1.com"
-                },
-                {
-                    "i": "id2", "v": "fake2", "a": "Identifier", "t": 2, "c": "@test2.com"
-                }
-            ]
-        },
-        "testIntKey": {
-            "v": 1, "t": 2, "p": [], "r": []
-        },
-        "testDoubleKey": {
-            "v": 1.1, "t": 3, "p": [], "r": []
-        },
-        "key1": {
-            "v": true, "i": "fakeId1", "p": [], "r": []
-        },
-        "key2": {
-            "v": false, "i": "fakeId2", "p": [], "r": []
-        }
+class TestLogger : public configcat::ILogger {
+   public:
+    TestLogger(configcat::LogLevel level = configcat::LOG_LEVEL_INFO): ILogger(level) {}
+    void log(configcat::LogLevel level, const std::string& message, const std::exception_ptr& exception = nullptr) override {
+        text += logLevelAsString(level) + std::string(" ") + message;
+        if (exception)
+            text += std::string("Exception details: ") + unwrap_exception_message(exception);
+        text += "\n";
     }
+
+    void clear() {
+        text.clear();
+    }
+
+    std::string text;
+};
+
+static constexpr char kTestJsonString[] = R"({
+  "p": {
+    "u": "https://cdn-global.configcat.com",
+    "r": 0
+  },
+  "f": {
+    "key1": {
+      "t": 0,
+      "v": {
+        "b": true
+      },
+      "i": "fakeId1"
+    },
+    "key2": {
+      "t": 0,
+      "v": {
+        "b": false
+      },
+      "i": "fakeId2"
+    },
+    "testBoolKey": {
+      "t": 0,
+      "v": {
+        "b": true
+      }
+    },
+    "testDoubleKey": {
+      "t": 3,
+      "v": {
+        "d": 1.1
+      }
+    },
+    "testIntKey": {
+      "t": 2,
+      "v": {
+        "i": 1
+      }
+    },
+    "testStringKey": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 2,
+                "l": [
+                  "@test1.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "fake1"
+            },
+            "i": "id1"
+          }
+        },
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 2,
+                "l": [
+                  "@test2.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "fake2"
+            },
+            "i": "id2"
+          }
+        }
+      ],
+      "v": {
+        "s": "testValue"
+      },
+      "i": "id"
+    }
+  }
 })";

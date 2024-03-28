@@ -6,12 +6,12 @@
 #include <atomic>
 
 #include "configcat/proxyauthentication.h"
+#include "configentry.h"
 
 namespace configcat {
 
 struct ConfigCatOptions;
 class ConfigCatLogger;
-struct ConfigEntry;
 class HttpSessionAdapter;
 
 enum Status {
@@ -22,15 +22,18 @@ enum Status {
 
 struct FetchResponse {
     Status status;
-    std::shared_ptr<ConfigEntry> entry;
-    std::string error;
+    std::shared_ptr<const ConfigEntry> entry;
+    std::optional<std::string> errorMessage;
+    std::exception_ptr errorException;
     bool isTransientError = false;
 
-    FetchResponse(Status status, std::shared_ptr<ConfigEntry> entry, const std::string& error = "", bool isTransientError = false):
-        status(status),
-        entry(entry),
-        error(error),
-        isTransientError(isTransientError) {
+    FetchResponse(Status status, const std::shared_ptr<const ConfigEntry>& entry,
+        const std::optional<std::string>& errorMessage = std::nullopt, const std::exception_ptr& errorException = nullptr, bool isTransientError = false)
+        : status(status)
+        , entry(entry)
+        , errorMessage(errorMessage)
+        , errorException(errorException)
+        , isTransientError(isTransientError) {
     }
 
     bool isFetched() {
@@ -48,15 +51,15 @@ struct FetchResponse {
 
 class ConfigFetcher {
 public:
-    static constexpr char kConfigJsonName[] = "config_v5.json";
+    static constexpr char kConfigJsonName[] = "config_v6.json";
     static constexpr char kGlobalBaseUrl[] = "https://cdn-global.configcat.com";
     static constexpr char kEuOnlyBaseUrl[] = "https://cdn-eu.configcat.com";
     static constexpr char kUserAgentHeaderName[] = "X-ConfigCat-UserAgent";
     static constexpr char kPlatformHeaderName[] = "X-ConfigCat-Platform";
     static constexpr char kIfNoneMatchHeaderName[] = "If-None-Match";
-    static constexpr char kEtagHeaderName[] = "ETag";
+    static constexpr char kEtagHeaderName[] = "etag";
 
-    ConfigFetcher(const std::string& sdkKey, std::shared_ptr<ConfigCatLogger> logger, const std::string& mode, const ConfigCatOptions& options);
+    ConfigFetcher(const std::string& sdkKey, const std::shared_ptr<ConfigCatLogger>& logger, const std::string& mode, const ConfigCatOptions& options);
     ~ConfigFetcher();
 
     void close();

@@ -7,9 +7,7 @@
 
 namespace configcat {
 
-class RefreshPolicy;
 class ConfigFetcher;
-class ConfigJsonCache;
 
 // The base class of a polling mode configuration.
 class PollingMode {

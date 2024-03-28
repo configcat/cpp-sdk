@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include "mock.h"
 #include "configcat/configcatclient.h"
-#include "utils.h"
 
 using namespace configcat;
 using namespace std;
@@ -29,7 +28,7 @@ TEST(ConfigCatClientIntegrationTest, DISABLED_ProxyTest) {
      * docker run -d --name squid-container -e TZ=UTC -p 3128:3128 ubuntu/squid:5.2-22.04_beta
      *
      * How to test the proxy server:
-     * curl --proxy localhost:3128 https://cdn-global.configcat.com/configuration-files/PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A/config_v5.json
+     * curl --proxy localhost:3128 https://cdn-global.configcat.com/configuration-files/PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A/config_v6.json
      *
      */
     ConfigCatOptions options;
