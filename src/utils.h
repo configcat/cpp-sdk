@@ -20,19 +20,6 @@ inline constexpr bool always_false_v = false;
 
 namespace configcat {
 
-constexpr auto kEpochTime = std::chrono::system_clock::time_point(); // January 1, 1970 UTC
-
-inline double getUtcNowSecondsSinceEpoch() {
-    auto duration = std::chrono::system_clock::now() - kEpochTime;
-    return std::chrono::duration<double>(duration).count();
-}
-
-std::optional<double> datetime_to_unixtimeseconds(const std::chrono::system_clock::time_point& tp);
-std::optional<std::chrono::system_clock::time_point> datetime_from_unixtimeseconds(double timestamp);
-
-std::string datetime_to_isostring(const std::chrono::system_clock::time_point& tp);
-std::chrono::system_clock::time_point make_datetime(int year, int month, int day, int hour, int min, int sec, int millisec);
-
 template<typename... Args>
 std::string string_format(const std::string& format, Args&&... args) {
     std::array<char, STRING_FORMAT_STACKBUF_MAXSIZE> stackBuf;

@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "mock.h"
-#include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
 #include "configcat/configcatclient.h"
+#include "configcat/timeutils.h"
 
 
 using namespace configcat;

@@ -1,8 +1,8 @@
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/timeutils.h"
 #include "configcatlogger.h"
 #include "configfetcher.h"
-#include "utils.h"
 #include <hash-library/sha1.h>
 #include <iostream>
 

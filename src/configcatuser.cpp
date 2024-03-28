@@ -1,7 +1,6 @@
 #include "configcat/configcatuser.h"
 #include <nlohmann/json.hpp>
 
-#include "utils.h"
 
 using namespace std;
 using ordered_json = nlohmann::ordered_json;

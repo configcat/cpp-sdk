@@ -4,7 +4,6 @@
 #include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include "mock.h"
-#include "utils.h"
 
 using namespace configcat;
 using namespace std;

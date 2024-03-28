@@ -1,6 +1,7 @@
 #include <cmath>
 #include <tuple>
 #include <gtest/gtest.h>
+#include "configcat/timeutils.h"
 #include "utils.h"
 
 using namespace configcat;

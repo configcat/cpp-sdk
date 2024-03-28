@@ -2,7 +2,6 @@
 #include "mock.h"
 #include "configcat/configcatclient.h"
 #include "configcat/config.h"
-#include "utils.h"
 
 
 using namespace configcat;

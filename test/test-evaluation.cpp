@@ -5,7 +5,6 @@
 #include "configcat/configcatuser.h"
 #include "configcat/configcatclient.h"
 #include "configcatlogger.h"
-#include "utils.h"
 #include "test.h"
 #include "mock.h"
 #include "configcat/log.h"

@@ -2,7 +2,6 @@
 #include "configcat/configcatuser.h"
 #include "configcat/log.h"
 #include <nlohmann/json.hpp>
-#include "utils.h"
 
 using namespace configcat;
 using namespace std;

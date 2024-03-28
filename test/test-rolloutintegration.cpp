@@ -6,7 +6,6 @@
 #include "configcat/configcatclient.h"
 #include "configcatlogger.h"
 #include "configcat/consolelogger.h"
-#include "utils.h"
 #include "test.h"
 #include "configcat/log.h"
 

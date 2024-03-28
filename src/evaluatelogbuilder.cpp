@@ -1,7 +1,7 @@
 #include <array>
 
 #include "evaluatelogbuilder.h"
-#include "utils.h"
+#include "configcat/timeutils.h"
 
 using namespace std;
 

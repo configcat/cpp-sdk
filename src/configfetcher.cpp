@@ -3,11 +3,11 @@
 #include "configfetcher.h"
 #include "configcat/log.h"
 #include "configcat/configcatoptions.h"
+#include "configcat/timeutils.h"
 #include "configcatlogger.h"
 #include "curlnetworkadapter.h"
 #include "version.h"
 #include "platform.h"
-#include "utils.h"
 
 using namespace std;
 

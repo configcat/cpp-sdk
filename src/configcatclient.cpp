@@ -11,7 +11,6 @@
 #include "configcat/overridedatasource.h"
 #include "configcatlogger.h"
 #include "configcat/consolelogger.h"
-#include "utils.h"
 
 using namespace std;
 using namespace std::chrono;

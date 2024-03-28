@@ -7,10 +7,9 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include "timeutils.h"
 
 namespace configcat {
-
-using date_time_t = std::chrono::system_clock::time_point;
 
 // An object containing attributes to properly identify a given user for rollout evaluation.
 class ConfigCatUser {

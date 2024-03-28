@@ -2,7 +2,6 @@
 #include "mock.h"
 #include "configcat/configcat.h"
 #include "configfetcher.h"
-#include "utils.h"
 #include <hash-library/sha1.h>
 
 using namespace configcat;

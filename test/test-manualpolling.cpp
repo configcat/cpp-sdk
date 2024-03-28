@@ -1,11 +1,9 @@
 #include <gtest/gtest.h>
 #include "mock.h"
-#include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
 #include "configcatlogger.h"
 #include "configcat/consolelogger.h"
-#include <thread>
 
 using namespace configcat;
 using namespace std;

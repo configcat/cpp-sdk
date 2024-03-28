@@ -10,7 +10,6 @@
 
 #include "configcatlogger.h"
 #include "rolloutevaluator.h"
-#include "utils.h"
 
 using namespace std;
 

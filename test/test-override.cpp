@@ -5,7 +5,6 @@
 #include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include "mock.h"
-#include "utils.h"
 #include "test.h"
 #include <filesystem>
 #include <fstream>
