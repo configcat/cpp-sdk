@@ -16,14 +16,14 @@
 using namespace std;
 using namespace configcat;
 
-class ConfigV2EvaluationTest : public ::testing::Test {
+class EvaluationTest : public ::testing::Test {
 public:
     static const string directoryPath;
 };
-const string ConfigV2EvaluationTest::directoryPath = RemoveFileName(__FILE__);
+const string EvaluationTest::directoryPath = RemoveFileName(__FILE__);
 
 class ComparisonAttributeConversionToCanonicalStringTestSuite : public ::testing::TestWithParam<tuple<string, ConfigCatUser::AttributeValue, string>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, ComparisonAttributeConversionToCanonicalStringTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, ComparisonAttributeConversionToCanonicalStringTestSuite, ::testing::Values(
     make_tuple("numberToStringConversion", .12345, "1"),
     make_tuple("numberToStringConversionInt", 125.0, "4"),
     make_tuple("numberToStringConversionPositiveExp", -1.23456789e96, "2"),
@@ -46,7 +46,7 @@ TEST_P(ComparisonAttributeConversionToCanonicalStringTestSuite, ComparisonAttrib
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
-    options.flagOverrides = make_shared<FileFlagOverrides>(ConfigV2EvaluationTest::directoryPath + "data/comparison_attribute_conversion.json", LocalOnly);
+    options.flagOverrides = make_shared<FileFlagOverrides>(EvaluationTest::directoryPath + "data/comparison_attribute_conversion.json", LocalOnly);
     auto client = ConfigCatClient::get("local-only", &options);
 
     std::unordered_map<string, ConfigCatUser::AttributeValue> custom = { {"Custom1", customAttributeValue} };
@@ -60,7 +60,7 @@ TEST_P(ComparisonAttributeConversionToCanonicalStringTestSuite, ComparisonAttrib
 }
 
 class ComparisonAttributeTrimmingTestSuite : public ::testing::TestWithParam<tuple<string, string>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, ComparisonAttributeTrimmingTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, ComparisonAttributeTrimmingTestSuite, ::testing::Values(
     make_tuple("isoneof", "no trim"),
     make_tuple("isnotoneof", "no trim"),
     make_tuple("isoneofhashed", "no trim"),
@@ -106,7 +106,7 @@ TEST_P(ComparisonAttributeTrimmingTestSuite, ComparisonAttributeTrimming) {
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
-    options.flagOverrides = make_shared<FileFlagOverrides>(ConfigV2EvaluationTest::directoryPath + "data/comparison_attribute_trimming.json", LocalOnly);
+    options.flagOverrides = make_shared<FileFlagOverrides>(EvaluationTest::directoryPath + "data/comparison_attribute_trimming.json", LocalOnly);
     auto client = ConfigCatClient::get("local-only", &options);
 
     std::unordered_map<string, ConfigCatUser::AttributeValue> custom = {
@@ -124,7 +124,7 @@ TEST_P(ComparisonAttributeTrimmingTestSuite, ComparisonAttributeTrimming) {
 }
 
 class ComparisonValueTrimmingTestSuite : public ::testing::TestWithParam<tuple<string, string>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, ComparisonValueTrimmingTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, ComparisonValueTrimmingTestSuite, ::testing::Values(
     make_tuple("isoneof", "no trim"),
     make_tuple("isnotoneof", "no trim"),
     make_tuple("containsanyof", "no trim"),
@@ -160,7 +160,7 @@ TEST_P(ComparisonValueTrimmingTestSuite, ComparisonValueTrimming) {
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
-    options.flagOverrides = make_shared<FileFlagOverrides>(ConfigV2EvaluationTest::directoryPath + "data/comparison_value_trimming.json", LocalOnly);
+    options.flagOverrides = make_shared<FileFlagOverrides>(EvaluationTest::directoryPath + "data/comparison_value_trimming.json", LocalOnly);
     auto client = ConfigCatClient::get("local-only", &options);
 
     std::unordered_map<string, ConfigCatUser::AttributeValue> custom = {
@@ -177,7 +177,7 @@ TEST_P(ComparisonValueTrimmingTestSuite, ComparisonValueTrimming) {
     ConfigCatClient::closeAll();
 }
 
-TEST_F(ConfigV2EvaluationTest, UserObjectAttributeValueConversionTextComparisons) {
+TEST_F(EvaluationTest, UserObjectAttributeValueConversionTextComparisons) {
     std::shared_ptr<TestLogger> testLogger = make_shared<TestLogger>(LOG_LEVEL_WARNING);
 
     ConfigCatOptions options;
@@ -205,7 +205,7 @@ TEST_F(ConfigV2EvaluationTest, UserObjectAttributeValueConversionTextComparisons
 }
 
 class UserObjectAttributeValueConversion_NonTextComparisonsTestSuite : public ::testing::TestWithParam<tuple<string, string, string, string, ConfigCatUser::AttributeValue, Value>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, UserObjectAttributeValueConversion_NonTextComparisonsTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, UserObjectAttributeValueConversion_NonTextComparisonsTestSuite, ::testing::Values(
     // SemVer-based comparisons
     make_tuple("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "0.0", "20%"),
     make_tuple("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "0.9.9", "< 1.0.0"),
@@ -283,7 +283,7 @@ TEST_P(UserObjectAttributeValueConversion_NonTextComparisonsTestSuite, UserObjec
 }
 
 class PrerequisiteFlagCircularDependencyTestSuite : public ::testing::TestWithParam<tuple<string, string>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, PrerequisiteFlagCircularDependencyTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, PrerequisiteFlagCircularDependencyTestSuite, ::testing::Values(
     make_tuple("key1", "'key1' -> 'key1'"),
     make_tuple("key2", "'key2' -> 'key3' -> 'key2'"),
     make_tuple("key4", "'key4' -> 'key3' -> 'key2' -> 'key3'")
@@ -295,7 +295,7 @@ TEST_P(PrerequisiteFlagCircularDependencyTestSuite, PrerequisiteFlagCircularDepe
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.logger = testLogger;
-    options.flagOverrides = make_shared<FileFlagOverrides>(ConfigV2EvaluationTest::directoryPath + "data/test_circulardependency_v6.json", LocalOnly);
+    options.flagOverrides = make_shared<FileFlagOverrides>(EvaluationTest::directoryPath + "data/test_circulardependency_v6.json", LocalOnly);
     auto client = ConfigCatClient::get("local-only", &options);
 
     auto details = client->getValueDetails(key);
@@ -315,7 +315,7 @@ TEST_P(PrerequisiteFlagCircularDependencyTestSuite, PrerequisiteFlagCircularDepe
 
 // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9e4e-4f59-86b2-5da50924b6ca/08dbc325-9ebd-4587-8171-88f76a3004cb
 class PrerequisiteFlagComparisonValueTypeMismatchTestSuite : public ::testing::TestWithParam<tuple<string, string, Value, std::optional<Value>>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, PrerequisiteFlagComparisonValueTypeMismatchTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, PrerequisiteFlagComparisonValueTypeMismatchTestSuite, ::testing::Values(
     make_tuple("stringDependsOnBool", "mainBoolFlag", true, "Dog"),
     make_tuple("stringDependsOnBool", "mainBoolFlag", false, "Cat"),
     make_tuple("stringDependsOnBool", "mainBoolFlag", "1", nullopt),
@@ -367,7 +367,7 @@ TEST_P(PrerequisiteFlagComparisonValueTypeMismatchTestSuite, PrerequisiteFlagCom
 
 // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9e4e-4f59-86b2-5da50924b6ca/08dbc325-9ebd-4587-8171-88f76a3004cb
 class PrerequisiteFlagOverrideTestSuite : public ::testing::TestWithParam<tuple<string, string, string, std::optional<OverrideBehaviour>, std::optional<Value>>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, PrerequisiteFlagOverrideTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, PrerequisiteFlagOverrideTestSuite, ::testing::Values(
     make_tuple("stringDependsOnString", "1", "john@sensitivecompany.com", nullopt, "Dog"),
     make_tuple("stringDependsOnString", "1", "john@sensitivecompany.com", RemoteOverLocal, "Dog"),
     make_tuple("stringDependsOnString", "1", "john@sensitivecompany.com", LocalOverRemote, "Dog"),
@@ -391,7 +391,7 @@ TEST_P(PrerequisiteFlagOverrideTestSuite, PrerequisiteFlagOverride) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     if (overrideBehaviour) {
-        options.flagOverrides = make_shared<FileFlagOverrides>(ConfigV2EvaluationTest::directoryPath + "data/test_override_flagdependency_v6.json", *overrideBehaviour);
+        options.flagOverrides = make_shared<FileFlagOverrides>(EvaluationTest::directoryPath + "data/test_override_flagdependency_v6.json", *overrideBehaviour);
     }
     auto client = ConfigCatClient::get("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/JoGwdqJZQ0K2xDy7LnbyOg", &options);
     client->forceRefresh();
@@ -415,7 +415,7 @@ TEST_P(PrerequisiteFlagOverrideTestSuite, PrerequisiteFlagOverride) {
 
 // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9e4e-4f59-86b2-5da50924b6ca/08dbc325-9ebd-4587-8171-88f76a3004cb
 class ConfigSaltAndSegmentsOverrideTestSuite : public ::testing::TestWithParam<tuple<string, string, string, std::optional<OverrideBehaviour>, std::optional<Value>>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, ConfigSaltAndSegmentsOverrideTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, ConfigSaltAndSegmentsOverrideTestSuite, ::testing::Values(
     make_tuple("developerAndBetaUserSegment", "1", "john@example.com", nullopt, false),
     make_tuple("developerAndBetaUserSegment", "1", "john@example.com", RemoteOverLocal, false),
     make_tuple("developerAndBetaUserSegment", "1", "john@example.com", LocalOverRemote, true),
@@ -431,7 +431,7 @@ TEST_P(ConfigSaltAndSegmentsOverrideTestSuite, ConfigSaltAndSegmentsOverride) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     if (overrideBehaviour) {
-        options.flagOverrides = make_shared<FileFlagOverrides>(ConfigV2EvaluationTest::directoryPath + "data/test_override_segments_v6.json", *overrideBehaviour);
+        options.flagOverrides = make_shared<FileFlagOverrides>(EvaluationTest::directoryPath + "data/test_override_segments_v6.json", *overrideBehaviour);
     }
     auto client = ConfigCatClient::get("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/h99HYXWWNE2bH8eWyLAVMA", &options);
     client->forceRefresh();
@@ -455,7 +455,7 @@ TEST_P(ConfigSaltAndSegmentsOverrideTestSuite, ConfigSaltAndSegmentsOverride) {
 
 // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9e4e-4f59-86b2-5da50924b6ca/08dbc325-9ebd-4587-8171-88f76a3004cb
 class EvaluationDetailsMatchedEvaluationRuleAndPercentageOptionTestSuite : public ::testing::TestWithParam<tuple<string, string, std::optional<string>, std::optional<string>, std::optional<string>, std::optional<Value>, bool, bool>> {};
-INSTANTIATE_TEST_SUITE_P(ConfigV2EvaluationTest, EvaluationDetailsMatchedEvaluationRuleAndPercentageOptionTestSuite, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(EvaluationTest, EvaluationDetailsMatchedEvaluationRuleAndPercentageOptionTestSuite, ::testing::Values(
     make_tuple("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", nullopt, nullopt, nullopt, "Cat", false, false),
     make_tuple("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", nullopt, nullopt, "Cat", false, false),
     make_tuple("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "a@example.com", nullopt, "Dog", true, false),
