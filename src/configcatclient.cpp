@@ -18,7 +18,7 @@ using namespace std::chrono;
 namespace configcat {
 
 std::mutex ConfigCatClient::instancesMutex;
-std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> ConfigCatClient::instances;
+std::unordered_map<std::string, std::shared_ptr<ConfigCatClient>> ConfigCatClient::instances;
 
 bool isValidSdkKey(const string& sdkKey, bool customBaseUrl) {
     static constexpr char proxyPrefix[] = "configcat-proxy/";
@@ -31,7 +31,13 @@ bool isValidSdkKey(const string& sdkKey, bool customBaseUrl) {
     return regex_match(sdkKey, re);
 }
 
-ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCatOptions* options) {
+// NOTE: make_shared doesn't work with private ctors but we can use this workaround to avoid double allocation
+// (see also https://stackoverflow.com/a/8147213/8656352)
+struct ConfigCatClient::MakeSharedEnabler : ConfigCatClient {
+    ConfigCatClient::MakeSharedEnabler(const std::string& sdkKey, const ConfigCatOptions& options) : ConfigCatClient(sdkKey, options) {}
+};
+
+std::shared_ptr<ConfigCatClient> ConfigCatClient::get(const std::string& sdkKey, const ConfigCatOptions* options) {
     if (sdkKey.empty()) {
         throw invalid_argument("SDK Key cannot be empty.");
     }
@@ -49,28 +55,22 @@ ConfigCatClient* ConfigCatClient::get(const std::string& sdkKey, const ConfigCat
 
     lock_guard<mutex> lock(instancesMutex);
     auto client = instances.find(sdkKey);
-    if (client != instances.end()) {
-        if (options) {
-            LOG_WARN_OBJECT(client->second->logger, 3000) <<
-                "There is an existing client instance for the specified SDK Key. "
-                "No new client instance will be created and the specified options are ignored. "
-                "Returning the existing client instance. SDK Key: '" << sdkKey << "'.";
-        }
-        return client->second.get();
+    if (client == instances.end()) {
+        client = instances.insert({sdkKey, make_shared<ConfigCatClient::MakeSharedEnabler>(sdkKey, actualOptions)}).first;
+    } else if (options) {
+        LOG_WARN_OBJECT(client->second->logger, 3000) <<
+            "There is an existing client instance for the specified SDK Key. "
+            "No new client instance will be created and the specified options are ignored. "
+            "Returning the existing client instance. SDK Key: '" << sdkKey << "'.";
     }
-
-    client = instances.insert({
-        sdkKey,
-        std::move(std::unique_ptr<ConfigCatClient>(new ConfigCatClient(sdkKey, actualOptions)))
-    }).first;
-
-    return client->second.get();
+    return client->second;
 }
 
-void ConfigCatClient::close(ConfigCatClient* client) {
+void ConfigCatClient::close(const std::shared_ptr<ConfigCatClient>& client) {
     lock_guard<mutex> lock(instancesMutex);
     for (auto it = instances.begin(); it != instances.end(); ++it) {
-        if (it->second.get() == client) {
+        if (it->second == client) {
+            client->configService.reset(); // stop polling by destroying configService
             instances.erase(it);
             return;
         }
@@ -114,7 +114,7 @@ SettingResult ConfigCatClient::getSettings() const {
             case LocalOnly:
                 return { overrideDataSource->getOverrides(), kDistantPast };
             case LocalOverRemote: {
-                auto settingResult = configService->getSettings();
+                auto settingResult = configService ? configService->getSettings() : SettingResult{nullptr, kDistantPast};
                 auto remote = settingResult.settings;
                 auto local = overrideDataSource->getOverrides();
                 auto result = make_shared<Settings>();
@@ -132,7 +132,7 @@ SettingResult ConfigCatClient::getSettings() const {
                 return { result, settingResult.fetchTime };
             }
             case RemoteOverLocal:
-                auto settingResult = configService->getSettings();
+                auto settingResult = configService ? configService->getSettings() : SettingResult{nullptr, kDistantPast};
                 auto remote = settingResult.settings;
                 auto local = overrideDataSource->getOverrides();
                 auto result = make_shared<Settings>();
@@ -151,7 +151,7 @@ SettingResult ConfigCatClient::getSettings() const {
         }
     }
 
-    return configService->getSettings();
+    return configService ? configService->getSettings() : SettingResult{nullptr, kDistantPast};
 }
 
 bool ConfigCatClient::getValue(const std::string& key, bool defaultValue, const std::shared_ptr<ConfigCatUser>& user) const {
@@ -486,7 +486,7 @@ RefreshResult ConfigCatClient::forceRefresh() {
     try {
         return configService
             ? configService->refresh()
-            : RefreshResult{"Client is configured to use the LocalOnly override behavior, which prevents making HTTP requests."};
+            : RefreshResult{"Client is configured to use the LocalOnly override behavior or has been closed, which prevents making HTTP requests."};
     } catch (...) {
         auto ex = std::current_exception();
         LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1003, ex);
@@ -499,7 +499,7 @@ void ConfigCatClient::setOnline() {
     if (configService) {
         configService->setOnline();
     } else {
-        LOG_WARN(3202) << "Client is configured to use the `LocalOnly` override behavior, thus `setOnline()` has no effect.";
+        LOG_WARN(3202) << "Client is configured to use the `LocalOnly` override behavior or has been closed, thus `setOnline()` has no effect.";
     }
 }
 
