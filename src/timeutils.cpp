@@ -22,6 +22,19 @@ using namespace std;
 
 namespace configcat {
 
+// https://howardhinnant.github.io/date_algorithms.html#days_from_civil
+// From C++20, this can be replaced with std::chrono::sys_days
+template <class Int> constexpr Int days_from_civil(Int y, unsigned m, unsigned d) noexcept {
+    static_assert(std::numeric_limits<unsigned>::digits >= 18, "This algorithm has not been ported to a 16 bit unsigned integer");
+    static_assert(std::numeric_limits<Int>::digits >= 20, "This algorithm has not been ported to a 16 bit signed integer");
+    y -= m <= 2;
+    const Int era = (y >= 0 ? y : y-399) / 400;
+    const unsigned yoe = static_cast<unsigned>(y - era * 400);  // [0, 399]
+    const unsigned doy = (153*(m > 2 ? m-3 : m+9) + 2)/5 + d-1; // [0, 365]
+    const unsigned doe = yoe * 365 + yoe/4 - yoe/100 + doy;     // [0, 146096]
+    return era * 146097 + static_cast<Int>(doe) - 719468;
+}
+
 std::string datetime_to_isostring(const date_time_t& tp) {
     const auto secondsSinceEpoch = chrono::system_clock::to_time_t(tp);
     const auto remainder = (tp - chrono::system_clock::from_time_t(secondsSinceEpoch));
@@ -41,25 +54,13 @@ std::string datetime_to_isostring(const date_time_t& tp) {
 }
 
 date_time_t make_datetime(int year, int month, int day, int hour, int min, int sec, int millisec) {
-    std::tm tm = {};
-    tm.tm_year = year - 1900; // Year since 1900
-    tm.tm_mon = month - 1;    // 0-11
-    tm.tm_mday = day;         // 1-31
-    tm.tm_hour = hour;        // 0-23
-    tm.tm_min = min;          // 0-59
-    tm.tm_sec = sec;          // 0-59
-
-    std::time_t t = std::mktime(&tm);
-    auto tp = std::chrono::system_clock::from_time_t(t);
-    tp += std::chrono::milliseconds(millisec); // Add milliseconds
-
-    // Correct for the timezone difference since mktime assumes local time
-    std::time_t current_time;
-    std::time(&current_time);
-    auto local_time = std::localtime(&current_time);
-    auto utc_time = std::gmtime(&current_time);
-    auto diff = std::difftime(std::mktime(local_time), std::mktime(utc_time));
-    return tp + chrono::seconds(static_cast<int>(diff));
+    auto days = days_from_civil(static_cast<long long>(year), month, day);
+    constexpr auto dayInSeconds = 86400;
+    auto duration = std::chrono::seconds(static_cast<long long>(days) * dayInSeconds + sec) +
+                    std::chrono::hours(hour) +
+                    std::chrono::minutes(min) +
+                    std::chrono::milliseconds(millisec);
+    return date_time_t{duration};
 }
 
 } // namespace configcat
