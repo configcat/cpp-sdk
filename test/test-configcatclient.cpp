@@ -38,23 +38,21 @@ TEST_F(ConfigCatClientTest, EnsureSingletonPerSdkKey) {
 }
 
 TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
-    ConfigCatOptions options;
-    options.pollingMode = PollingMode::manualPoll();
-    auto client = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
-    auto client2 = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
+    auto client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
+    auto client2 = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     EXPECT_TRUE(client2 == client);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 
     ConfigCatClient::close(client2);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
 
-    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
+    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 
     ConfigCatClient::closeAll();
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
 
-    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
+    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 }
 
@@ -89,7 +87,7 @@ TEST_P(SdkKeyFormatValidationTestSuite, SdkKeyFormatValidation) {
         if (!isValid) {
             FAIL() << "Expected invalid_argument exception";
         }
-    } catch (const invalid_argument& e) {
+    } catch (const invalid_argument&) {
         if (isValid) {
             FAIL() << "Did not expect invalid_argument exception";
         }

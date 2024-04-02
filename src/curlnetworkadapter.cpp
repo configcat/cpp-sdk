@@ -41,7 +41,9 @@ std::shared_ptr<LibCurlResourceGuard> LibCurlResourceGuard::instance = nullptr;
 std::mutex LibCurlResourceGuard::mutex;
 
 int ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-    return static_cast<CurlNetworkAdapter*>(clientp)->ProgressFunction(dltotal, dlnow, ultotal, ulnow);
+    if (clientp)
+        return static_cast<CurlNetworkAdapter*>(clientp)->ProgressFunction(dltotal, dlnow, ultotal, ulnow);
+    return 1; // Return abort
 }
 
 int CurlNetworkAdapter::ProgressFunction(curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
@@ -157,6 +159,7 @@ void CurlNetworkAdapter::close() {
 
 CurlNetworkAdapter::~CurlNetworkAdapter() {
     if (curl) {
+        curl_easy_setopt(curl, CURLOPT_XFERINFODATA, NULL);
         curl_easy_cleanup(curl);
     }
 }
