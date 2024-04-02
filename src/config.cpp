@@ -421,7 +421,7 @@ shared_ptr<Config> Config::fromFile(const string& filePath, bool tolerant) {
 
 void Config::fixupSaltAndSegments() {
     if (settings && !settings->empty()) {
-        auto configJsonSalt = preferences ? (*preferences).salt : nullptr;
+        auto configJsonSalt = preferences ? preferences->salt : nullptr;
 
         for (auto& [_, setting] : *settings) {
             setting.configJsonSalt = configJsonSalt;

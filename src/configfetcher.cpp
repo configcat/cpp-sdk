@@ -146,13 +146,13 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
             std::map<std::string, std::string>::const_iterator it = response.header.find(kEtagHeaderName);
             // If the etag header is not present in the response, try to find it case-insensitively
             if (it == response.header.end()) {
-                it = findCaseInsensitive(response.header, kEtagHeaderName);
+                it = find_caseinsensitive(response.header, kEtagHeaderName);
             }
             string eTag = it != response.header.end() ? it->second : "";
             try {
                 auto config = Config::fromJson(response.text);
                 LOG_DEBUG << "Fetch was successful: new config fetched.";
-                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, response.text, getUtcNowSecondsSinceEpoch()));
+                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, response.text, get_utcnowseconds_since_epoch()));
             } catch (...) {
                 auto ex = current_exception();
                 LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105, ex);

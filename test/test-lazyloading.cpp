@@ -109,7 +109,7 @@ TEST_F(LazyLoadingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch()).serialize()
+        get_utcnowseconds_since_epoch()).serialize()
     );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
@@ -140,7 +140,7 @@ TEST_F(LazyLoadingTest, FetchConfigWhenCacheIsExpired) {
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch() - cacheTimeToLiveSeconds).serialize()
+        get_utcnowseconds_since_epoch() - cacheTimeToLiveSeconds).serialize()
     );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
@@ -163,7 +163,7 @@ TEST_F(LazyLoadingTest, CacheTTLRespectsExternalCache) {
         Config::fromJson(jsonStringLocal),
         "etag",
         jsonStringLocal,
-        getUtcNowSecondsSinceEpoch()).serialize()
+        get_utcnowseconds_since_epoch()).serialize()
     );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test-remote"})")};
@@ -185,7 +185,7 @@ TEST_F(LazyLoadingTest, CacheTTLRespectsExternalCache) {
         Config::fromJson(jsonStringLocal),
         "etag2",
         jsonStringLocal,
-        getUtcNowSecondsSinceEpoch()).serialize();
+        get_utcnowseconds_since_epoch()).serialize();
 
     settings = *service.getSettings().settings;
     EXPECT_EQ("test-local2", std::get<string>(settings["fakeKey"].value));

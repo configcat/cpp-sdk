@@ -48,7 +48,7 @@ SettingResult ConfigService::getSettings() {
     if (pollingMode->getPollingIdentifier() == LazyLoadingMode::kIdentifier) {
         auto& lazyPollingMode = (LazyLoadingMode&)*pollingMode;
         auto now = chrono::steady_clock::now();
-        auto [ entry, _0, _1 ] = fetchIfOlder(getUtcNowSecondsSinceEpoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
+        auto [ entry, _0, _1 ] = fetchIfOlder(get_utcnowseconds_since_epoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
         auto config = cachedEntry->config;
         return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime};
     } else if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !initialized) {
@@ -164,7 +164,7 @@ tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_
         writeCache(cachedEntry);
         hooks->invokeOnConfigChanged(cachedEntry->config->getSettingsOrEmpty());
     } else if ((response.notModified() || !response.isTransientError) && cachedEntry != ConfigEntry::empty) {
-        cachedEntry->fetchTime = getUtcNowSecondsSinceEpoch();
+        cachedEntry->fetchTime = get_utcnowseconds_since_epoch();
         writeCache(cachedEntry);
     }
 
@@ -211,7 +211,7 @@ void ConfigService::startPoll() {
 
 void ConfigService::run() {
     auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
-    fetchIfOlder(getUtcNowSecondsSinceEpoch() - autoPollingMode.autoPollIntervalInSeconds);
+    fetchIfOlder(get_utcnowseconds_since_epoch() - autoPollingMode.autoPollIntervalInSeconds);
 
     {
         // Initialization finished
@@ -230,7 +230,7 @@ void ConfigService::run() {
             }
         }
 
-        fetchIfOlder(getUtcNowSecondsSinceEpoch() - autoPollingMode.autoPollIntervalInSeconds);
+        fetchIfOlder(get_utcnowseconds_since_epoch() - autoPollingMode.autoPollIntervalInSeconds);
     } while (true);
 }
 

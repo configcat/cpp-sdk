@@ -22,7 +22,7 @@ namespace configcat {
 
 constexpr auto kEpochTime = std::chrono::system_clock::time_point(); // January 1, 1970 UTC
 
-inline double getUtcNowSecondsSinceEpoch() {
+inline double get_utcnowseconds_since_epoch() {
     auto duration = std::chrono::system_clock::now() - kEpochTime;
     return std::chrono::duration<double>(duration).count();
 }
@@ -117,7 +117,7 @@ inline std::string to_lower(const std::string& str) {
 }
 
 template<typename Type>
-inline typename Type::const_iterator findCaseInsensitive(const Type& map, const std::string& searchKey) {
+inline typename Type::const_iterator find_caseinsensitive(const Type& map, const std::string& searchKey) {
     auto lowerSearchKey = to_lower(searchKey);
     return std::find_if(map.begin(), map.end(), [&lowerSearchKey](const auto& pair) {
         return to_lower(pair.first) == lowerSearchKey;

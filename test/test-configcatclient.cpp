@@ -296,7 +296,7 @@ TEST_F(ConfigCatClientTest, FromCacheOnly) {
     auto cacheKey = SHA1()(""s + kTestSdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
     auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})");
     auto config = Config::fromJson(jsonString);
-    auto configEntry = ConfigEntry(config, "test-etag", jsonString, getUtcNowSecondsSinceEpoch());
+    auto configEntry = ConfigEntry(config, "test-etag", jsonString, get_utcnowseconds_since_epoch());
     mockCache->write(cacheKey, configEntry.serialize());
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 
@@ -315,7 +315,7 @@ TEST_F(ConfigCatClientTest, FromCacheOnlyRefresh) {
     auto cacheKey = SHA1()(""s + kTestSdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
     auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"fake"})");
     auto config = Config::fromJson(jsonString);
-    auto configEntry = ConfigEntry(config, "test-etag", jsonString, getUtcNowSecondsSinceEpoch());
+    auto configEntry = ConfigEntry(config, "test-etag", jsonString, get_utcnowseconds_since_epoch());
     mockCache->write(cacheKey, configEntry.serialize());
     mockHttpSessionAdapter->enqueueResponse({500, ""});
 

@@ -179,7 +179,7 @@ TEST_F(AutoPollingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch()).serialize()
+        get_utcnowseconds_since_epoch()).serialize()
     );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
@@ -221,7 +221,7 @@ TEST_F(AutoPollingTest, FetchConfigWhenCacheIsExpired) {
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch() - pollIntervalSeconds).serialize()
+        get_utcnowseconds_since_epoch() - pollIntervalSeconds).serialize()
     );
 
     configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
@@ -245,7 +245,7 @@ TEST_F(AutoPollingTest, initWaitTimeReturnCached) {
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch() - 2 * pollIntervalSeconds).serialize()
+        get_utcnowseconds_since_epoch() - 2 * pollIntervalSeconds).serialize()
     );
 
     configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
