@@ -773,3 +773,51 @@ TEST_F(ConfigCatClientTest, SetOnlineAfterClose) {
     client->setOnline();
     EXPECT_TRUE(client->isOffline());
 }
+
+TEST_F(ConfigCatClientTest, ForceRefreshAfterCloseAll) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    ConfigCatClient::closeAll();
+
+    auto refreshResult = client->forceRefresh();
+
+    EXPECT_FALSE(refreshResult.success());
+    EXPECT_TRUE(refreshResult.errorMessage.has_value());
+    EXPECT_TRUE(refreshResult.errorMessage->find("has been closed") != string::npos);
+    EXPECT_TRUE(refreshResult.errorException == nullptr);
+}
+
+TEST_F(ConfigCatClientTest, GetValueDetailsAfterCloseAll) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+    client->forceRefresh();
+    ConfigCatClient::closeAll();
+
+    auto user = make_shared<ConfigCatUser>("test@test1.com");
+    auto details = client->getValueDetails("testStringKey", "", user);
+
+    EXPECT_EQ("", details.value);
+    EXPECT_EQ("testStringKey", details.key);
+    EXPECT_TRUE(details.variationId == nullopt);
+    EXPECT_TRUE(details.isDefaultValue);
+    EXPECT_TRUE(details.errorMessage.has_value());
+    EXPECT_TRUE(details.matchedTargetingRule == std::nullopt);
+    EXPECT_TRUE(details.matchedPercentageOption == std::nullopt);
+}
+
+TEST_F(ConfigCatClientTest, SetOnlineAfterCloseAll) {
+    SetUp();
+
+    configcat::Response response = {200, kTestJsonString};
+    mockHttpSessionAdapter->enqueueResponse(response);
+
+    EXPECT_FALSE(client->isOffline());
+    ConfigCatClient::closeAll();
+
+    client->setOnline();
+    EXPECT_TRUE(client->isOffline());
+}

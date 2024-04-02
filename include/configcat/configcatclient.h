@@ -121,6 +121,8 @@ private:
 
     ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
 
+    void closeCore();
+
     template<typename ValueType>
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
 

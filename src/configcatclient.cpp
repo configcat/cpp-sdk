@@ -67,12 +67,16 @@ std::shared_ptr<ConfigCatClient> ConfigCatClient::get(const std::string& sdkKey,
 }
 
 void ConfigCatClient::close(const std::shared_ptr<ConfigCatClient>& client) {
-    lock_guard<mutex> lock(instancesMutex);
-    for (auto it = instances.begin(); it != instances.end(); ++it) {
-        if (it->second == client) {
-            client->configService.reset(); // stop polling by destroying configService
-            instances.erase(it);
-            return;
+    {
+        lock_guard<mutex> lock(instancesMutex);
+
+        client->closeCore();
+
+        for (auto it = instances.begin(); it != instances.end(); ++it) {
+            if (it->second == client) {
+                instances.erase(it);
+                return;
+            }
         }
     }
 
@@ -82,6 +86,11 @@ void ConfigCatClient::close(const std::shared_ptr<ConfigCatClient>& client) {
 
 void ConfigCatClient::closeAll() {
     lock_guard<mutex> lock(instancesMutex);
+
+    for (const auto& [_, instance] : instances) {
+        instance->closeCore();
+    }
+
     instances.clear();
 }
 
@@ -106,6 +115,10 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
     if (!overrideDataSource || overrideDataSource->getBehaviour() != LocalOnly) {
         configService = make_unique<ConfigService>(sdkKey, logger, hooks, configCache, options);
     }
+}
+
+void ConfigCatClient::closeCore() {
+    configService.reset(); // stop polling by destroying configService
 }
 
 SettingResult ConfigCatClient::getSettings() const {
