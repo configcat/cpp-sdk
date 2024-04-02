@@ -54,7 +54,7 @@ std::string datetime_to_isostring(const date_time_t& tp) {
 }
 
 date_time_t make_datetime(int year, int month, int day, int hour, int min, int sec, int millisec) {
-    auto days = days_from_civil(static_cast<long long>(year), month, day);
+    auto days = days_from_civil(static_cast<int32_t>(year), month, day);
     constexpr auto dayInSeconds = 86400;
     auto duration = std::chrono::seconds(static_cast<long long>(days) * dayInSeconds + sec) +
                     std::chrono::hours(hour) +
