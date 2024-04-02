@@ -85,7 +85,7 @@ public:
       }
     })";
 
-    ConfigCatClient* client = nullptr;
+    shared_ptr<ConfigCatClient> client = nullptr;
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
 
     void SetUp() override {

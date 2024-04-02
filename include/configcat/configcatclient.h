@@ -23,11 +23,17 @@ struct SettingResult;
 
 class ConfigCatClient {
 public:
+    ConfigCatClient(const ConfigCatClient&) = delete; // Disable copy
+    ConfigCatClient& operator=(const ConfigCatClient&) = delete;
+
+    ConfigCatClient(ConfigCatClient&&) = delete; // Disable move
+    ConfigCatClient& operator=(ConfigCatClient&&) = delete;
+
     // Creates a new or gets an already existing [ConfigCatClient] for the given [sdkKey].
-    static ConfigCatClient* get(const std::string& sdkKey, const ConfigCatOptions* options = nullptr);
+    static std::shared_ptr<ConfigCatClient> get(const std::string& sdkKey, const ConfigCatOptions* options = nullptr);
 
     // Closes an individual [ConfigCatClient] instance.
-    static void close(ConfigCatClient* client);
+    static void close(const std::shared_ptr<ConfigCatClient>& client);
 
     // Closes all [ConfigCatClient] instances.
     static void closeAll();
@@ -111,7 +117,11 @@ public:
     inline std::shared_ptr<Hooks> getHooks() { return hooks; }
 
 private:
+    struct MakeSharedEnabler;
+
     ConfigCatClient(const std::string& sdkKey, const ConfigCatOptions& options);
+
+    void closeResources();
 
     template<typename ValueType>
     ValueType _getValue(const std::string& key, const ValueType& defaultValue, const std::shared_ptr<ConfigCatUser>& user = nullptr) const;
@@ -137,7 +147,7 @@ private:
     std::unique_ptr<ConfigService> configService;
 
     static std::mutex instancesMutex;
-    static std::unordered_map<std::string, std::unique_ptr<ConfigCatClient>> instances;
+    static std::unordered_map<std::string, std::shared_ptr<ConfigCatClient>> instances;
 };
 
 } // namespace configcat
