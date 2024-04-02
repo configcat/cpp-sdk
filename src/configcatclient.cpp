@@ -70,7 +70,7 @@ void ConfigCatClient::close(const std::shared_ptr<ConfigCatClient>& client) {
     {
         lock_guard<mutex> lock(instancesMutex);
 
-        client->closeCore();
+        client->closeResources();
 
         for (auto it = instances.begin(); it != instances.end(); ++it) {
             if (it->second == client) {
@@ -88,7 +88,7 @@ void ConfigCatClient::closeAll() {
     lock_guard<mutex> lock(instancesMutex);
 
     for (const auto& [_, instance] : instances) {
-        instance->closeCore();
+        instance->closeResources();
     }
 
     instances.clear();
@@ -117,7 +117,7 @@ ConfigCatClient::ConfigCatClient(const std::string& sdkKey, const ConfigCatOptio
     }
 }
 
-void ConfigCatClient::closeCore() {
+void ConfigCatClient::closeResources() {
     configService.reset(); // stop polling by destroying configService
 }
 
