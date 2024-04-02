@@ -67,6 +67,10 @@ std::shared_ptr<ConfigCatClient> ConfigCatClient::get(const std::string& sdkKey,
 }
 
 void ConfigCatClient::close(const std::shared_ptr<ConfigCatClient>& client) {
+    if (!client) {
+        return;
+    }
+
     {
         lock_guard<mutex> lock(instancesMutex);
 
