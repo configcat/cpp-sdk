@@ -34,7 +34,7 @@ bool isValidSdkKey(const string& sdkKey, bool customBaseUrl) {
 // NOTE: make_shared doesn't work with private ctors but we can use this workaround to avoid double allocation
 // (see also https://stackoverflow.com/a/8147213/8656352)
 struct ConfigCatClient::MakeSharedEnabler : ConfigCatClient {
-    ConfigCatClient::MakeSharedEnabler(const std::string& sdkKey, const ConfigCatOptions& options) : ConfigCatClient(sdkKey, options) {}
+    MakeSharedEnabler(const std::string& sdkKey, const ConfigCatOptions& options) : ConfigCatClient(sdkKey, options) {}
 };
 
 std::shared_ptr<ConfigCatClient> ConfigCatClient::get(const std::string& sdkKey, const ConfigCatOptions* options) {
