@@ -93,9 +93,9 @@ Read more about Targeting [here](https://configcat.com/docs/advanced/targeting/)
 Percentage and targeted rollouts are calculated by the user object passed to the configuration requests.
 The user object must be created with a **mandatory** identifier parameter which uniquely identifies each user:
 ```cpp
-auto user = ConfigCatUser("#USER-IDENTIFIER#");
+auto user = ConfigCatUser::create("#USER-IDENTIFIER#");
 
-bool isMyAwesomeFeatureEnabled = client->getValue("isMyAwesomeFeatureEnabled", false, &user);
+bool isMyAwesomeFeatureEnabled = client->getValue("isMyAwesomeFeatureEnabled", false, user);
 if (isMyAwesomeFeatureEnabled) {
     doTheNewThing();
 } else {
