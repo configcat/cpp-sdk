@@ -11,7 +11,7 @@ struct KeyValue {
         , value(value) {
     }
 
-    KeyValue(const std::string& key, Value&& value)
+    KeyValue(const std::string& key, Value&& value) noexcept
         : key(key)
         , value(value) {
     }

@@ -339,9 +339,9 @@ struct Preferences {
         return *this;
     }
 
-    Preferences(Preferences&& other) = default;
+    Preferences(Preferences&& other) noexcept = default;
 
-    Preferences& operator=(Preferences&& other) = default;
+    Preferences& operator=(Preferences&& other) noexcept = default;
 };
 
 /**
@@ -391,9 +391,9 @@ struct Config {
         return *this;
     }
 
-    Config(Config&& other) = default;
+    Config(Config&& other) noexcept = default;
 
-    Config& operator=(Config&& other) = default;
+    Config& operator=(Config&& other) noexcept = default;
 private:
     void fixupSaltAndSegments();
 };
