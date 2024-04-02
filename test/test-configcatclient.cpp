@@ -38,21 +38,23 @@ TEST_F(ConfigCatClientTest, EnsureSingletonPerSdkKey) {
 }
 
 TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
-    auto client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
-    auto client2 = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::manualPoll();
+    auto client = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
+    auto client2 = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
     EXPECT_TRUE(client2 == client);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 
     ConfigCatClient::close(client2);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
 
-    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
+    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 
     ConfigCatClient::closeAll();
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
 
-    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
+    client = ConfigCatClient::get("another-90123456789012/1234567890123456789012", &options);
     EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
 }
 
