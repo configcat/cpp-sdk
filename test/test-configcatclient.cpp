@@ -41,19 +41,19 @@ TEST_F(ConfigCatClientTest, EnsureCloseWorks) {
     auto client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     auto client2 = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
     EXPECT_TRUE(client2 == client);
-    EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
+    EXPECT_EQ(1, ConfigCatClient::instanceCount());
 
     ConfigCatClient::close(client2);
-    EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
+    EXPECT_EQ(0, ConfigCatClient::instanceCount());
 
     client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
-    EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
+    EXPECT_EQ(1, ConfigCatClient::instanceCount());
 
     ConfigCatClient::closeAll();
-    EXPECT_TRUE(ConfigCatClient::instanceCount() == 0);
+    EXPECT_EQ(0, ConfigCatClient::instanceCount());
 
     client = ConfigCatClient::get("another-90123456789012/1234567890123456789012");
-    EXPECT_TRUE(ConfigCatClient::instanceCount() == 1);
+    EXPECT_EQ(1, ConfigCatClient::instanceCount());
 }
 
 class SdkKeyFormatValidationTestSuite : public ::testing::TestWithParam<tuple<string, bool, bool>> {};
