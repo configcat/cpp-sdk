@@ -99,6 +99,8 @@ void ConfigCatClient::closeAll() {
 }
 
 size_t ConfigCatClient::instanceCount() {
+    lock_guard<mutex> lock(instancesMutex);
+
     return instances.size();
 }
 
