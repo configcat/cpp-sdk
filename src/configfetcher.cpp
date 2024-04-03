@@ -117,11 +117,16 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     }
 
     auto response = httpSessionAdapter->get(requestUrl, requestHeader, proxies, proxyAuthentications);
-    if (response.operationTimedOut) {
+    if (response.errorCode == ResponseErrorCode::TimedOut) {
         LogEntry logEntry = LogEntry(logger, LOG_LEVEL_ERROR, 1102);
         logEntry << "Request timed out while trying to fetch config JSON. "
                     "Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]";
         return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), nullptr, true);
+    }
+    if (response.errorCode == ResponseErrorCode::RequestCancelled) {
+        auto message = "Request was cancelled while trying to fetch config JSON.";
+        LOG_INFO(0) << message;
+        return FetchResponse(failure, ConfigEntry::empty, message, nullptr, true);
     }
     if (response.error.length() > 0) {
         try { throw std::runtime_error(response.error); }

@@ -105,6 +105,7 @@ Response CurlNetworkAdapter::get(const std::string& url,
                                  const std::map<std::string, ProxyAuthentication>& proxyAuthentications) {
     Response response;
     if (!curl) {
+        response.errorCode = ResponseErrorCode::InternalError;
         response.error = "CURL is not initialized.";
         return response;
     }
@@ -141,7 +142,13 @@ Response CurlNetworkAdapter::get(const std::string& url,
 
     if (res != CURLE_OK) {
         response.error = curl_easy_strerror(res);
-        response.operationTimedOut = res == CURLE_OPERATION_TIMEDOUT;
+        if (res == CURLE_OPERATION_TIMEDOUT) {
+            response.errorCode = ResponseErrorCode::TimedOut;
+        } else if (res == CURLE_ABORTED_BY_CALLBACK) {
+            response.errorCode = ResponseErrorCode::RequestCancelled;
+        } else {
+            response.errorCode = ResponseErrorCode::InternalError;
+        }
         return response;
     }
 
