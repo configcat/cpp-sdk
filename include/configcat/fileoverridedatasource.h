@@ -10,7 +10,9 @@ namespace configcat {
 class FileFlagOverrides : public FlagOverrides {
 public:
     FileFlagOverrides(const std::string& filePath, OverrideBehaviour behaviour);
-    std::shared_ptr<OverrideDataSource> createDataSource(std::shared_ptr<ConfigCatLogger> logger) override;
+    std::shared_ptr<OverrideDataSource> createDataSource(const std::shared_ptr<ConfigCatLogger>& logger) override;
+
+    inline OverrideBehaviour getBehavior() override { return behaviour; }
 
 private:
     const std::string filePath;
@@ -20,10 +22,10 @@ private:
 
 class FileOverrideDataSource : public OverrideDataSource {
 public:
-    FileOverrideDataSource(const std::string& filePath, OverrideBehaviour behaviour, std::shared_ptr<ConfigCatLogger> logger);
+    FileOverrideDataSource(const std::string& filePath, OverrideBehaviour behaviour, const std::shared_ptr<ConfigCatLogger>& logger);
 
     // Gets all the overrides defined in the given source.
-    const std::shared_ptr<Settings> getOverrides() override;
+    std::shared_ptr<Settings> getOverrides() override;
 
 private:
     void reloadFileContent();

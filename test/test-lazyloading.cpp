@@ -1,9 +1,8 @@
 #include <gtest/gtest.h>
 #include "mock.h"
-#include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include <thread>
 #include <chrono>
@@ -16,16 +15,16 @@ using namespace std::this_thread;
 class LazyLoadingTest : public ::testing::Test {
 public:
     static constexpr char kTestSdkKey[] = "TestSdkKey";
-    static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
+    static constexpr char kTestJsonFormat[] = R"({"f":{"fakeKey":{"t":%d,"v":%s}}})";
 
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
     shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 };
 
 TEST_F(LazyLoadingTest, Get) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     constexpr int secondResponseDelay = 2;
     mockHttpSessionAdapter->enqueueResponse(secondResponse, secondResponseDelay);
 
@@ -50,9 +49,9 @@ TEST_F(LazyLoadingTest, Get) {
 }
 
 TEST_F(LazyLoadingTest, GetFailedRequest) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {500, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {500, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
@@ -78,9 +77,9 @@ TEST_F(LazyLoadingTest, GetFailedRequest) {
 TEST_F(LazyLoadingTest, Cache) {
     auto mockCache = make_shared<InMemoryConfigCache>();
 
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
@@ -92,7 +91,7 @@ TEST_F(LazyLoadingTest, Cache) {
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test")"));
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"({"s":"test"})"));
 
     // Wait for cache invalidation
     sleep_for(seconds(3));
@@ -101,19 +100,19 @@ TEST_F(LazyLoadingTest, Cache) {
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"({"s":"test2"})"));
 }
 
 TEST_F(LazyLoadingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
-    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})");
     auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch()).serialize()
+        get_utcnowseconds_since_epoch()).serialize()
     );
 
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
 
     ConfigCatOptions options;
@@ -136,15 +135,15 @@ TEST_F(LazyLoadingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
 
 TEST_F(LazyLoadingTest, FetchConfigWhenCacheIsExpired) {
     auto cacheTimeToLiveSeconds = 1;
-    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})");
     auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch() - cacheTimeToLiveSeconds).serialize()
+        get_utcnowseconds_since_epoch() - cacheTimeToLiveSeconds).serialize()
     );
 
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
 
     ConfigCatOptions options;
@@ -157,8 +156,44 @@ TEST_F(LazyLoadingTest, FetchConfigWhenCacheIsExpired) {
     EXPECT_EQ(1, mockHttpSessionAdapter->requests.size());
 }
 
+TEST_F(LazyLoadingTest, CacheTTLRespectsExternalCache) {
+    auto cacheTimeToLiveSeconds = 1;
+    auto jsonStringLocal = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test-local"})");
+    auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
+        Config::fromJson(jsonStringLocal),
+        "etag",
+        jsonStringLocal,
+        get_utcnowseconds_since_epoch()).serialize()
+    );
+
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test-remote"})")};
+    mockHttpSessionAdapter->enqueueResponse(firstResponse);
+
+    ConfigCatOptions options;
+    options.pollingMode = PollingMode::lazyLoad(cacheTimeToLiveSeconds);
+    options.httpSessionAdapter = mockHttpSessionAdapter;
+    auto service = ConfigService(kTestSdkKey, logger, make_shared<Hooks>(), mockCache, options);
+
+    auto settings = *service.getSettings().settings;
+    EXPECT_EQ("test-local", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+
+    sleep_for(seconds(1));
+
+    jsonStringLocal = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test-local2"})");
+    mockCache->value = ConfigEntry(
+        Config::fromJson(jsonStringLocal),
+        "etag2",
+        jsonStringLocal,
+        get_utcnowseconds_since_epoch()).serialize();
+
+    settings = *service.getSettings().settings;
+    EXPECT_EQ("test-local2", std::get<string>(settings["fakeKey"].value));
+    EXPECT_EQ(0, mockHttpSessionAdapter->requests.size());
+}
+
 TEST_F(LazyLoadingTest, OnlineOffline) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
@@ -189,7 +224,7 @@ TEST_F(LazyLoadingTest, OnlineOffline) {
 }
 
 TEST_F(LazyLoadingTest, InitOffline) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;

@@ -1,8 +1,8 @@
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcat/timeutils.h"
+#include "configcatlogger.h"
 #include "configfetcher.h"
-#include "utils.h"
 #include <hash-library/sha1.h>
 #include <iostream>
 
@@ -12,14 +12,14 @@ using namespace std::this_thread;
 namespace configcat {
 
 ConfigService::ConfigService(const string& sdkKey,
-                             shared_ptr<ConfigCatLogger> logger,
-                             std::shared_ptr<Hooks> hooks,
-                             std::shared_ptr<ConfigCache> configCache,
+                             const shared_ptr<ConfigCatLogger>& logger,
+                             const std::shared_ptr<Hooks>& hooks,
+                             const std::shared_ptr<ConfigCache>& configCache,
                              const ConfigCatOptions& options):
     logger(logger),
     hooks(hooks),
     pollingMode(options.pollingMode ? options.pollingMode : PollingMode::autoPoll()),
-    cachedEntry(ConfigEntry::empty),
+    cachedEntry(const_pointer_cast<ConfigEntry>(ConfigEntry::empty)),
     configCache(configCache) {
     cacheKey = generateCacheKey(sdkKey);
     configFetcher = make_unique<ConfigFetcher>(sdkKey, logger, pollingMode->getPollingIdentifier(), options);
@@ -48,9 +48,9 @@ SettingResult ConfigService::getSettings() {
     if (pollingMode->getPollingIdentifier() == LazyLoadingMode::kIdentifier) {
         auto& lazyPollingMode = (LazyLoadingMode&)*pollingMode;
         auto now = chrono::steady_clock::now();
-        auto [ entry, _ ] = fetchIfOlder(getUtcNowSecondsSinceEpoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
+        auto [ entry, _0, _1 ] = fetchIfOlder(get_utcnowseconds_since_epoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
         auto config = cachedEntry->config;
-        return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
+        return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime};
     } else if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !initialized) {
         auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
         auto elapsedTime = chrono::duration<double>(chrono::steady_clock::now() - startTime).count();
@@ -63,19 +63,26 @@ SettingResult ConfigService::getSettings() {
             if (!initialized) {
                 setInitialized();
                 auto config = cachedEntry->config;
-                return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, cachedEntry->fetchTime };
+                return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, cachedEntry->fetchTime };
             }
         }
     }
 
-    auto [ entry, _ ] = fetchIfOlder(kDistantPast, true);
+    // If we are initialized, we prefer the cached results
+    auto [ entry, _0, _1 ] = fetchIfOlder(kDistantPast, initialized);
     auto config = entry->config;
-    return { (cachedEntry != ConfigEntry::empty && config) ? config->entries : nullptr, entry->fetchTime };
+    return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime };
 }
 
 RefreshResult ConfigService::refresh() {
-    auto [ _, error ] = fetchIfOlder(kDistantFuture);
-    return { error.empty(), error };
+    if (offline) {
+        auto offlineWarning = "Client is in offline mode, it cannot initiate HTTP calls.";
+        LOG_WARN(3200) << offlineWarning;
+        return { offlineWarning, nullptr };
+    }
+
+    auto [ _, errorMessage, errorException ] = fetchIfOlder(kDistantFuture);
+    return { errorMessage, errorException };
 }
 
 void ConfigService::setOnline() {
@@ -113,37 +120,26 @@ void ConfigService::setOffline() {
 string ConfigService::generateCacheKey(const string& sdkKey) {
     return SHA1()(sdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
 }
-tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, bool preferCache) {
+tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> ConfigService::fetchIfOlder(double threshold, bool preferCache) {
     {
         lock_guard<mutex> lock(fetchMutex);
 
         // Sync up with the cache and use it when it's not expired.
-        if (cachedEntry == ConfigEntry::empty || cachedEntry->fetchTime > time) {
-            auto entry = readCache();
-            if (entry != ConfigEntry::empty && entry->eTag != cachedEntry->eTag) {
-                cachedEntry = entry;
-                hooks->invokeOnConfigChanged(entry->config->entries);
-            }
-
-            // Cache isn't expired
-            if (cachedEntry && cachedEntry->fetchTime > time) {
-                setInitialized();
-                return { cachedEntry, "" };
-            }
+        auto fromCache = readCache();
+        if (fromCache != ConfigEntry::empty && fromCache->eTag != cachedEntry->eTag) {
+            cachedEntry = const_pointer_cast<ConfigEntry>(fromCache);
+            hooks->invokeOnConfigChanged(fromCache->config->getSettingsOrEmpty());
         }
 
-        // Use cache anyway (get calls on auto & manual poll must not initiate fetch).
-        // The initialized check ensures that we subscribe for the ongoing fetch during the
-        // max init wait time window in case of auto poll.
-        if (preferCache && initialized) {
-            return { cachedEntry, "" };
+        // Cache isn't expired
+        if (cachedEntry && cachedEntry->fetchTime > threshold) {
+            setInitialized();
+            return { cachedEntry, nullopt, nullptr };
         }
 
-        // If we are in offline mode we are not allowed to initiate fetch.
-        if (offline) {
-            auto offlineWarning = "Client is in offline mode, it cannot initiate HTTP calls.";
-            LOG_WARN(3200) << offlineWarning;
-            return { cachedEntry, offlineWarning };
+        // If we are in offline mode or the caller prefers cached values, do not initiate fetch.
+        if (offline || preferCache) {
+            return { cachedEntry, nullopt, nullptr };
         }
 
         // If there's an ongoing fetch running, we will wait for the ongoing fetch future and use its response.
@@ -164,16 +160,16 @@ tuple<shared_ptr<ConfigEntry>, string> ConfigService::fetchIfOlder(double time, 
     lock_guard<mutex> lock(fetchMutex);
 
     if (response.isFetched()) {
-        cachedEntry = response.entry;
+        cachedEntry = const_pointer_cast<ConfigEntry>(response.entry);
         writeCache(cachedEntry);
-        hooks->invokeOnConfigChanged(cachedEntry->config->entries);
+        hooks->invokeOnConfigChanged(cachedEntry->config->getSettingsOrEmpty());
     } else if ((response.notModified() || !response.isTransientError) && cachedEntry != ConfigEntry::empty) {
-        cachedEntry->fetchTime = getUtcNowSecondsSinceEpoch();
+        cachedEntry->fetchTime = get_utcnowseconds_since_epoch();
         writeCache(cachedEntry);
     }
 
     setInitialized();
-    return { cachedEntry, "" };
+    return { cachedEntry, response.errorMessage, response.errorException };
 }
 
 void ConfigService::setInitialized() {
@@ -184,7 +180,7 @@ void ConfigService::setInitialized() {
     }
 }
 
-shared_ptr<ConfigEntry> ConfigService::readCache() {
+shared_ptr<const ConfigEntry> ConfigService::readCache() {
     try {
         auto jsonString = configCache->read(cacheKey);
         if (jsonString.empty() || jsonString == cachedEntryString) {
@@ -193,17 +189,19 @@ shared_ptr<ConfigEntry> ConfigService::readCache() {
 
         cachedEntryString = jsonString;
         return ConfigEntry::fromString(jsonString);
-    } catch (exception& exception) {
-        LOG_ERROR(2200) << "Error occurred while reading the cache. " << exception.what();
+    } catch (...) {
+        LogEntry logEntry(logger, configcat::LOG_LEVEL_ERROR, 2200, current_exception());
+        logEntry << "Error occurred while reading the cache.";
         return ConfigEntry::empty;
     }
 }
 
-void ConfigService::writeCache(const std::shared_ptr<ConfigEntry>& configEntry) {
+void ConfigService::writeCache(const std::shared_ptr<const ConfigEntry>& configEntry) {
     try {
         configCache->write(cacheKey, configEntry->serialize());
-    } catch (exception& exception) {
-        LOG_ERROR(2201) << "Error occurred while writing the cache. " << exception.what();
+    } catch (...) {
+        LogEntry logEntry(logger, configcat::LOG_LEVEL_ERROR, 2201, current_exception());
+        logEntry << "Error occurred while writing the cache.";
     }
 }
 
@@ -213,7 +211,7 @@ void ConfigService::startPoll() {
 
 void ConfigService::run() {
     auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
-    fetchIfOlder(getUtcNowSecondsSinceEpoch() - autoPollingMode.autoPollIntervalInSeconds);
+    fetchIfOlder(get_utcnowseconds_since_epoch() - autoPollingMode.autoPollIntervalInSeconds);
 
     {
         // Initialization finished
@@ -232,7 +230,7 @@ void ConfigService::run() {
             }
         }
 
-        fetchIfOlder(getUtcNowSecondsSinceEpoch() - autoPollingMode.autoPollIntervalInSeconds);
+        fetchIfOlder(get_utcnowseconds_since_epoch() - autoPollingMode.autoPollIntervalInSeconds);
     } while (true);
 }
 

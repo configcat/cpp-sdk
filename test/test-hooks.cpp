@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include "mock.h"
-#include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatclient.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include <chrono>
+#include <nlohmann/json.hpp>
 
 using namespace configcat;
 using namespace std;
@@ -21,12 +21,10 @@ TEST_F(HooksTest, Init) {
     HookCallbacks hookCallbacks;
     auto hooks = make_shared<Hooks>(
         [&]() { hookCallbacks.onClientReady(); },
-        [&](std::shared_ptr<configcat::Settings> config) { hookCallbacks.onConfigChanged(config); },
-        [&](const EvaluationDetails& details) { hookCallbacks.onFlagEvaluated(details); },
-        [&](const string& error) { hookCallbacks.onError(error); }
+        [&](std::shared_ptr<const configcat::Settings> config) { hookCallbacks.onConfigChanged(config); },
+        [&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); },
+        [&](const string& message, const std::exception_ptr& exception) { hookCallbacks.onError(message, exception); }
     );
-
-    auto config = Config::fromJson(kTestJsonString);
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
@@ -36,25 +34,31 @@ TEST_F(HooksTest, Init) {
         kTestJsonString).serialize()
     );
     options.hooks = hooks;
-    auto client = ConfigCatClient::get("test", &options);
+    auto client = ConfigCatClient::get("test-67890123456789012/1234567890123456789012", &options);
 
     auto value = client->getValue("testStringKey", "");
+
+    auto expectedConfig = Config::fromJson(kTestJsonString);
+    expectedConfig->preferences = {};
+    expectedConfig->segments = {};
+    Config actualConfig;
+    actualConfig.settings = make_shared<Settings>(*hookCallbacks.changedConfig);
 
     EXPECT_EQ("testValue", value);
     EXPECT_TRUE(hookCallbacks.isReady);
     EXPECT_EQ(1, hookCallbacks.isReadyCallCount);
-    EXPECT_EQ(*config->entries, *hookCallbacks.changedConfig);
+    EXPECT_EQ(expectedConfig->toJson(), actualConfig.toJson());
     EXPECT_EQ(1, hookCallbacks.changedConfigCallCount);
 
     EXPECT_EQ("testStringKey", hookCallbacks.evaluationDetails.key);
-    EXPECT_EQ("testValue", get<string>(hookCallbacks.evaluationDetails.value));
+    EXPECT_EQ("testValue", get<string>(*hookCallbacks.evaluationDetails.value));
     EXPECT_EQ("id", hookCallbacks.evaluationDetails.variationId);
     EXPECT_TRUE(hookCallbacks.evaluationDetails.user == nullptr);
     EXPECT_FALSE(hookCallbacks.evaluationDetails.isDefaultValue);
-    EXPECT_TRUE(hookCallbacks.evaluationDetails.error.empty());
+    EXPECT_FALSE(hookCallbacks.evaluationDetails.errorMessage.has_value());
     EXPECT_EQ(1, hookCallbacks.evaluationDetailsCallCount);
 
-    EXPECT_TRUE(hookCallbacks.error.empty());
+    EXPECT_TRUE(hookCallbacks.errorMessage.empty());
     EXPECT_EQ(0, hookCallbacks.errorCallCount);
 
     ConfigCatClient::close(client);
@@ -64,11 +68,9 @@ TEST_F(HooksTest, Subscribe) {
     HookCallbacks hookCallbacks;
     auto hooks = make_shared<Hooks>();
     hooks->addOnClientReady([&]() { hookCallbacks.onClientReady(); });
-    hooks->addOnConfigChanged([&](std::shared_ptr<configcat::Settings> config) { hookCallbacks.onConfigChanged(config); });
-    hooks->addOnFlagEvaluated([&](const EvaluationDetails& details) { hookCallbacks.onFlagEvaluated(details); });
-    hooks->addOnError([&](const string& error) { hookCallbacks.onError(error); });
-
-    auto config = Config::fromJson(kTestJsonString);
+    hooks->addOnConfigChanged([&](std::shared_ptr<const configcat::Settings> config) { hookCallbacks.onConfigChanged(config); });
+    hooks->addOnFlagEvaluated([&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); });
+    hooks->addOnError([&](const string& message, const std::exception_ptr& exception) { hookCallbacks.onError(message, exception); });
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
@@ -78,25 +80,31 @@ TEST_F(HooksTest, Subscribe) {
         kTestJsonString).serialize()
     );
     options.hooks = hooks;
-    auto client = ConfigCatClient::get("test", &options);
+    auto client = ConfigCatClient::get("test-67890123456789012/1234567890123456789012", &options);
 
     auto value = client->getValue("testStringKey", "");
+
+    auto expectedConfig = Config::fromJson(kTestJsonString);
+    expectedConfig->preferences = {};
+    expectedConfig->segments = {};
+    Config actualConfig;
+    actualConfig.settings = make_shared<Settings>(*hookCallbacks.changedConfig);
 
     EXPECT_EQ("testValue", value);
     EXPECT_TRUE(hookCallbacks.isReady);
     EXPECT_EQ(1, hookCallbacks.isReadyCallCount);
-    EXPECT_EQ(*config->entries, *hookCallbacks.changedConfig);
+    EXPECT_EQ(expectedConfig->toJson(), actualConfig.toJson());
     EXPECT_EQ(1, hookCallbacks.changedConfigCallCount);
 
     EXPECT_EQ("testStringKey", hookCallbacks.evaluationDetails.key);
-    EXPECT_EQ("testValue", get<string>(hookCallbacks.evaluationDetails.value));
+    EXPECT_EQ("testValue", get<string>(*hookCallbacks.evaluationDetails.value));
     EXPECT_EQ("id", hookCallbacks.evaluationDetails.variationId);
     EXPECT_TRUE(hookCallbacks.evaluationDetails.user == nullptr);
     EXPECT_FALSE(hookCallbacks.evaluationDetails.isDefaultValue);
-    EXPECT_TRUE(hookCallbacks.evaluationDetails.error.empty());
+    EXPECT_FALSE(hookCallbacks.evaluationDetails.errorMessage.has_value());
     EXPECT_EQ(1, hookCallbacks.evaluationDetailsCallCount);
 
-    EXPECT_TRUE(hookCallbacks.error.empty());
+    EXPECT_TRUE(hookCallbacks.errorMessage.empty());
     EXPECT_EQ(0, hookCallbacks.errorCallCount);
 
     ConfigCatClient::close(client);
@@ -110,30 +118,32 @@ TEST_F(HooksTest, Evaluation) {
     ConfigCatOptions options;
     options.pollingMode = PollingMode::manualPoll();
     options.httpSessionAdapter = mockHttpSessionAdapter;
-    auto client = ConfigCatClient::get("test", &options);
+    auto client = ConfigCatClient::get("test-67890123456789012/1234567890123456789012", &options);
 
-    client->getHooks()->addOnFlagEvaluated([&](const EvaluationDetails& details) { hookCallbacks.onFlagEvaluated(details); });
+    client->getHooks()->addOnFlagEvaluated([&](const EvaluationDetailsBase& details) { hookCallbacks.onFlagEvaluated(details); });
 
     client->forceRefresh();
 
-    ConfigCatUser user("test@test1.com");
-    auto value = client->getValue("testStringKey", "", &user);
+    auto user = make_shared<ConfigCatUser>("test@test1.com");
+    auto value = client->getValue("testStringKey", "", user);
     EXPECT_EQ("fake1", value);
 
     auto& details = hookCallbacks.evaluationDetails;
-    EXPECT_EQ("fake1", get<string>(details.value));
+    EXPECT_EQ("fake1", get<string>(*details.value));
     EXPECT_EQ("testStringKey", details.key);
     EXPECT_EQ("id1", details.variationId);
     EXPECT_FALSE(details.isDefaultValue);
-    EXPECT_TRUE(details.error.empty());
-    EXPECT_TRUE(details.matchedEvaluationPercentageRule == std::nullopt);
+    EXPECT_FALSE(details.errorMessage.has_value());
+    EXPECT_TRUE(details.matchedPercentageOption == std::nullopt);
 
-    auto rule = details.matchedEvaluationRule;
-    EXPECT_EQ("fake1", get<string>(rule->value));
-    EXPECT_EQ(Comparator::CONTAINS, rule->comparator);
-    EXPECT_EQ("Identifier", rule->comparisonAttribute);
-    EXPECT_EQ("@test1.com", rule->comparisonValue);
-    EXPECT_TRUE(details.user == &user);
+    auto& rule = details.matchedTargetingRule;
+    auto& condition = get<UserCondition>(rule->conditions[0].condition);
+    auto& simpleValue = get<SettingValueContainer>(rule->then);
+    EXPECT_EQ("fake1", get<string>(simpleValue.value));
+    EXPECT_EQ(UserComparator::TextContainsAnyOf, condition.comparator);
+    EXPECT_EQ("Identifier", condition.comparisonAttribute);
+    EXPECT_EQ("@test1.com", get<vector<string>>(condition.comparisonValue)[0]);
+    EXPECT_TRUE(details.user == user);
 
     auto now =  std::chrono::system_clock::now();
     EXPECT_GT(details.fetchTime, now - std::chrono::seconds(1));

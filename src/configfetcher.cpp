@@ -3,17 +3,17 @@
 #include "configfetcher.h"
 #include "configcat/log.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcat/timeutils.h"
+#include "configcatlogger.h"
 #include "curlnetworkadapter.h"
 #include "version.h"
 #include "platform.h"
-#include "utils.h"
 
 using namespace std;
 
 namespace configcat {
 
-ConfigFetcher::ConfigFetcher(const string& sdkKey, shared_ptr<ConfigCatLogger> logger, const string& mode, const ConfigCatOptions& options):
+ConfigFetcher::ConfigFetcher(const string& sdkKey, const shared_ptr<ConfigCatLogger>& logger, const string& mode, const ConfigCatOptions& options):
     sdkKey(sdkKey),
     logger(logger),
     mode(mode),
@@ -57,34 +57,35 @@ FetchResponse ConfigFetcher::fetchConfiguration(const std::string& eTag) {
 
 FetchResponse ConfigFetcher::executeFetch(const std::string& eTag, int executeCount) {
     auto response = fetch(eTag);
-    auto preferences = response.entry && response.entry->config ? response.entry->config->preferences : nullptr;
+    auto& preferences = response.entry && response.entry->config ? response.entry->config->preferences : nullopt;
 
     // If there wasn't a config change or there were no preferences in the config, we return the response
-    if (!response.isFetched() || preferences == nullptr) {
+    if (!response.isFetched() || !preferences) {
         return response;
     }
 
+    const auto& baseUrl = preferences->baseUrl.value_or("");
     // If the preferences url is the same as the last called one, just return the response.
-    if (!preferences->url.empty() && url == preferences->url) {
+    if (!baseUrl.empty() && url == baseUrl) {
         return response;
     }
 
     // If the url is overridden, and the redirect parameter is not ForceRedirect,
     // the SDK should not redirect the calls, and it just has to return the response.
-    if (urlIsCustom && preferences->redirect != ForceRedirect) {
+    if (urlIsCustom && preferences->redirectMode != RedirectMode::Force) {
         return response;
     }
 
     // The next call should use the preferences url provided in the config json
-    url = preferences->url;
+    url = baseUrl;
 
-    if (preferences->redirect == NoRedirect) {
+    if (preferences->redirectMode == RedirectMode::No) {
         return response;
     }
 
     // Try to download again with the new url
 
-    if (preferences->redirect == ShouldRedirect) {
+    if (preferences->redirectMode == RedirectMode::Should) {
         LOG_WARN(3002) <<
             "The `dataGovernance` parameter specified at the client initialization is not in sync with the preferences on the ConfigCat Dashboard. "
             "Read more: https://configcat.com/docs/advanced/data-governance/";
@@ -103,7 +104,7 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
         auto error = "HttpSessionAdapter is not provided.";
         LOG_ERROR(0) << error;
         assert(false);
-        return FetchResponse(failure, ConfigEntry::empty, error, true);
+        return FetchResponse(failure, ConfigEntry::empty, error, nullptr, true);
     }
 
     string requestUrl(url + "/configuration-files/" + sdkKey + "/" + kConfigJsonName);
@@ -116,16 +117,29 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
     }
 
     auto response = httpSessionAdapter->get(requestUrl, requestHeader, proxies, proxyAuthentications);
-    if (response.operationTimedOut) {
+    if (response.errorCode == ResponseErrorCode::TimedOut) {
         LogEntry logEntry = LogEntry(logger, LOG_LEVEL_ERROR, 1102);
         logEntry << "Request timed out while trying to fetch config JSON. "
                     "Timeout values: [connect: " << connectTimeoutMs << "ms, read: " << readTimeoutMs << "ms]";
-        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), nullptr, true);
+    }
+    if (response.errorCode == ResponseErrorCode::RequestCancelled) {
+        auto message = "Request was cancelled while trying to fetch config JSON.";
+        LOG_INFO(0) << message;
+        return FetchResponse(failure, ConfigEntry::empty, message, nullptr, true);
     }
     if (response.error.length() > 0) {
-        LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1103);
-        logEntry << "Unexpected error occurred while trying to fetch config JSON: " << response.error;
-        return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+        try { throw std::runtime_error(response.error); }
+        catch (...)
+        {
+            exception_ptr ex = current_exception();
+            LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1103, ex);
+            logEntry <<
+                "Unexpected error occurred while trying to fetch config JSON. "
+                "It is most likely due to a local network issue. "
+                "Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP.";
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), ex, true);
+        }
     }
 
     switch (response.statusCode) {
@@ -134,18 +148,23 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
         case 202:
         case 203:
         case 204: {
-            const auto it = response.header.find(kEtagHeaderName);
+            std::map<std::string, std::string>::const_iterator it = response.header.find(kEtagHeaderName);
+            // If the etag header is not present in the response, try to find it case-insensitively
+            if (it == response.header.end()) {
+                it = find_caseinsensitive(response.header, kEtagHeaderName);
+            }
             string eTag = it != response.header.end() ? it->second : "";
             try {
                 auto config = Config::fromJson(response.text);
                 LOG_DEBUG << "Fetch was successful: new config fetched.";
-                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, response.text, getUtcNowSecondsSinceEpoch()));
-            } catch (exception& exception) {
-                LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105);
+                return FetchResponse(fetched, make_shared<ConfigEntry>(config, eTag, response.text, get_utcnowseconds_since_epoch()));
+            } catch (...) {
+                auto ex = current_exception();
+                LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1105, ex);
                 logEntry <<
                     "Fetching config JSON was successful but the HTTP response content was invalid. "
-                    "Config JSON parsing failed. " << exception.what();
-                return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+                    "Config JSON parsing failed.";
+                return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), ex, true);
             }
         }
 
@@ -159,13 +178,13 @@ FetchResponse ConfigFetcher::fetch(const std::string& eTag) {
             logEntry <<
                 "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey. "
                 "Received unexpected response: " << response.statusCode;
-            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), false);
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), nullptr, false);
         }
 
         default: {
             LogEntry logEntry(logger, LOG_LEVEL_ERROR, 1101);
             logEntry << "Unexpected HTTP response was received while trying to fetch config JSON: " << response.statusCode;
-            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), true);
+            return FetchResponse(failure, ConfigEntry::empty, logEntry.getMessage(), nullptr, true);
         }
     }
 }

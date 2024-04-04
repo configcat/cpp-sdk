@@ -1,49 +1,96 @@
 #pragma once
 
-#include <string>
-#include <optional>
 #include <chrono>
+#include <exception>
+
 #include "config.h"
+#include "configcatuser.h"
 
 namespace configcat {
 
-class ConfigCatUser;
+using fetch_time_t = std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>;
 
-struct EvaluationDetails {
-public:
-    EvaluationDetails(const std::string& key = "",
-                      const Value& value = {},
-                      const std::string& variationId = "",
-                      const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>>& fetchTime = {},
-                      const ConfigCatUser* user = nullptr,
-                      bool isDefaultValue = false,
-                      const std::string& error = "",
-                      const RolloutRule* matchedEvaluationRule = nullptr,
-                      const RolloutPercentageItem* matchedEvaluationPercentageRule = nullptr)
+struct EvaluationDetailsBase {
+    std::string key;
+    std::optional<std::string> variationId;
+    configcat::fetch_time_t fetchTime;
+    std::shared_ptr<ConfigCatUser> user;
+    bool isDefaultValue;
+    std::optional<std::string> errorMessage;
+    std::exception_ptr errorException;
+    std::optional<TargetingRule> matchedTargetingRule;
+    std::optional<PercentageOption> matchedPercentageOption;
+
+    inline std::optional<Value> value() const { return getValue(); }
+
+protected:
+    EvaluationDetailsBase(const std::string& key = "",
+        const std::optional<std::string>& variationId = "",
+        const configcat::fetch_time_t& fetchTime = {},
+        const std::shared_ptr<ConfigCatUser>& user = nullptr,
+        bool isDefaultValue = false,
+        const std::optional<std::string>& errorMessage = std::nullopt,
+        const std::exception_ptr& errorException = nullptr,
+        const TargetingRule* matchedTargetingRule = nullptr,
+        const PercentageOption* matchedPercentageOption = nullptr)
         : key(key)
-        , value(value)
         , variationId(variationId)
         , fetchTime(fetchTime)
         , user(user)
         , isDefaultValue(isDefaultValue)
-        , error(error)
-        , matchedEvaluationRule(matchedEvaluationRule ? std::optional<RolloutRule>{*matchedEvaluationRule} : std::nullopt)
-        , matchedEvaluationPercentageRule(matchedEvaluationPercentageRule ? std::optional<RolloutPercentageItem>{*matchedEvaluationPercentageRule} : std::nullopt)
+        , errorMessage(errorMessage)
+        , errorException(errorException)
+        // Unfortunately, std::optional<T&> is not possible (https://stackoverflow.com/a/26862721/8656352).
+        // We could use std::optional<std::reference_wrapper<T>> as a workaround. However, that would take up more space
+        // than pointers, so we'd rather resort to pointers, as this is ctor is not meant for public use.
+        , matchedTargetingRule(matchedTargetingRule ? std::optional<TargetingRule>(*matchedTargetingRule) : std::nullopt)
+        , matchedPercentageOption(matchedPercentageOption ? std::optional<PercentageOption>(*matchedPercentageOption) : std::nullopt)
     {}
 
-    static EvaluationDetails fromError(const std::string& key, const Value& value, const std::string& error, const std::string& variationId = {}) {
-        return EvaluationDetails(key, value, variationId, {}, nullptr, true, error);
+    virtual std::optional<Value> getValue() const = 0;
+};
+
+template <typename ValueType = std::optional<Value>>
+struct EvaluationDetails : public EvaluationDetailsBase {
+    EvaluationDetails(const std::string& key = "",
+                      const ValueType& value = {},
+                      const std::optional<std::string>& variationId = "",
+                      const configcat::fetch_time_t& fetchTime = {},
+                      const std::shared_ptr<ConfigCatUser>& user = nullptr,
+                      bool isDefaultValue = false,
+                      const std::optional<std::string>& errorMessage = std::nullopt,
+                      const std::exception_ptr& errorException = nullptr,
+                      const TargetingRule* matchedTargetingRule = nullptr,
+                      const PercentageOption* matchedPercentageOption = nullptr) :
+        EvaluationDetailsBase(key, variationId, fetchTime, user, isDefaultValue, errorMessage, errorException, matchedTargetingRule, matchedPercentageOption),
+        value(value) {
     }
 
-    std::string key;
-    Value value;
-    std::string variationId;
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> fetchTime;
-    const ConfigCatUser* user;
-    bool isDefaultValue;
-    std::string error;
-    std::optional<RolloutRule> matchedEvaluationRule;
-    std::optional<RolloutPercentageItem> matchedEvaluationPercentageRule;
+    static EvaluationDetails fromError(const std::string& key,
+                                       const ValueType& defaultValue,
+                                       const std::string& errorMessage,
+                                       const std::exception_ptr& errorException = nullptr) {
+        return EvaluationDetails<ValueType>(key, defaultValue, std::nullopt, {}, nullptr, true, errorMessage, errorException);
+    }
+
+    ValueType value;
+
+protected:
+    std::optional<Value> getValue() const override {
+        if constexpr (std::is_same_v<ValueType, std::optional<Value>>) {
+            return value;
+        } else {
+            return Value(value);
+        }
+    }
 };
+
+/** Helper function for creating copies of [EvaluationDetailsBase], which is not constructible, thus, not copyable. */
+inline EvaluationDetails<> to_concrete(const EvaluationDetailsBase& details) {
+    return EvaluationDetails<>(details.key, details.value(), details.variationId, details.fetchTime,
+        details.user, details.isDefaultValue, details.errorMessage, details.errorException,
+        details.matchedTargetingRule ? &*details.matchedTargetingRule : nullptr,
+        details.matchedPercentageOption ? &*details.matchedPercentageOption : nullptr);
+}
 
 } // namespace configcat

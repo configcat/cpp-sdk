@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "configservice.h"
 #include "configcat/configcatoptions.h"
-#include "configcat/configcatlogger.h"
+#include "configcatlogger.h"
 #include "configcat/consolelogger.h"
 #include <thread>
 #include <chrono>
@@ -16,16 +16,16 @@ using namespace std::this_thread;
 class AutoPollingTest : public ::testing::Test {
 public:
     static constexpr char kTestSdkKey[] = "TestSdkKey";
-    static constexpr char kTestJsonFormat[] = R"({ "f": { "fakeKey": { "v": %s, "p": [], "r": [] } } })";
+    static constexpr char kTestJsonFormat[] = R"({"f":{"fakeKey":{"t":%d,"v":%s}}})";
 
     shared_ptr<MockHttpSessionAdapter> mockHttpSessionAdapter = make_shared<MockHttpSessionAdapter>();
     shared_ptr<ConfigCatLogger> logger = make_shared<ConfigCatLogger>(make_shared<ConsoleLogger>(), make_shared<Hooks>());
 };
 
 TEST_F(AutoPollingTest, Get) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
@@ -43,9 +43,9 @@ TEST_F(AutoPollingTest, Get) {
 }
 
 TEST_F(AutoPollingTest, GetFailedRequest) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {500, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {500, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
@@ -63,9 +63,9 @@ TEST_F(AutoPollingTest, GetFailedRequest) {
 }
 
 TEST_F(AutoPollingTest, OnConfigChanged) {
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     bool called = false;
@@ -87,7 +87,7 @@ TEST_F(AutoPollingTest, OnConfigChanged) {
 }
 
 TEST_F(AutoPollingTest, RequestTimeout) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     constexpr int responseDelay = 3;
     mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
@@ -108,7 +108,7 @@ TEST_F(AutoPollingTest, RequestTimeout) {
 }
 
 TEST_F(AutoPollingTest, InitWaitTimeout) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     constexpr int responseDelay = 5;
     mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
@@ -129,7 +129,7 @@ TEST_F(AutoPollingTest, InitWaitTimeout) {
 }
 
 TEST_F(AutoPollingTest, CancelRequest) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     constexpr int responseDelay = 60;
     mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
@@ -148,9 +148,9 @@ TEST_F(AutoPollingTest, CancelRequest) {
 TEST_F(AutoPollingTest, Cache) {
     auto mockCache = make_shared<InMemoryConfigCache>();
 
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
-    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response secondResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(secondResponse);
 
     ConfigCatOptions options;
@@ -162,7 +162,7 @@ TEST_F(AutoPollingTest, Cache) {
     EXPECT_EQ("test", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test")"));
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"({"s":"test"})"));
 
     sleep_for(seconds(3));
 
@@ -170,19 +170,19 @@ TEST_F(AutoPollingTest, Cache) {
     EXPECT_EQ("test2", std::get<string>(settings["fakeKey"].value));
 
     EXPECT_EQ(1, mockCache->store.size());
-    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"("test2")"));
+    EXPECT_TRUE(contains(mockCache->store.begin()->second, R"({"s":"test2"})"));
 }
 
 TEST_F(AutoPollingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
-    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})");
     auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch()).serialize()
+        get_utcnowseconds_since_epoch()).serialize()
     );
 
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
 
     auto pollIntervalSeconds = 2;
@@ -216,15 +216,15 @@ TEST_F(AutoPollingTest, ReturnCachedConfigWhenCacheIsNotExpired) {
 TEST_F(AutoPollingTest, FetchConfigWhenCacheIsExpired) {
     auto pollIntervalSeconds = 2;
     auto maxInitWaitTimeSeconds = 1;
-    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})");
     auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch() - pollIntervalSeconds).serialize()
+        get_utcnowseconds_since_epoch() - pollIntervalSeconds).serialize()
     );
 
-    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response firstResponse = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     mockHttpSessionAdapter->enqueueResponse(firstResponse);
 
     ConfigCatOptions options;
@@ -240,15 +240,15 @@ TEST_F(AutoPollingTest, FetchConfigWhenCacheIsExpired) {
 TEST_F(AutoPollingTest, initWaitTimeReturnCached) {
     auto pollIntervalSeconds = 60;
     auto maxInitWaitTimeSeconds = 1;
-    auto jsonString = string_format(kTestJsonFormat, R"("test")");
+    auto jsonString = string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})");
     auto mockCache = make_shared<SingleValueCache>(ConfigEntry(
         Config::fromJson(jsonString),
         "test-etag",
         jsonString,
-        getUtcNowSecondsSinceEpoch() - 2 * pollIntervalSeconds).serialize()
+        get_utcnowseconds_since_epoch() - 2 * pollIntervalSeconds).serialize()
     );
 
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test2")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test2"})")};
     constexpr int responseDelay = 5;
     mockHttpSessionAdapter->enqueueResponse(response, responseDelay);
 
@@ -271,7 +271,7 @@ TEST_F(AutoPollingTest, initWaitTimeReturnCached) {
 }
 
 TEST_F(AutoPollingTest, OnlineOffline) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
@@ -301,7 +301,7 @@ TEST_F(AutoPollingTest, OnlineOffline) {
 }
 
 TEST_F(AutoPollingTest, InitOffline) {
-    configcat::Response response = {200, string_format(kTestJsonFormat, R"("test")")};
+    configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;

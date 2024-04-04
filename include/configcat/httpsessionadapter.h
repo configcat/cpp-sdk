@@ -6,12 +6,19 @@
 
 namespace configcat {
 
+enum class ResponseErrorCode : int {
+    OK = 0,
+    TimedOut = 1,
+    RequestCancelled = 2,
+    InternalError = 3
+};
+
 struct Response {
     long statusCode = 0;
     std::string text;
     std::map<std::string, std::string> header;
 
-    bool operationTimedOut = false;
+    ResponseErrorCode errorCode = ResponseErrorCode::OK;
     std::string error;
 };
 

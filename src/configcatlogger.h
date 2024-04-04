@@ -1,31 +1,33 @@
 #pragma once
 
-#include "log.h"
-#include "configcatoptions.h"
-#include "configcatuser.h"
-#include "config.h"
+#include <exception>
+
+#include "configcat/log.h"
+#include "configcat/configcatoptions.h"
+#include "configcat/configcatuser.h"
+#include "configcat/config.h"
+#include "utils.h"
 
 namespace configcat {
 
 class ConfigCatLogger {
 public:
-    ConfigCatLogger(std::shared_ptr<ILogger> logger, std::shared_ptr<Hooks> hooks):
+    ConfigCatLogger(const std::shared_ptr<ILogger>& logger, const std::shared_ptr<Hooks>& hooks):
         logger(logger),
         hooks(hooks) {
     }
 
-    void log(LogLevel level, int eventId, const std::string& message) {
+    void log(LogLevel level, int eventId, const std::string& message, const std::exception_ptr& exception = nullptr) {
         if (hooks && level == LOG_LEVEL_ERROR) {
-            hooks->invokeOnError(message);
+            hooks->invokeOnError(message, exception);
         }
 
-        if (logger) {
-            logger->log(level, "[" + std::to_string(eventId) + "] " + message);
+        if (isEnabled(level)) {
+            logger->log(level, "[" + std::to_string(eventId) + "] " + message, exception);
         }
     }
 
-    void setLogLevel(LogLevel logLevel) { if (logger) logger->setLogLevel(logLevel); }
-    LogLevel getLogLevel() const { return logger ? logger->getLogLevel() : LOG_LEVEL_WARNING; }
+    inline bool isEnabled(LogLevel level) { return logger && level <= logger->getLogLevel(); }
 
 private:
     std::shared_ptr<ILogger> logger;
@@ -34,70 +36,55 @@ private:
 
 class LogEntry {
 public:
-    LogEntry(std::shared_ptr<ConfigCatLogger> logger, LogLevel level, int eventId) : logger(logger), level(level), eventId(eventId) {}
+    LogEntry(const std::shared_ptr<ConfigCatLogger>& logger, LogLevel level, int eventId, const std::exception_ptr& exception = nullptr)
+        : logger(logger), level(level), eventId(eventId), exception(exception) {}
+
     ~LogEntry() {
-        if (logger && level <= logger->getLogLevel())
-            logger->log(level, eventId, message);
+        if (logger->isEnabled(level))
+            logger->log(level, eventId, message, exception);
     }
 
     LogEntry& operator<<(const char* str) {
-        if (str && logger && level <= logger->getLogLevel())
+        if (str && logger->isEnabled(level))
             message += str;
         return *this;
     }
 
     LogEntry& operator<<(char* str) {
-        if (str && logger && level <= logger->getLogLevel())
+        if (str && logger->isEnabled(level))
             message += str;
         return *this;
     }
 
     LogEntry& operator<<(const std::string& str) {
-        if (logger && level <= logger->getLogLevel())
+        if (logger->isEnabled(level))
             message += str;
         return *this;
     }
 
     LogEntry& operator<<(bool arg) {
-        if (logger && level <= logger->getLogLevel())
+        if (logger->isEnabled(level))
             message += arg ? "true" : "false";
         return *this;
     }
 
-    LogEntry& operator<<(const ConfigCatUser* user) {
-        return operator<<(*user);
-    }
-
-    LogEntry& operator<<(const ConfigCatUser& user) {
-        if (logger && level <= logger->getLogLevel())
-            message += user.toJson();
-        return *this;
-    }
-
-    LogEntry& operator<<(const Value& v) {
-        if (logger && level <= logger->getLogLevel())
-            message += valueToString(v);
+    LogEntry& operator<<(const std::optional<Value>& v) {
+        if (logger->isEnabled(level))
+            message += v ? v->toString() : "";
         return *this;
     }
 
     template<typename Type>
     LogEntry& operator<<(Type arg) {
-        if (logger && level <= logger->getLogLevel())
+        if (logger->isEnabled(level))
             message += std::to_string(arg);
         return *this;
     }
 
-    template<typename Type>
-    LogEntry& operator<<(const std::vector<Type>& v) {
-        if (logger && level <= logger->getLogLevel()) {
+    LogEntry& operator<<(const std::vector<std::string>& v) {
+        if (logger->isEnabled(level)) {
             message += "[";
-            size_t last = v.size() - 1;
-            for (size_t i = 0; i < v.size(); ++i) {
-                operator<<(v[i]);
-                if (i != last) {
-                    message += ", ";
-                }
-            }
+            append_stringlist(*this, v);
             message += "]";
         }
         return *this;
@@ -110,6 +97,7 @@ private:
     LogLevel level;
     int eventId;
     std::string message;
+    std::exception_ptr exception;
 };
 
 } // namespace configcat

@@ -8,7 +8,9 @@ namespace configcat {
 class MapFlagOverrides : public FlagOverrides {
 public:
     MapFlagOverrides(const std::unordered_map<std::string, Value>& source, OverrideBehaviour behaviour);
-    std::shared_ptr<OverrideDataSource> createDataSource(std::shared_ptr<ConfigCatLogger> logger) override;
+    std::shared_ptr<OverrideDataSource> createDataSource(const std::shared_ptr<ConfigCatLogger>& logger) override;
+
+    inline OverrideBehaviour getBehavior() override { return behaviour; }
 
 private:
     const std::shared_ptr<Settings> overrides;
@@ -17,17 +19,17 @@ private:
 
 class MapOverrideDataSource : public OverrideDataSource {
 public:
-    MapOverrideDataSource(const std::shared_ptr<Settings> overrides,
+    MapOverrideDataSource(const std::shared_ptr<Settings>& overrides,
                           OverrideBehaviour behaviour):
         OverrideDataSource(behaviour),
         overrides(overrides) {
     }
 
     // Gets all the overrides defined in the given source.
-    const std::shared_ptr<Settings> getOverrides() override { return overrides; }
+    std::shared_ptr<Settings> getOverrides() override { return overrides; }
 
 private:
-    const std::shared_ptr<Settings> overrides;
+    std::shared_ptr<Settings> overrides;
 };
 
 } // namespace configcat

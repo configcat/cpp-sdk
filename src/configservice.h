@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include "configcat/config.h"
 #include "configcat/refreshresult.h"
-#include "configcat/settingresult.h"
+#include "settingresult.h"
 #include "configfetcher.h"
 
 
@@ -18,16 +18,15 @@ struct ConfigCatOptions;
 class ConfigCatLogger;
 class ConfigFetcher;
 class ConfigCache;
-struct ConfigEntry;
 class PollingMode;
 class Hooks;
 
 class ConfigService {
 public:
     ConfigService(const std::string& sdkKey,
-                  std::shared_ptr<ConfigCatLogger> logger,
-                  std::shared_ptr<Hooks> hooks,
-                  std::shared_ptr<ConfigCache> configCache,
+                  const std::shared_ptr<ConfigCatLogger>& logger,
+                  const std::shared_ptr<Hooks>& hooks,
+                  const std::shared_ptr<ConfigCache>& configCache,
                   const ConfigCatOptions& options);
     ~ConfigService();
 
@@ -41,10 +40,10 @@ public:
 
 private:
     // Returns the ConfigEntry object and error message in case of any error.
-    std::tuple<std::shared_ptr<ConfigEntry>, std::string> fetchIfOlder(double time, bool preferCache = false);
+    std::tuple<std::shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> fetchIfOlder(double threshold, bool preferCache = false);
     void setInitialized();
-    std::shared_ptr<ConfigEntry> readCache();
-    void writeCache(const std::shared_ptr<ConfigEntry>& configEntry);
+    std::shared_ptr<const ConfigEntry> readCache();
+    void writeCache(const std::shared_ptr<const ConfigEntry>& configEntry);
     void startPoll();
     void run();
 
