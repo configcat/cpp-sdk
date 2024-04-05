@@ -368,7 +368,7 @@ std::unordered_map<std::string, Value> ConfigCatClient::getAllValues(const std::
         const auto& effectiveUser = user ? user : defaultUser;
         for (const auto& [key, setting] : *settings) {
             auto details = evaluate<Value>(key, nullopt, effectiveUser, setting, settings, fetchTime);
-            result.insert({ key, move(details.value) });
+            result.insert({ key, std::move(details.value) });
         }
 
         return result;
@@ -447,7 +447,7 @@ ValueType ConfigCatClient::_getValue(const std::string& key, const ValueType& de
         const auto& effectiveUser = user ? user : defaultUser;
         auto details = evaluate<ValueType>(key, defaultValue, effectiveUser, setting->second, settings, fetchTime);
 
-        return move(details.value);
+        return std::move(details.value);
     }
     catch (...) {
         auto ex = std::current_exception();
