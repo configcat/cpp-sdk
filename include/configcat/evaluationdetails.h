@@ -47,6 +47,8 @@ protected:
         , matchedPercentageOption(matchedPercentageOption ? std::optional<PercentageOption>(*matchedPercentageOption) : std::nullopt)
     {}
 
+    virtual ~EvaluationDetailsBase() = default;
+
     virtual std::optional<Value> getValue() const = 0;
 };
 
