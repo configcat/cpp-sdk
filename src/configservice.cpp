@@ -45,15 +45,16 @@ ConfigService::~ConfigService() {
 }
 
 SettingResult ConfigService::getSettings() {
+    auto threshold = kDistantPast;
+    auto preferCached = initialized;
     if (pollingMode->getPollingIdentifier() == LazyLoadingMode::kIdentifier) {
         auto& lazyPollingMode = (LazyLoadingMode&)*pollingMode;
-        auto now = chrono::steady_clock::now();
-        auto [ entry, _0, _1 ] = fetchIfOlder(get_utcnowseconds_since_epoch() - lazyPollingMode.cacheRefreshIntervalInSeconds);
-        auto config = cachedEntry->config;
-        return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime};
+        threshold = get_utcnowseconds_since_epoch() - lazyPollingMode.cacheRefreshIntervalInSeconds;
+        preferCached = false;
     } else if (pollingMode->getPollingIdentifier() == AutoPollingMode::kIdentifier && !initialized) {
         auto& autoPollingMode = (AutoPollingMode&)*pollingMode;
         auto elapsedTime = chrono::duration<double>(chrono::steady_clock::now() - startTime).count();
+        threshold = get_utcnowseconds_since_epoch() - autoPollingMode.autoPollIntervalInSeconds;
         if (elapsedTime < autoPollingMode.maxInitWaitTimeInSeconds) {
             unique_lock<mutex> lock(initMutex);
             chrono::duration<double> timeout(autoPollingMode.maxInitWaitTimeInSeconds - elapsedTime);
@@ -69,7 +70,7 @@ SettingResult ConfigService::getSettings() {
     }
 
     // If we are initialized, we prefer the cached results
-    auto [ entry, _0, _1 ] = fetchIfOlder(kDistantPast, initialized);
+    auto [ entry, _0, _1 ] = fetchIfOlder(threshold, preferCached);
     auto config = entry->config;
     return { (cachedEntry != ConfigEntry::empty && config) ? config->getSettingsOrEmpty() : nullptr, entry->fetchTime };
 }
@@ -120,7 +121,7 @@ void ConfigService::setOffline() {
 string ConfigService::generateCacheKey(const string& sdkKey) {
     return SHA1()(sdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
 }
-tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> ConfigService::fetchIfOlder(double threshold, bool preferCache) {
+tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> ConfigService::fetchIfOlder(double threshold, bool preferCached) {
     {
         lock_guard<mutex> lock(fetchMutex);
 
@@ -138,7 +139,7 @@ tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_
         }
 
         // If we are in offline mode or the caller prefers cached values, do not initiate fetch.
-        if (offline || preferCache) {
+        if (offline || preferCached) {
             return { cachedEntry, nullopt, nullptr };
         }
 
