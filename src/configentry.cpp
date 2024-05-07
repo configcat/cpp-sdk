@@ -30,9 +30,6 @@ shared_ptr<const ConfigEntry> ConfigEntry::fromString(const string& text) {
     }
 
     auto eTag = text.substr(fetchTimeIndex + 1, eTagIndex - fetchTimeIndex - 1);
-    if (eTag.empty()) {
-        throw invalid_argument("Empty eTag value");
-    }
 
     auto configJsonString = text.substr(eTagIndex + 1);
     try {
