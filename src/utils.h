@@ -130,4 +130,7 @@ std::optional<double> number_from_string(const std::string& str);
 
 std::optional<long long> integer_from_string(const std::string& str);
 
+std::string sha1(const std::string& input);
+std::string sha256(const std::string& input);
+
 } // namespace configcat

@@ -17,6 +17,7 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 option(CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER "Use external network adapter." OFF)
+option(CONFIGCAT_USE_EXTERNAL_SHA "Use external hash calculation." OFF)
 option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
 
 if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
@@ -24,7 +25,9 @@ if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
 endif()
 
 find_package(nlohmann_json REQUIRED)
-find_package(unofficial-hash-library REQUIRED)
+if(NOT CONFIGCAT_USE_EXTERNAL_SHA)
+    find_package(unofficial-hash-library REQUIRED)
+endif()
 find_package(semver REQUIRED)
 
 set(CONFIGCAT_INCLUDE_PATHS
@@ -66,11 +69,19 @@ file(GLOB SOURCES "src/*")
 add_library(configcat ${SOURCES})
 add_library(configcat::configcat ALIAS configcat)
 
+set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} nlohmann_json::nlohmann_json semver::semver)
+
+# Conditionally add libraries based on options and set compile definitions
 if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
-    set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} CURL::libcurl nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
+    list(APPEND CONFIGCAT_LIBRARIES CURL::libcurl)
 else()
-    set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} nlohmann_json::nlohmann_json unofficial::hash-library semver::semver)
     target_compile_definitions(configcat PRIVATE CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED)
+endif()
+
+if(NOT CONFIGCAT_USE_EXTERNAL_SHA)
+    list(APPEND CONFIGCAT_LIBRARIES unofficial::hash-library)
+else()
+    target_compile_definitions(configcat PRIVATE CONFIGCAT_EXTERNAL_SHA_ENABLED)
 endif()
 
 target_link_libraries(configcat

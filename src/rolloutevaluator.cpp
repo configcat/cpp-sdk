@@ -3,8 +3,6 @@
 #include <ostream> // must be imported before <semver/semver.hpp>
 #include <sstream>
 
-#include <hash-library/sha1.h>
-#include <hash-library/sha256.h>
 #include <nlohmann/json.hpp>
 #include <semver/semver.hpp>
 
@@ -35,14 +33,12 @@ static const ValueType& ensureComparisonValue(const UserConditionComparisonValue
     throw runtime_error("Comparison value is missing or invalid.");
 }
 
-static string hashComparisonValue(SHA256& sha256, const string& value, const string& configJsonSalt, const string& contextSalt) {
+static string hashComparisonValue(const string& value, const string& configJsonSalt, const string& contextSalt) {
     return sha256(value + configJsonSalt + contextSalt);
 }
 
 RolloutEvaluator::RolloutEvaluator(const std::shared_ptr<ConfigCatLogger>& logger) :
-    logger(logger),
-    sha1(make_unique<SHA1>()),
-    sha256(make_unique<SHA256>()) {
+    logger(logger) {
 }
 
 EvaluateResult RolloutEvaluator::evaluate(const std::optional<Value>& defaultValue, EvaluateContext& context, std::optional<Value>& returnValue) const {
@@ -221,8 +217,8 @@ std::optional<EvaluateResult> RolloutEvaluator::evaluatePercentageOptions(const 
     const auto userAttributeValuePtr = get_if<string>(percentageOptionsAttributeValuePtr);
     const auto userAttributeValue = userAttributeValuePtr ? string() : userAttributeValueToString(*percentageOptionsAttributeValuePtr);
 
-    auto sha1 = (*this->sha1)(context.key + (userAttributeValuePtr ? *userAttributeValuePtr : userAttributeValue));
-    const auto hashValue = std::stoul(sha1.erase(7), nullptr, 16) % 100;
+    auto hash = sha1(context.key + (userAttributeValuePtr ? *userAttributeValuePtr : userAttributeValue));
+    const auto hashValue = std::stoul(hash.erase(7), nullptr, 16) % 100;
 
     if (logBuilder) {
         logBuilder->newLine().appendFormat("- Computing hash in the [0..99] range from User.%s => %d (this value is sticky and consistent across all SDKs)",
@@ -569,7 +565,7 @@ bool RolloutEvaluator::evaluateTextEquals(const std::string& text, const UserCon
 bool RolloutEvaluator::evaluateSensitiveTextEquals(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
     const auto& hash2 = ensureComparisonValue<string>(comparisonValue);
 
-    const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+    const auto hash = hashComparisonValue(text, configJsonSalt, contextSalt);
 
     return (hash == hash2) ^ negate;
 }
@@ -589,7 +585,7 @@ bool RolloutEvaluator::evaluateTextIsOneOf(const std::string& text, const UserCo
 bool RolloutEvaluator::evaluateSensitiveTextIsOneOf(const std::string& text, const UserConditionComparisonValue& comparisonValue, const std::string& configJsonSalt, const std::string& contextSalt, bool negate) const {
     const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
 
-    const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+    const auto hash = hashComparisonValue(text, configJsonSalt, contextSalt);
 
     for (const auto& comparisonValue : comparisonValues) {
         if (hash == comparisonValue) {
@@ -639,7 +635,7 @@ bool RolloutEvaluator::evaluateSensitiveTextSliceEqualsAnyOf(const std::string& 
 
         const auto slice = startsWith ? text.substr(0, sliceLength) : text.substr(textLength - sliceLength);
 
-        const auto hash = hashComparisonValue(*sha256, slice, configJsonSalt, contextSalt);
+        const auto hash = hashComparisonValue(slice, configJsonSalt, contextSalt);
         if (hash == hash2) {
             return !negate;
         }
@@ -756,7 +752,7 @@ bool RolloutEvaluator::evaluateSensitiveArrayContainsAnyOf(const std::vector<std
     const auto& comparisonValues = ensureComparisonValue<vector<string>>(comparisonValue);
 
     for (const auto& text : array) {
-        const auto hash = hashComparisonValue(*sha256, text, configJsonSalt, contextSalt);
+        const auto hash = hashComparisonValue(text, configJsonSalt, contextSalt);
 
         for (const auto& comparisonValue : comparisonValues) {
             if (hash == comparisonValue) {
