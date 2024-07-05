@@ -7,16 +7,11 @@
 #include <string>
 #include <tuple>
 #include <vector>
-#include <hash-library/sha1.h>
-#include <hash-library/sha256.h>
 #include <semver/semver.hpp>
 
 #include "configcat/config.h"
 #include "configcat/configcatuser.h"
 #include "evaluatelogbuilder.h"
-
-class SHA1;
-class SHA256;
 
 namespace configcat {
 
@@ -83,8 +78,6 @@ private:
     using SuccessOrError = std::variant<bool, std::string>;
 
     std::shared_ptr<ConfigCatLogger> logger;
-    std::unique_ptr<SHA1> sha1;
-    std::unique_ptr<SHA256> sha256;
 
     EvaluateResult evaluateSetting(EvaluateContext& context) const;
     std::optional<EvaluateResult> evaluateTargetingRules(const std::vector<TargetingRule>& targetingRules, EvaluateContext& context) const;
