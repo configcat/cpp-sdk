@@ -1,8 +1,11 @@
 #include <cmath>
 
 #include "utils.h"
+
+#ifndef CONFIGCAT_EXTERNAL_SHA
 #include <hash-library/sha1.h>
 #include <hash-library/sha256.h>
+#endif // CONFIGCAT_EXTERNAL_SHA
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/EPSILON
 #define JS_NUMBER_EPSILON 2.2204460492503130808472633361816e-16
@@ -176,9 +179,6 @@ std::optional<long long> integer_from_string(const std::string& str) {
 }
 
 #ifndef CONFIGCAT_EXTERNAL_SHA
-#include <hash-library/sha1.h>
-#include <hash-library/sha256.h>
-
 SHA1 sha1Calculator;
 SHA256 sha256Calculator;
 
