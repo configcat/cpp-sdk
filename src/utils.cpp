@@ -2,10 +2,10 @@
 
 #include "utils.h"
 
-#ifndef CONFIGCAT_EXTERNAL_SHA
+#ifndef CONFIGCAT_EXTERNAL_SHA_ENABLED
 #include <hash-library/sha1.h>
 #include <hash-library/sha256.h>
-#endif // CONFIGCAT_EXTERNAL_SHA
+#endif // CONFIGCAT_EXTERNAL_SHA_ENABLED
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/EPSILON
 #define JS_NUMBER_EPSILON 2.2204460492503130808472633361816e-16
@@ -178,7 +178,7 @@ std::optional<long long> integer_from_string(const std::string& str) {
     return value;
 }
 
-#ifndef CONFIGCAT_EXTERNAL_SHA
+#ifndef CONFIGCAT_EXTERNAL_SHA_ENABLED
 SHA1 sha1Calculator;
 SHA256 sha256Calculator;
 
@@ -189,7 +189,7 @@ std::string sha1(const std::string& input) {
 std::string sha256(const std::string& input) {
     return sha256Calculator(input);
 }
-#endif // CONFIGCAT_EXTERNAL_SHA
+#endif // CONFIGCAT_EXTERNAL_SHA_ENABLED
 
 
 } // namespace configcat

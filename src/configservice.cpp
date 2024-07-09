@@ -3,7 +3,6 @@
 #include "configcat/timeutils.h"
 #include "configcatlogger.h"
 #include "configfetcher.h"
-#include <hash-library/sha1.h>
 #include <iostream>
 
 using namespace std;
@@ -119,7 +118,7 @@ void ConfigService::setOffline() {
 }
 
 string ConfigService::generateCacheKey(const string& sdkKey) {
-    return SHA1()(sdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
+    return sha1(sdkKey + "_" + ConfigFetcher::kConfigJsonName + "_" + ConfigEntry::kSerializationFormatVersion);
 }
 tuple<shared_ptr<const ConfigEntry>, std::optional<std::string>, std::exception_ptr> ConfigService::fetchIfOlder(double threshold, bool preferCached) {
     {
