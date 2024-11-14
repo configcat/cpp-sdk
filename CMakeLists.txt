@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 file(READ "src/version.h" HeaderVersionFile)
 string(REGEX MATCH
     "#define CONFIGCAT_VERSION \"([0-9\\.]+).*\""
@@ -16,19 +18,34 @@ include(FetchContent)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+# Dependencies
 option(CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER "Use external network adapter." OFF)
 option(CONFIGCAT_USE_EXTERNAL_SHA "Use external hash calculation." OFF)
 option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
 
+#if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
+#    find_package(CURL REQUIRED)
+#endif()
+#
+#find_package(nlohmann_json REQUIRED)
+#if(NOT CONFIGCAT_USE_EXTERNAL_SHA)
+#    find_package(unofficial-hash-library REQUIRED)
+#endif()
+#find_package(semver REQUIRED)
+
 if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
-    find_package(CURL REQUIRED)
+    # include(cmake/httplib.cmake)
+    include(cmake/curl.cmake)
 endif()
 
-find_package(nlohmann_json REQUIRED)
+include(cmake/json.cmake)
 if(NOT CONFIGCAT_USE_EXTERNAL_SHA)
-    find_package(unofficial-hash-library REQUIRED)
+    include(cmake/hash-library.cmake)
 endif()
-find_package(semver REQUIRED)
+include(cmake/cpp-semver.cmake)
+
+
+
 
 set(CONFIGCAT_INCLUDE_PATHS
     "src"
@@ -69,23 +86,24 @@ file(GLOB SOURCES "src/*")
 add_library(configcat ${SOURCES})
 add_library(configcat::configcat ALIAS configcat)
 
-set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} nlohmann_json::nlohmann_json semver::semver)
+set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} nlohmann_json::nlohmann_json semver)
 
 # Conditionally add libraries based on options and set compile definitions
 if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
+    # list(APPEND CONFIGCAT_LIBRARIES httplib::httplib)
     list(APPEND CONFIGCAT_LIBRARIES CURL::libcurl)
 else()
     target_compile_definitions(configcat PRIVATE CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED)
 endif()
 
 if(NOT CONFIGCAT_USE_EXTERNAL_SHA)
-    list(APPEND CONFIGCAT_LIBRARIES unofficial::hash-library)
+    list(APPEND CONFIGCAT_LIBRARIES hash-library)
 else()
     target_compile_definitions(configcat PRIVATE CONFIGCAT_EXTERNAL_SHA_ENABLED)
 endif()
 
 target_link_libraries(configcat
-    PRIVATE ${CONFIGCAT_LIBRARIES}
+    PUBLIC ${CONFIGCAT_LIBRARIES}
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -99,34 +117,38 @@ target_include_directories(${PROJECT_NAME}
 
 # install
 
-configure_package_config_file(
-        ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}
-        PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR)
+#configure_package_config_file(
+#        ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
+#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+#        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}
+#        PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR)
+#
+#write_basic_package_version_file(
+#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+#        VERSION ${PROJECT_VERSION}
+#        COMPATIBILITY SameMajorVersion
+#        ARCH_INDEPENDENT)
+#
+#install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+#        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#
+#install(FILES
+#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+#        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+#
+#export(TARGETS ${PROJECT_NAME}
+#        NAMESPACE ${PROJECT_NAME}::
+#        FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
+#
+#install(TARGETS ${PROJECT_NAME}
+#        EXPORT ${PROJECT_NAME}-targets
+#        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#
+#install(EXPORT ${PROJECT_NAME}-targets
+#        NAMESPACE ${PROJECT_NAME}::
+#        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
 
-write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY SameMajorVersion
-        ARCH_INDEPENDENT)
 
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
-
-export(TARGETS ${PROJECT_NAME}
-        NAMESPACE ${PROJECT_NAME}::
-        FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
-
-install(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}-targets
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-install(EXPORT ${PROJECT_NAME}-targets
-        NAMESPACE ${PROJECT_NAME}::
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+# cmake CLion parameter: -DCMAKE_TOOLCHAIN_FILE=/Users/pkorodi/git/cat/vcpkg/scripts/buildsystems/vcpkg.cmake -DCONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER=OFF

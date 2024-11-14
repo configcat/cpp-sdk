@@ -70,7 +70,7 @@ TEST_P(EvaluationLogTest, TestEvaluationLog) {
 
     for (const auto& test : data["tests"]) {
         testLogger->clear();
-        string key = test["key"];
+        string key(test["key"]);
         auto returnValue = test["returnValue"];
         auto defaultValue = test["defaultValue"];
 

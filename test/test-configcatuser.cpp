@@ -40,7 +40,6 @@ TEST(ConfigCatUserTest, ToJson) {
     );
 
     json userJson = json::parse(user.toJson());
-    string d = userJson["datetime"];
 
     EXPECT_EQ("id", userJson["Identifier"]);
     EXPECT_EQ("email", userJson["Email"]);

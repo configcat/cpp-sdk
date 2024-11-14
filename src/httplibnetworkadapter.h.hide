@@ -1,0 +1,37 @@
+#pragma once
+
+#ifndef CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED
+
+#include "configcat/httpsessionadapter.h"
+#include <atomic>
+#include <memory>
+
+namespace httplib {
+    class Client;
+}
+
+namespace configcat {
+
+class HttplibResourceGuard;
+
+class HttplibNetworkAdapter : public HttpSessionAdapter {
+public:
+    HttplibNetworkAdapter() = default;
+    ~HttplibNetworkAdapter();
+
+    bool init(uint32_t connectTimeoutMs, uint32_t readTimeoutMs) override;
+    Response get(const std::string& url,
+                 const std::map<std::string, std::string>& header,
+                 const std::map<std::string, std::string>& proxies,
+                 const std::map<std::string, ProxyAuthentication>& proxyAuthentications) override;
+    void close() override;
+
+private:
+    std::shared_ptr<HttplibResourceGuard> HttplibResourceGuard;
+    std::unique_ptr<httplib::Client> client;
+    std::atomic<bool> closed = false;
+};
+
+} // configcat
+
+#endif // CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED

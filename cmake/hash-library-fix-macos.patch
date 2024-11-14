@@ -1,0 +1,34 @@
+diff --git a/sha1.cpp b/sha1.cpp
+index 8331e92..5ea23b9 100644
+--- a/sha1.cpp
++++ b/sha1.cpp
+@@ -7,8 +7,10 @@
+ #include "sha1.h"
+ 
+ // big endian architectures need #define __BYTE_ORDER __BIG_ENDIAN
+-#ifndef _MSC_VER
+-#include <endian.h>
++#if defined(__APPLE__)
++  #include <machine/endian.h>
++#elif !defined(_MSC_VER)
++  #include <endian.h>
+ #endif
+ 
+ 
+diff --git a/sha256.cpp b/sha256.cpp
+index 0c6138c..5cddbfe 100644
+--- a/sha256.cpp
++++ b/sha256.cpp
+@@ -7,8 +7,10 @@
+ #include "sha256.h"
+ 
+ // big endian architectures need #define __BYTE_ORDER __BIG_ENDIAN
+-#ifndef _MSC_VER
+-#include <endian.h>
++#if defined(__APPLE__)
++  #include <machine/endian.h>
++#elif !defined(_MSC_VER)
++  #include <endian.h>
+ #endif
+ 
+ 

@@ -1,0 +1,161 @@
+#ifndef CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED
+
+#include "httplibnetworkadapter.h"
+#include <httplib.h>
+#include <mutex>
+#include <sstream>
+#include <vector>
+#include <regex>
+
+namespace configcat {
+
+class HttplibResourceGuard {
+private:
+    static std::shared_ptr<HttplibResourceGuard> instance;
+    static std::mutex mutex;
+
+    HttplibResourceGuard() {}
+
+    struct Deleter {
+        void operator()(HttplibResourceGuard* guard) {
+            delete guard;
+            HttplibResourceGuard::instance.reset();
+        }
+    };
+
+public:
+    // Prevent copying
+    HttplibResourceGuard(const HttplibResourceGuard&) = delete;
+    HttplibResourceGuard& operator=(const HttplibResourceGuard&) = delete;
+
+    static std::shared_ptr<HttplibResourceGuard> getInstance() {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (!instance) {
+            instance = std::shared_ptr<HttplibResourceGuard>(new HttplibResourceGuard(), Deleter());
+        }
+        return instance;
+    }
+};
+std::shared_ptr<HttplibResourceGuard> HttplibResourceGuard::instance = nullptr;
+std::mutex HttplibResourceGuard::mutex;
+
+bool HttplibNetworkAdapter::init(uint32_t connectTimeoutMs, uint32_t readTimeoutMs) {
+    HttplibResourceGuard = HttplibResourceGuard::getInstance();
+    client = std::make_unique<httplib::Client>("");
+    if (!client) {
+        return false;
+    }
+
+    // Timeout setup
+    client->set_connection_timeout(connectTimeoutMs / 1000.0);
+    client->set_read_timeout(readTimeoutMs / 1000.0);
+
+    // Enable the progress callback function to be able to abort the request
+    // curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+    // curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
+    // curl_easy_setopt(curl, CURLOPT_XFERINFODATA, this);
+
+    return true;
+}
+
+struct ParsedURL {
+    std::string hostname;
+    std::string path;
+};
+
+ParsedURL parse_url(const std::string& url) {
+    ParsedURL result;
+
+    // Regular expression to match the hostname and path parts of a URL
+    std::regex url_regex(R"((https?:\/\/)?([^\/:]+)(\/.*)?)", std::regex::icase);
+    std::smatch match;
+
+    if (std::regex_search(url, match, url_regex)) {
+        result.hostname = match[2].str();  // Extract the hostname
+        result.path = match[3].str();      // Extract the path
+    }
+
+    return result;
+}
+
+Response HttplibNetworkAdapter::get(const std::string& url,
+                                    const std::map<std::string, std::string>& headers,
+                                    const std::map<std::string, std::string>& proxies,
+                                    const std::map<std::string, ProxyAuthentication>& proxyAuthentications) {
+    Response response;
+    if (!client) {
+        response.errorCode = ResponseErrorCode::InternalError;
+        response.error = "HTTP client is not initialized.";
+        return response;
+    }
+
+    // Update header
+    httplib::Headers httpHeaders;
+    for (const auto& header : headers) {
+        httpHeaders.emplace(header.first, header.second);
+    }
+
+
+    auto urlParts = parse_url(url);
+
+    client->adju
+    client->set_scheme(urlParts->scheme);
+
+    // Set proxy if available
+    if (proxies.count(urlParts->scheme) > 0) {
+        auto proxyUrl = httplib::detail::parse_url(proxies.at(urlParts->scheme));
+        if (proxyUrl) {
+            client->set_proxy(proxyUrl->host.c_str(), proxyUrl->port);
+            
+            if (proxyAuthentications.count(urlParts->scheme) > 0) {
+                const auto& auth = proxyAuthentications.at(urlParts->scheme);
+                client->set_proxy_basic_auth(auth.user.c_str(), auth.password.c_str());
+            }
+        }
+    }
+
+    // Perform the request
+    auto result = client->Get(urlParts->path, httpHeaders);
+
+    if (closed) {
+        response.errorCode = ResponseErrorCode::RequestCancelled;
+        response.error = "Request cancelled";
+        return response;
+    }
+
+    if (!result) {
+        response.errorCode = ResponseErrorCode::InternalError;
+        response.error = "Request failed";
+        return response;
+    }
+
+    if (result.error() == httplib::Error::Read) {
+        response.errorCode = ResponseErrorCode::TimedOut;
+        response.error = "Request timed out";
+        return response;
+    }
+
+    response.statusCode = result->status;
+    response.text = result->body;
+    
+    for (const auto& header : result->headers) {
+        response.header[header.first] = header.second;
+    }
+
+    return response;
+}
+
+void HttplibNetworkAdapter::close() {
+    closed = true;
+    if (client) {
+        client->stop();
+    }
+}
+
+HttplibNetworkAdapter::~HttplibNetworkAdapter() {
+    client.reset();
+}
+
+} // configcat
+
+#endif // CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED

@@ -5,7 +5,7 @@
 #include "configcat/configcatoptions.h"
 #include "configcat/timeutils.h"
 #include "configcatlogger.h"
-#include "curlnetworkadapter.h"
+#include "httplibnetworkadapter.h"
 #include "version.h"
 #include "platform.h"
 
@@ -32,7 +32,7 @@ ConfigFetcher::ConfigFetcher(const string& sdkKey, const shared_ptr<ConfigCatLog
 
 #ifndef CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED
     if (!httpSessionAdapter) {
-        httpSessionAdapter = make_shared<CurlNetworkAdapter>();
+        httpSessionAdapter = make_shared<HttplibNetworkAdapter>();
     }
 #endif
 
