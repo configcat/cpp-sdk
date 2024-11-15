@@ -2,11 +2,14 @@ include(CMakeFindDependencyMacro)
 @PACKAGE_INIT@
 
 if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
-    find_package(CURL REQUIRED)
+    find_dependency(cpr REQUIRED)
 endif()
-find_package(nlohmann_json REQUIRED)
-find_package(unofficial-hash-library REQUIRED)
-find_package(semver REQUIRED)
+if(NOT CONFIGCAT_USE_EXTERNAL_SHA)
+    find_dependency(hash-library REQUIRED)
+endif()
+
+find_dependency(nlohmann_json REQUIRED)
+find_dependency(semver REQUIRED)
 
 set(CONFIGCAT_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_FULL_INCLUDEDIR@")
 

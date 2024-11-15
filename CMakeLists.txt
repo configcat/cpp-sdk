@@ -35,7 +35,8 @@ option(CONFIGCAT_BUILD_TESTS "Build ConfigCat unittests." ON)
 
 if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
     # include(cmake/httplib.cmake)
-    include(cmake/curl.cmake)
+    # include(cmake/curl.cmake)
+    include(cmake/cpr.cmake)
 endif()
 
 include(cmake/json.cmake)
@@ -91,7 +92,8 @@ set(CONFIGCAT_LIBRARIES ${CONFIGCAT_LIBRARIES} nlohmann_json::nlohmann_json semv
 # Conditionally add libraries based on options and set compile definitions
 if(NOT CONFIGCAT_USE_EXTERNAL_NETWORK_ADAPTER)
     # list(APPEND CONFIGCAT_LIBRARIES httplib::httplib)
-    list(APPEND CONFIGCAT_LIBRARIES CURL::libcurl)
+    # list(APPEND CONFIGCAT_LIBRARIES CURL::libcurl)
+    list(APPEND CONFIGCAT_LIBRARIES cpr::cpr)
 else()
     target_compile_definitions(configcat PRIVATE CONFIGCAT_EXTERNAL_NETWORK_ADAPTER_ENABLED)
 endif()
@@ -103,7 +105,7 @@ else()
 endif()
 
 target_link_libraries(configcat
-    PUBLIC ${CONFIGCAT_LIBRARIES}
+    PRIVATE ${CONFIGCAT_LIBRARIES}
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -117,37 +119,37 @@ target_include_directories(${PROJECT_NAME}
 
 # install
 
-#configure_package_config_file(
-#        ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
-#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
-#        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}
-#        PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR)
-#
-#write_basic_package_version_file(
-#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
-#        VERSION ${PROJECT_VERSION}
-#        COMPATIBILITY SameMajorVersion
-#        ARCH_INDEPENDENT)
-#
-#install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-#        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-#
-#install(FILES
-#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
-#        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
-#        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
-#
-#export(TARGETS ${PROJECT_NAME}
-#        NAMESPACE ${PROJECT_NAME}::
-#        FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
-#
-#install(TARGETS ${PROJECT_NAME}
-#        EXPORT ${PROJECT_NAME}-targets
-#        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-#
-#install(EXPORT ${PROJECT_NAME}-targets
-#        NAMESPACE ${PROJECT_NAME}::
-#        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+configure_package_config_file(
+       ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
+       ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+       INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}
+       PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR)
+
+write_basic_package_version_file(
+       ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+       VERSION ${PROJECT_VERSION}
+       COMPATIBILITY SameMajorVersion
+       ARCH_INDEPENDENT)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+       DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(FILES
+       ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+       ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+       DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+
+export(TARGETS ${PROJECT_NAME}
+       NAMESPACE ${PROJECT_NAME}::
+       FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
+
+install(TARGETS ${PROJECT_NAME}
+       EXPORT ${PROJECT_NAME}-targets
+       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT ${PROJECT_NAME}-targets
+       NAMESPACE ${PROJECT_NAME}::
+       DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
 
 
 

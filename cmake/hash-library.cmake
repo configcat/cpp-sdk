@@ -1,7 +1,8 @@
 FetchContent_Declare(hash-library
     GIT_REPOSITORY    https://github.com/stbrumme/hash-library.git
     GIT_TAG           hash_library_v8
-    PATCH_COMMAND ${GIT_EXECUTABLE} apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/hash-library-fix-macos.patch
+    PATCH_COMMAND     ${GIT_EXECUTABLE} apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/hash-library-fix-macos.patch
+    UPDATE_DISCONNECTED 1
 )
 
 FetchContent_GetProperties(hash-library)
