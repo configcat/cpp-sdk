@@ -17,9 +17,6 @@ using namespace std::chrono;
 
 namespace configcat {
 
-std::mutex ConfigCatClient::instancesMutex;
-std::unordered_map<std::string, std::shared_ptr<ConfigCatClient>> ConfigCatClient::instances;
-
 bool isValidSdkKey(const string& sdkKey, bool customBaseUrl) {
     static constexpr char proxyPrefix[] = "configcat-proxy/";
 
@@ -53,7 +50,8 @@ std::shared_ptr<ConfigCatClient> ConfigCatClient::get(const std::string& sdkKey,
         }
     }
 
-    lock_guard<mutex> lock(instancesMutex);
+    lock_guard<mutex> lock(getInstancesMutex());
+    auto& instances = getInstances();
     auto client = instances.find(sdkKey);
     if (client == instances.end()) {
         client = instances.insert({sdkKey, make_shared<ConfigCatClient::MakeSharedEnabler>(sdkKey, actualOptions)}).first;
@@ -72,7 +70,8 @@ void ConfigCatClient::close(const std::shared_ptr<ConfigCatClient>& client) {
     }
 
     {
-        lock_guard<mutex> lock(instancesMutex);
+        lock_guard<mutex> lock(getInstancesMutex());
+        auto& instances = getInstances();
 
         client->closeResources();
 
@@ -89,7 +88,8 @@ void ConfigCatClient::close(const std::shared_ptr<ConfigCatClient>& client) {
 }
 
 void ConfigCatClient::closeAll() {
-    lock_guard<mutex> lock(instancesMutex);
+    lock_guard<mutex> lock(getInstancesMutex());
+    auto& instances = getInstances();
 
     for (const auto& [_, instance] : instances) {
         instance->closeResources();
@@ -99,7 +99,8 @@ void ConfigCatClient::closeAll() {
 }
 
 size_t ConfigCatClient::instanceCount() {
-    lock_guard<mutex> lock(instancesMutex);
+    lock_guard<mutex> lock(getInstancesMutex());
+    auto& instances = getInstances();
 
     return instances.size();
 }

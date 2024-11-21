@@ -146,8 +146,15 @@ private:
     std::shared_ptr<OverrideDataSource> overrideDataSource;
     std::unique_ptr<ConfigService> configService;
 
-    static std::mutex instancesMutex;
-    static std::unordered_map<std::string, std::shared_ptr<ConfigCatClient>> instances;
+    static inline std::mutex& getInstancesMutex() {
+        static std::mutex instancesMutex;
+        return instancesMutex;
+    }
+
+    static inline std::unordered_map<std::string, std::shared_ptr<ConfigCatClient>>& getInstances() {
+        static std::unordered_map<std::string, std::shared_ptr<ConfigCatClient>> instances;
+        return instances;
+    }
 };
 
 } // namespace configcat
