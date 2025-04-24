@@ -53,7 +53,7 @@ jobs:
 
   coverage:
     needs: [ test ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       CXXFLAGS: "--coverage -fno-inline"
 
