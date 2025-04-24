@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <stdint.h>
 #include "proxyauthentication.h"
 
 namespace configcat {
