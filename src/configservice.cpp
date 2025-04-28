@@ -206,6 +206,8 @@ void ConfigService::writeCache(const std::shared_ptr<const ConfigEntry>& configE
 }
 
 void ConfigService::startPoll() {
+    thread.reset();
+    stopRequested = false;
     thread = make_unique<std::thread>([this] { run(); });
 };
 
