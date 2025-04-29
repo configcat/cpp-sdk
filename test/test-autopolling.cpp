@@ -273,6 +273,9 @@ TEST_F(AutoPollingTest, initWaitTimeReturnCached) {
 TEST_F(AutoPollingTest, OnlineOffline) {
     configcat::Response response = {200, string_format(kTestJsonFormat, SettingType::String, R"({"s":"test"})")};
     mockHttpSessionAdapter->enqueueResponse(response);
+    mockHttpSessionAdapter->enqueueResponse(response);
+    mockHttpSessionAdapter->enqueueResponse(response);
+    mockHttpSessionAdapter->enqueueResponse(response);
 
     ConfigCatOptions options;
     options.pollingMode = PollingMode::autoPoll(1);
@@ -297,7 +300,11 @@ TEST_F(AutoPollingTest, OnlineOffline) {
 
     sleep_for(seconds(1));
 
-    EXPECT_TRUE(mockHttpSessionAdapter->requests.size() >= 3);
+    EXPECT_LE(3, mockHttpSessionAdapter->requests.size());
+
+    sleep_for(seconds(1));
+
+    EXPECT_LE(4, mockHttpSessionAdapter->requests.size());
 }
 
 TEST_F(AutoPollingTest, InitOffline) {

@@ -3,7 +3,6 @@
 #include "configcat/timeutils.h"
 #include "configcatlogger.h"
 #include "configfetcher.h"
-#include <iostream>
 
 using namespace std;
 using namespace std::this_thread;
@@ -109,11 +108,18 @@ void ConfigService::setOffline() {
             lock_guard<mutex> lock(initMutex);
             stopRequested = true;
         }
-        stop.notify_all();
-        if (thread && thread->joinable())
-            thread->join();
-    }
 
+        stop.notify_all();
+        if (thread && thread->joinable()) {
+            thread->join();
+            thread.reset();
+        }
+
+        {
+            lock_guard<mutex> lock(initMutex);
+            stopRequested = false;
+        }
+    }
     LOG_INFO(5200) << "Switched to OFFLINE mode.";
 }
 
