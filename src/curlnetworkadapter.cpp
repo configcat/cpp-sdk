@@ -140,6 +140,10 @@ Response CurlNetworkAdapter::get(const std::string& url,
     // Perform the request
     res = curl_easy_perform(curl);
 
+    // Cleanup the headers
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, NULL);
+    curl_slist_free_all(headers);
+
     if (res != CURLE_OK) {
         response.error = curl_easy_strerror(res);
         if (res == CURLE_OPERATION_TIMEDOUT) {
