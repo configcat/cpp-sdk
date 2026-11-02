@@ -1,5 +1,4 @@
 #include "configcat/pollingmode.h"
-#include <memory>
 
 using namespace std;
 
